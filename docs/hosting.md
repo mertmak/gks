@@ -149,15 +149,16 @@ Otomatik aşağı migration yoktur. Önceki sürüme dönmek için önceki commi
 
 ## 6. Yedek ve geri yükleme
 
-Yedek, konteynerdeki kurulum parolasını kullanır; parola komut satırına yazılmaz:
+Yedek, konteynerdeki kurulum parolasını kullanır; parola komut satırına yazılmaz. `umask 077` yedek dosyasının yalnız sahibince okunabilmesini (`600`) sağlar:
 
 ```sh
+umask 077
 install -d -m 700 /opt/gks/backups
 gks exec -T postgres sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U gks_admin -Fc gksdemo_v1' > /opt/gks/backups/gks-$(date +%F).dump
 find /opt/gks/backups -name 'gks-*.dump' -mtime +7 -delete
 ```
 
-Bu üç satır gece çalışan bir cron işine konabilir. Yedeklerin bir kopyasını sunucu dışında saklayın.
+Bu satırlar gece çalışan bir cron işine konabilir; cron'da `umask 077` satırı da korunmalıdır. Yedeklerin bir kopyasını sunucu dışında saklayın.
 
 Geri yükleme her zaman **yeni** bir veritabanına yapılır; çalışan DB'nin üzerine yazılmaz. Boş DB'yi `db:init` doğru dil/saat dilimi ayarlarıyla oluşturur; bunun için `install.env` dosyasını kurulum hesabıyla geçici olarak yeniden oluşturun:
 
