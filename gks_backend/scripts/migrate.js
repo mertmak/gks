@@ -1,21 +1,34 @@
 require('dotenv').config({quiet:true});
-const fs=require('fs');const path=require('path');
+const fs=require('fs');const path=require('path');const crypto=require('crypto');
 const {connectDB,sql}=require('../db');
+const locks=require('../db/locks');
+// Each file runs in its own transaction under one advisory lock, so parallel
+// runs apply a migration once. Applied files must never change (checksum).
+async function locked(work) {
+ const tx=new sql.Transaction();await tx.begin(sql.ISOLATION_LEVEL.READ_COMMITTED);
+ try {
+  const client=tx.activeClient();
+  await client.query('SELECT pg_advisory_xact_lock($1)',[locks.migrations]);
+  const result=await work(client);await tx.commit();return result;
+ }catch(e){if(tx.client)await tx.rollback().catch(()=>{});throw e;}
+}
 (async()=>{
  await connectDB();
- await sql.query("IF OBJECT_ID('dbo.GksMigrations','U') IS NULL CREATE TABLE dbo.GksMigrations(Name nvarchar(200) NOT NULL PRIMARY KEY,AppliedAt datetime2 NOT NULL DEFAULT SYSUTCDATETIME())");
+ await locked(client=>client.query("CREATE TABLE IF NOT EXISTS GksMigrations(Name varchar(200) NOT NULL PRIMARY KEY,Checksum char(64) NOT NULL,AppliedAt timestamp NOT NULL DEFAULT (now() AT TIME ZONE 'UTC'))"));
  const root=path.resolve(__dirname,'../../database/migrations');
  for(const name of fs.readdirSync(root).filter(n=>n.endsWith('.sql')).sort()) {
-  const tx=new sql.Transaction();await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-  try {
-   const request=new sql.Request(tx);request.input('name',sql.NVarChar,name);
-   const exists=await request.query('SELECT Name FROM dbo.GksMigrations WITH (UPDLOCK,HOLDLOCK) WHERE Name=@name');
-   if(!exists.recordset.length) {
-    await new sql.Request(tx).batch(fs.readFileSync(path.join(root,name),'utf8'));
-    await request.query('INSERT INTO dbo.GksMigrations(Name) VALUES(@name)');
-    console.log('Applied:',name);
-   } else console.log('Already applied:',name);
-   await tx.commit();
-  }catch(e){await tx.rollback();throw e;}
+  const text=fs.readFileSync(path.join(root,name),'utf8');
+  const checksum=crypto.createHash('sha256').update(text).digest('hex');
+  await locked(async client=>{
+   const exists=(await client.query('SELECT Checksum FROM GksMigrations WHERE Name=$1',[name])).rows[0];
+   if(exists) {
+    if(exists.checksum!==checksum) throw new Error(`Uygulanmış migration değiştirilmiş: ${name}`);
+    console.log('Already applied:',name);
+    return;
+   }
+   await client.query(text);
+   await client.query('INSERT INTO GksMigrations(Name,Checksum) VALUES($1,$2)',[name,checksum]);
+   console.log('Applied:',name);
+  });
  }
 })().catch(e=>{console.error('Migration failed:',e.message);process.exitCode=1;}).finally(()=>sql.close());
