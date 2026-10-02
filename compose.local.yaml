@@ -1,5 +1,5 @@
 # Explicit local-only override; never pass this file to a public deployment.
-# SQL is separate. DB_SERVER must be reachable from the backend container.
+# PostgreSQL is separate. DB_SERVER must be reachable from the backend container.
 services:
   backend:
     environment:

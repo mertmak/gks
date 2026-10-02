@@ -27,24 +27,28 @@ jobs:
   database:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Fresh ephemeral Developer instance. Never uses repository or production secrets.
+    # Fresh ephemeral PostgreSQL. Never uses repository or production secrets.
     services:
-      sql:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+      postgres:
+        image: postgres:18
         env:
-          ACCEPT_EULA: 'Y'
-          MSSQL_PID: Developer
-          MSSQL_SA_PASSWORD: 'Gks-CI-Only-Disposable-2026!'
+          POSTGRES_USER: gks_ci
+          POSTGRES_PASSWORD: 'gks-ci-only-disposable'
+          POSTGRES_DB: postgres
+          POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale-provider=icu --icu-locale=tr-TR
+          TZ: Europe/Istanbul
         ports:
-          - 1433:1433
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gks_ci -d postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       NODE_ENV: test
       DB_SERVER: 127.0.0.1
-      DB_PORT: '1433'
-      DB_USER: sa
-      DB_PASSWORD: 'Gks-CI-Only-Disposable-2026!'
-      DB_ENCRYPT: 'false'
-      DB_TRUST_SERVER_CERTIFICATE: 'true'
+      DB_PORT: '5432'
+      DB_USER: gks_ci
+      DB_PASSWORD: 'gks-ci-only-disposable'
+      DB_SSL: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,13 +57,20 @@ jobs:
           cache: npm
           cache-dependency-path: gks_backend/package-lock.json
       - run: npm ci --prefix gks_backend
-      - name: Wait for SQL readiness
+      - name: Wait for PostgreSQL readiness
         run: node gks_backend/scripts/wait-for-db.js
       - name: Fresh schema, migrations, API and demo regressions
         run: npm run test:db --prefix gks_backend
       - name: Build backend and check migration files
         run: |
           docker build -f gks_backend/Dockerfile -t gks-backend:ci .
-          docker run --rm --entrypoint node gks-backend:ci -e "const fs=require('fs');if(fs.readdirSync('../database/migrations').filter(n=>n.endsWith('.sql')).length<5)process.exit(1)"
+          docker run --rm --entrypoint node gks-backend:ci -e "require('fs').accessSync('../database/migrations/001_initial.sql')"
       - name: Build frontend
         run: docker build -t gks-frontend:ci gks_frontend
+      - name: Check hosting Compose file and database certificate script
+        run: |
+          env_dir="$RUNNER_TEMP/gks-env"
+          mkdir -p "$env_dir"
+          scripts/hosting/make-db-cert.sh "$env_dir/db-tls"
+          touch "$env_dir/backend.env" "$env_dir/postgres.env" "$env_dir/install.env"
+          GKS_ENV_DIR="$env_dir" GKS_SITE_ADDRESS=gks.example.test docker compose -f compose.hosting.yaml --profile install config -q

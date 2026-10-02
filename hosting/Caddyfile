@@ -1,0 +1,16 @@
+# Public entry point. API and Socket.IO go straight to the backend so it sees
+# exactly one trusted proxy (TRUST_PROXY_HOPS=1) and the real client address.
+{$GKS_SITE_ADDRESS} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	@backend path /api/* /socket.io/*
+	handle @backend {
+		reverse_proxy backend:3000
+	}
+	handle {
+		reverse_proxy frontend:80
+	}
+}
