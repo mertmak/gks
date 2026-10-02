@@ -152,7 +152,7 @@ router.get('/logs', verifyToken, validateQuery(logsQuery), async (req, res, next
                 LEFT JOIN Users U ON L.User_ID = U.ID
                 LEFT JOIN Doors D ON L.Door_ID = D.ID
                 ${where}
-                ORDER BY L.Zaman DESC
+                ORDER BY L.Zaman DESC,L.ID DESC
                 LIMIT @limit OFFSET @offset
             `),
             countReq.query(`
@@ -217,7 +217,7 @@ router.get('/door-logs', verifyToken, validateQuery(logsQuery), async (req, res,
         request.input('limit',  sql.Int, limit);
 
         const [dataResult, countResult] = await Promise.all([
-            request.query(`SELECT * FROM DoorLogs ${where} ORDER BY Tarih DESC LIMIT @limit OFFSET @offset`),
+            request.query(`SELECT * FROM DoorLogs ${where} ORDER BY Tarih DESC,ID DESC LIMIT @limit OFFSET @offset`),
             countReq.query(`SELECT COUNT(*) AS toplam FROM DoorLogs ${where}`)
         ]);
 
