@@ -28,7 +28,7 @@ const aliases = [
     'AktifKapi', 'AktifPersonel', 'Basarili', 'BugunGecis', 'Cakisma_Var', 'Gelen', 'Izin_Durumu',
     'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
     'Onayli_Izin_Sayisi', 'Saat', 'ToplamPersonel', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
-    'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'toplam', 'tur',
+    'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'superuser', 'toplam', 'tur',
 ];
 
 const canonical = new Map();

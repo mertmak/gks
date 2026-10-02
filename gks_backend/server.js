@@ -31,13 +31,21 @@ if(process.env.NODE_ENV!=='production') {
 app.use((req,res)=>res.status(404).json({success:false,message:'İstenen işlem bulunamadı.'}));
 app.use(require('./middlewares/errorHandler'));
 const server=http.createServer(app);
+// Production refuses unsafe settings before and right after the DB connection.
+function assertProductionConfig() {
+    if(!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32) throw new Error('Üretimde JWT_SECRET en az 32 karakter olmalıdır.');
+}
+async function assertProductionDatabase() {
+    const account=(await sql.query('SELECT rolsuper AS superuser FROM pg_roles WHERE rolname=current_user')).recordset[0];
+    if(!account||account.superuser) throw new Error('Üretimde uygulama, süper kullanıcı yerine ayrı uygulama hesabıyla bağlanmalıdır (db:runtime-role).');
+    const admins=(await sql.query("SELECT Sifre_Hash FROM Yoneticiler WHERE Rol='admin'")).recordset;
+    for(const admin of admins) if(await require('bcrypt').compare('admin',admin.Sifre_Hash)) throw new Error('Üretime çıkmadan önce varsayılan yönetici şifresini değiştirin.');
+}
 async function start() {
-    if(process.env.NODE_ENV==='production' && (!process.env.JWT_SECRET||process.env.JWT_SECRET.length<32)) throw new Error('Üretimde JWT_SECRET en az 32 karakter olmalıdır.');
+    const production=process.env.NODE_ENV==='production';
+    if(production) assertProductionConfig();
     await connectDB();
-    if (process.env.NODE_ENV === 'production') {
-        const admins = (await sql.query("SELECT Sifre_Hash FROM Yoneticiler WHERE Rol='admin'")).recordset;
-        for (const admin of admins) if (await require('bcrypt').compare('admin', admin.Sifre_Hash)) throw new Error('Üretime çıkmadan önce varsayılan yönetici şifresini değiştirin.');
-    }
+    if(production) await assertProductionDatabase();
     socket.init(server);
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(process.env.PORT||3000,process.env.HOST||'127.0.0.1',resolve);});
     logger.info(`GKS ${process.env.PORT||3000} portunda hazır.`);
@@ -48,4 +56,4 @@ async function shutdown() {
     server.close(async()=>{await sql.close();clearTimeout(deadline);process.exit(0);});
 }
 if(require.main===module) {start().catch(e=>{logger.error(e.message);process.exit(1);});process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);}
-module.exports={app,start,server};
+module.exports={app,start,server,assertProductionConfig,assertProductionDatabase};

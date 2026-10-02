@@ -2,7 +2,7 @@
 node_modules/
 
 # 🔐 Çevresel Değişkenler ve Gizli Bilgiler
-# (MS SQL Server şifreleri, API anahtarları vb. bu dosyalarda kalmalı)
+# (veritabanı şifreleri, API anahtarları vb. bu dosyalarda kalmalı)
 .env
 .env.*
 !.env.example
@@ -27,7 +27,10 @@ Thumbs.db
 # 🧹 Geçici ve Cache Dosyaları
 .eslintcache
 .npm/
-# Database backups must never be committed
+# Database backups and TLS private keys must never be committed
+*.key
+*.pem
+*.dump
 *.bak
 *.mdf
 *.ldf
