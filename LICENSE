@@ -1,0 +1,40 @@
+# GKS licensing terms
+
+The original GKS code and documentation supplied by the licensor are
+licensed under the unmodified PolyForm Internal Use License 1.0.0 in
+docs/licenses/PolyForm-Internal-Use-1.0.0.md, together with the additional
+permission below. Read both documents together. This additional permission
+is provided by the GKS licensor, not by the PolyForm Project.
+
+## Additional permission: private, noncommercial learning
+
+In addition to the purposes permitted by the base license, an individual,
+including a student, may privately copy, install, run, study, and modify the
+software, and create works based on it, solely for that individual's own
+noncommercial learning, education, experimentation, or hobby projects.
+Enrollment in an educational institution is not required.
+
+This additional permission does not grant permission to distribute, publish,
+sell, sublicense, or otherwise supply copies of the software or works based
+on it to third parties, whether in source or executable form and whether
+modified or unmodified. It does not grant permission to provide the software
+or works based on it as a hosted, managed, or other service to third parties,
+whether paid or free. It does not authorize commercial exploitation of the
+software or works based on it under the learning permission.
+
+All conditions and limitations of the base license continue to apply to
+this additional permission. The base license's permission for internal
+business operations remains available; this additional permission does not
+restrict that permission. Uses outside these grants require separate
+permission from the applicable rights holder. Rights provided by applicable
+law are not limited by this notice.
+
+## Third-party material and earlier grants
+
+Third-party libraries and other third-party material retain their own
+licenses. These GKS terms apply only to rights the GKS licensor is entitled
+to license and do not replace those third-party licenses or revoke rights
+already validly granted for earlier copies under other terms.
+
+The English licensing documents govern. Turkish summaries in the README
+and documentation are explanatory and do not expand these permissions.

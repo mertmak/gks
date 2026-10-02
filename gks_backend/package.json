@@ -1,0 +1,37 @@
+{
+  "name": "gks_backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "test:db": "RUN_DB_TESTS=true RUN_SIM_TESTS=true node --test",
+    "seed:demo": "node scripts/seed-demo.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:init": "node scripts/init-db.js",
+    "admin:create": "node scripts/create-admin.js",
+    "db:runtime-role": "node scripts/configure-runtime-role.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "SEE LICENSE IN ../LICENSE",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "jsonwebtoken": "^9.0.3",
+    "mssql": "^12.7.0",
+    "socket.io": "^4.8.3",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}

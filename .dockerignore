@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/.env
+**/.env.*
+**/logs
+**/dist
+**/test
+**/test-support
+**/*.bak
+**/*.log
+notlar

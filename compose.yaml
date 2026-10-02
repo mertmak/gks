@@ -1,0 +1,31 @@
+# App-only deployment. Use a separately managed, supported SQL Server with a
+# valid TLS certificate and externally verified backups. No database is replaced.
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: gks_backend/Dockerfile
+    env_file: ${GKS_ENV_FILE:-./gks_backend/.env}
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      ENABLE_SIMULATION: 'false'
+      ENABLE_SETUP: 'false'
+      TRUST_PROXY_HOPS: '1'
+    restart: unless-stopped
+    volumes:
+      - backend-logs:/app/gks_backend/logs
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  frontend:
+    build: ./gks_frontend
+    ports: ['127.0.0.1:${GKS_HTTP_PORT:-8080}:80']
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  backend-logs:

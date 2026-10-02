@@ -1,0 +1,16 @@
+# Explicit local-only override; never pass this file to a public deployment.
+# SQL is separate. DB_SERVER must be reachable from the backend container.
+services:
+  backend:
+    environment:
+      NODE_ENV: development
+      FRONTEND_URL: http://localhost:${GKS_HTTP_PORT:-8080},http://127.0.0.1:${GKS_HTTP_PORT:-8080}
+      ENABLE_SIMULATION: ${GKS_ENABLE_SIMULATION:-false}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    healthcheck:
+      interval: 5s
+  frontend:
+    build:
+      args:
+        VITE_ENABLE_SIMULATION: ${GKS_ENABLE_SIMULATION:-false}

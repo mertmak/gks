@@ -1,0 +1,65 @@
+name: Checks
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            gks_backend/package-lock.json
+            gks_frontend/package-lock.json
+      - name: Release export isolation and content preflight
+        run: |
+          node --test scripts/test/*.test.js
+          node scripts/prepare-release.js
+      - run: npm ci --prefix gks_backend
+      - run: npm test --prefix gks_backend
+      - run: npm ci --prefix gks_frontend
+      - run: npm test --prefix gks_frontend
+      - run: npm run lint --prefix gks_frontend
+      - run: npm run build --prefix gks_frontend
+      - run: npm audit --prefix gks_backend --audit-level=high
+      - run: npm audit --prefix gks_frontend --audit-level=high
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Fresh ephemeral Developer instance. Never uses repository or production secrets.
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: 'Gks-CI-Only-Disposable-2026!'
+        ports:
+          - 1433:1433
+    env:
+      NODE_ENV: test
+      DB_SERVER: 127.0.0.1
+      DB_PORT: '1433'
+      DB_USER: sa
+      DB_PASSWORD: 'Gks-CI-Only-Disposable-2026!'
+      DB_ENCRYPT: 'false'
+      DB_TRUST_SERVER_CERTIFICATE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gks_backend/package-lock.json
+      - run: npm ci --prefix gks_backend
+      - name: Wait for SQL readiness
+        run: node gks_backend/scripts/wait-for-db.js
+      - name: Fresh schema, migrations, API and demo regressions
+        run: npm run test:db --prefix gks_backend
+      - name: Build backend and check migration files
+        run: |
+          docker build -f gks_backend/Dockerfile -t gks-backend:ci .
+          docker run --rm --entrypoint node gks-backend:ci -e "const fs=require('fs');if(fs.readdirSync('../database/migrations').filter(n=>n.endsWith('.sql')).length<5)process.exit(1)"
+      - name: Build frontend
+        run: docker build -t gks-frontend:ci gks_frontend

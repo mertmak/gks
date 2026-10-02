@@ -1,0 +1,15 @@
+# Optional fresh development database on supported SQL Server. Never remove or
+# replace gks_db before restoring and validating an external backup.
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${GKS_DEV_SA_PASSWORD:?Set a strong development password}
+    ports: ['127.0.0.1:1434:1433']
+    volumes: ['gks-sql-data:/var/opt/mssql']
+    restart: unless-stopped
+volumes:
+  gks-sql-data:
