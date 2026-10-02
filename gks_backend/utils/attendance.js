@@ -3,8 +3,8 @@ const dayMs = 86400000;
 const asDate = value => new Date(value instanceof Date ? value.getTime() : `${String(value).slice(0,10)}T00:00:00Z`);
 const dateKey = value => asDate(value).toISOString().slice(0,10);
 const businessToday = () => require('../config/demo').enabled ? require('../config/demo').referenceDate : require('../config/business').date();
-// Existing SQL DATETIME values are business wall-clock times, represented by the
-// MSSQL driver as UTC Dates. Do not add the browser/server timezone a second time.
+// Stored SQL timestamps are business wall-clock times, represented by the
+// database layer (db.js) as UTC Dates. Do not add the browser/server timezone a second time.
 function shiftWindow(row) {
     const day = asDate(row.Tarih);
     const startMinute = parseTimeToMinutes(row.Mesai_Baslangic);

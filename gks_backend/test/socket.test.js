@@ -41,12 +41,12 @@ test('authenticated live notifications follow committed writes and omit rolled-b
         await delivered;
     };
     const door = { kapi_adi: 'Socket Fixture Door', kapi_turu: 'İç Geçiş' };
-    await sql.query("CREATE TRIGGER Fixture_Door_Audit_Reject ON DoorLogs INSTEAD OF INSERT AS THROW 51000, 'fixture audit failure', 1;");
+    await require('../test-support/failures').failInsertsOn(sql,'DoorLogs','fixture audit failure');
     assert.equal((await call('/doors', door)).status, 500);
     await barrier();
     assert.deepEqual(notifications.filter(event => event !== 'fixture_barrier'), []);
     assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Doors')).recordset[0].n, 0);
-    await sql.query('DROP TRIGGER Fixture_Door_Audit_Reject');
+    await require('../test-support/failures').restoreInserts(sql,'DoorLogs');
     const doorSeen = once(client, 'new_door_log', { signal: AbortSignal.timeout(5000) }).then(() => sql.query('SELECT (SELECT COUNT(*) FROM Doors) AS doors, (SELECT COUNT(*) FROM DoorLogs) AS logs'));
     assert.equal((await call('/doors', door)).status, 200);
     assert.deepEqual((await doorSeen).recordset[0], { doors: 1, logs: 1 });

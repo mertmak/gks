@@ -7,18 +7,18 @@ test('28-day trend keeps four ordered weeks across New Year, including empty wee
     const { sql, connectDB } = require('../db');
     await connectDB();
     await sql.query(`
-      INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES(N'Trend Fixture',N'Ana Giriş');
+      INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES('Trend Fixture','Ana Giriş');
       INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi)
-      SELECT N'trend-fixture',D.ID,V.Zaman,V.Basarili
+      SELECT 'trend-fixture',D.ID,V.Zaman,V.Basarili
       FROM Doors D CROSS JOIN (VALUES
-        (CAST('2026-12-13T23:59:59' AS datetime),1),
-        (CAST('2026-12-14T00:00:00' AS datetime),1),
-        (CAST('2026-12-20T23:59:59' AS datetime),0),
-        (CAST('2026-12-28T00:00:00' AS datetime),1),
-        (CAST('2027-01-03T23:59:59' AS datetime),1),
-        (CAST('2027-01-04T00:00:00' AS datetime),0),
-        (CAST('2027-01-10T23:59:59' AS datetime),1),
-        (CAST('2027-01-11T00:00:00' AS datetime),1)
+        (CAST('2026-12-13T23:59:59' AS timestamp),true),
+        (CAST('2026-12-14T00:00:00' AS timestamp),true),
+        (CAST('2026-12-20T23:59:59' AS timestamp),false),
+        (CAST('2026-12-28T00:00:00' AS timestamp),true),
+        (CAST('2027-01-03T23:59:59' AS timestamp),true),
+        (CAST('2027-01-04T00:00:00' AS timestamp),false),
+        (CAST('2027-01-10T23:59:59' AS timestamp),true),
+        (CAST('2027-01-11T00:00:00' AS timestamp),true)
       ) V(Zaman,Basarili);
     `);
     const expected = [
@@ -27,11 +27,8 @@ test('28-day trend keeps four ordered weeks across New Year, including empty wee
         { Hafta: 2, Basarili: 2, Yetkisiz: 0 },
         { Hafta: 3, Basarili: 1, Yetkisiz: 1 },
     ];
-    for (const firstDay of [1, 7]) {
-        const result = await new sql.Request().input('today', sql.Date, '2027-01-10')
-            .query(`SET DATEFIRST ${firstDay}; ${monthlyTrendQuery}`);
-        assert.deepEqual(result.recordset, expected);
-    }
+    const result = await new sql.Request().input('today', sql.Date, '2027-01-10').query(monthlyTrendQuery);
+    assert.deepEqual(result.recordset, expected);
     const empty = await new sql.Request().input('today', sql.Date, '2028-01-10').query(monthlyTrendQuery);
     assert.deepEqual(empty.recordset.map(row => [row.Basarili, row.Yetkisiz]), [[0,0],[0,0],[0,0],[0,0]]);
 });

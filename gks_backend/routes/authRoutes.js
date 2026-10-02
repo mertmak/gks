@@ -1,4 +1,4 @@
-const { inTransaction, httpError } = require('../utils/transaction');
+const { inTransaction, httpError, advisoryLock } = require('../utils/transaction');
 const { addSystemLog } = require('../utils/logger');
 const notifyAudit = () => require('../utils/socket').getIO().emit('new_system_log');
 const express = require('express');
@@ -8,6 +8,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const { sql } = require('../db');
+const locks = require('../db/locks');
+const { isUniqueViolation } = require('../utils/dbErrors');
 const { verifyToken, verifyAdmin, SECRET_KEY } = require('../middlewares/auth');
 const { validate, schemas } = require('../middlewares/validate');
 const logger = require('../utils/appLogger');
@@ -26,7 +28,7 @@ router.post('/login', loginLimiter, validate(schemas.loginSchema), async (req, r
     try {
         const request = new sql.Request();
         request.input('kullanici', sql.VarChar, username);
-        const result = await request.query('SELECT * FROM Yoneticiler WHERE Kullanici_Adi = @kullanici');
+        const result = await request.query('SELECT * FROM Yoneticiler WHERE gks_ci(Kullanici_Adi) = gks_ci(@kullanici)');
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
@@ -56,8 +58,9 @@ router.post('/ilk-kurulum', (req,res,next) => process.env.NODE_ENV !== 'producti
         const { username, password } = req.body;
         const hash = await bcrypt.hash(password, 12);
         await inTransaction(async tx => {
+            await advisoryLock(tx, locks.panelAccounts);
             const request = new sql.Request(tx);
-            const existing = await request.query('SELECT COUNT(*) AS count FROM Yoneticiler WITH (UPDLOCK,HOLDLOCK)');
+            const existing = await request.query('SELECT COUNT(*) AS count FROM Yoneticiler');
             if (existing.recordset[0].count) throw Object.assign(new Error('Sistem zaten kurulu.'), { statusCode: 403 });
             await request.input('user', sql.VarChar, username).input('hash', sql.VarChar, hash)
                 .query("INSERT INTO Yoneticiler(Kullanici_Adi,Sifre_Hash,Rol) VALUES(@user,@hash,'admin')");
@@ -82,7 +85,7 @@ router.post('/hesap-ekle', verifyToken, verifyAdmin, validate(schemas.hesapEkleS
         notifyAudit();
         res.json({ success: true, message: 'Yeni hesap oluşturuldu.' });
     } catch (error) {
-        if ([2601, 2627].includes(error.number)) return res.status(400).json({ success: false, message: 'Bu kullanıcı adı zaten mevcut.' });
+        if (isUniqueViolation(error)) return res.status(400).json({ success: false, message: 'Bu kullanıcı adı zaten mevcut.' });
         next(error);
     }
 });
@@ -120,7 +123,7 @@ router.delete('/hesap-sil/:id', verifyToken, verifyAdmin, async (req, res, next)
     try {
         await inTransaction(async tx => {
             const deleted = await new sql.Request(tx).input('id', sql.Int, req.params.id)
-                .query('DELETE FROM Yoneticiler OUTPUT DELETED.Kullanici_Adi,DELETED.Rol WHERE ID=@id');
+                .query('DELETE FROM Yoneticiler WHERE ID=@id RETURNING Kullanici_Adi,Rol');
             if (!deleted.recordset.length) throw httpError(404, 'Hesap bulunamadı.');
             const user = deleted.recordset[0];
             await addSystemLog(req.user.kullanici_adi, 'HESAP SİLME', user.Kullanici_Adi, '', `Hesap ID: ${req.params.id}, rol: ${user.Rol}`, tx);

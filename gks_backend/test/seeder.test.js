@@ -14,8 +14,8 @@ test('simulation is atomic and accepts quoted names', {skip: process.env.RUN_SIM
   try {
     const count = (await sql.query('SELECT COUNT(*) AS n FROM Users')).recordset[0].n;
     assert.equal(count, 0, 'Refuse to modify a populated database');
-    account = (await sql.query("INSERT INTO Yoneticiler(Kullanici_Adi,Sifre_Hash,Rol) OUTPUT INSERTED.ID VALUES('simulation-test','unused','admin')")).recordset[0].ID;
-    shift = (await sql.query("INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis) OUTPUT INSERTED.ID VALUES(N'Test','09:00','18:00')")).recordset[0].ID;
+    account = (await sql.query("INSERT INTO Yoneticiler(Kullanici_Adi,Sifre_Hash,Rol) VALUES('simulation-test','unused','admin') RETURNING ID")).recordset[0].ID;
+    shift = (await sql.query("INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis) VALUES('Test','09:00','18:00') RETURNING ID")).recordset[0].ID;
     const token = require('jsonwebtoken').sign({id:account,version:0,role:'admin'},process.env.JWT_SECRET,{expiresIn:'5m'});
     const call = async body => {
       const res = await fetch(`http://127.0.0.1:${server.address().port}/api/seeder/run`, {method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(body)});
@@ -24,7 +24,7 @@ test('simulation is atomic and accepts quoted names', {skip: process.env.RUN_SIM
     const body = {userAction:'append',doorAction:'append',logAction:'append',personelSayisi:2,kapiSayisi:2,vardiyaId:shift,startDateStr:'2026-09-07',endDateStr:'2026-09-07',customIsimler:"O'Neil",customSoyisimler:"D'Angelo",customDepartmanlar:"Ar'Ge",customKapilar:'Ana Giriş,Ana Çıkış'};
     const result = await call(body);
     assert.equal(result.status,200,JSON.stringify(result.data));
-    assert.equal((await sql.query("SELECT Ad_Soyad FROM Users WHERE Ad_Soyad LIKE N'O%'")).recordset[0].Ad_Soyad,"O'Neil D'Angelo");
+    assert.equal((await sql.query("SELECT Ad_Soyad FROM Users WHERE Ad_Soyad LIKE 'O%'")).recordset[0].Ad_Soyad,"O'Neil D'Angelo");
     assert.ok((await sql.query('SELECT Ad_Soyad,Departman FROM Users')).recordset.every(row => row.Ad_Soyad === "O'Neil D'Angelo" && row.Departman === "Ar'Ge"));
     assert.ok((await sql.query('SELECT COUNT(*) AS n FROM Logs')).recordset[0].n >= 2);
     assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Logs WHERE User_ID IS NULL')).recordset[0].n, 0);
@@ -39,10 +39,10 @@ test('simulation is atomic and accepts quoted names', {skip: process.env.RUN_SIM
       assert.equal((await call({ ...body, vardiyaId:2147483647 })).status, 404);
       assert.equal((await call({ ...body, endDateStr:'2026-10-08' })).status, 400);
       await sql.query(`UPDATE Vardiyalar SET Mesai_Baslangic='22:45',Mesai_Bitis='06:15',Yemek_Baslangic='02:35' WHERE ID=${shift}`);
-      const lastId = (await sql.query('SELECT MAX(ID) AS id FROM Logs')).recordset[0].id;
+      const lastId = (await sql.query('SELECT MAX(ID) AS ID FROM Logs')).recordset[0].ID;
       const result = await call({ ...body, userAction:'keep', kapiSayisi:4, customKapilar:'Yemekhane Giriş,Yemekhane Çıkış,Mola / Sigara Alanı,İç Geçiş' });
       assert.equal(result.status, 200);
-      const logs = (await sql.query(`SELECT L.Zaman,D.Kapi_Turu FROM Logs L JOIN Doors D ON D.ID=L.Door_ID WHERE L.ID>${lastId} AND L.Basarili_Mi=1`)).recordset;
+      const logs = (await sql.query(`SELECT L.Zaman,D.Kapi_Turu FROM Logs L JOIN Doors D ON D.ID=L.Door_ID WHERE L.ID>${lastId} AND L.Basarili_Mi=true`)).recordset;
       const entry = logs.filter(row => row.Kapi_Turu === 'Ana Giriş');
       const exit = logs.filter(row => row.Kapi_Turu === 'Ana Çıkış');
       const meals = logs.filter(row => row.Kapi_Turu.startsWith('Yemekhane'));

@@ -5,7 +5,7 @@ const parseTimeToMinutes = (timeObj) => {
     let hours, minutes;
 
     if (timeObj instanceof Date) {
-        // mssql driver Date olarak getirir, UTC saatini kullan
+        // db.js saati 1970-01-01 UTC Date olarak getirir, UTC saatini kullan
         hours = timeObj.getUTCHours();
         minutes = timeObj.getUTCMinutes();
     } else {

@@ -29,10 +29,15 @@ async function inTransaction(work, { retries = MAX_RETRIES } = {}) {
     }
 }
 
+// Serializes one invariant (see db/locks.js) until the transaction ends.
+function advisoryLock(tx, key) {
+    return new sql.Request(tx).input('key', sql.Int, key).query('SELECT pg_advisory_xact_lock(@key) AS locked');
+}
+
 function validateId(req, res, next, value) {
     if (!/^[1-9]\d*$/.test(value) || Number(value) > 2147483647) {
         return res.status(400).json({ success: false, message: 'Geçerli bir kayıt ID değeri giriniz.' });
     }
     next();
 }
-module.exports = { inTransaction, httpError, validateId, isRetryable: error => RETRYABLE.has(error?.code) };
+module.exports = { inTransaction, httpError, validateId, advisoryLock, isRetryable: error => RETRYABLE.has(error?.code) };

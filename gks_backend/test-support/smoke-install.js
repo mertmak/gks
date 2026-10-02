@@ -1,5 +1,5 @@
 // Explicit opt-in local Docker acceptance. Owns one fresh DB and Compose project.
-// Uses existing development SQL; never changes the configured DB_NAME database.
+// Uses existing development PostgreSQL; never changes the configured DB_NAME database.
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -10,11 +10,13 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env'), quiet: true
 
 async function main() {
     if (process.env.RUN_INSTALL_SMOKE !== 'true' || process.env.NODE_ENV === 'production') {
-        throw new Error('Set RUN_INSTALL_SMOKE=true against a development SQL server.');
+        throw new Error('Set RUN_INSTALL_SMOKE=true against a development PostgreSQL server.');
     }
-    const sql = require('mssql');
+    const pg = require('pg');
+    const { connectionConfig } = require('../db');
+    const { databaseExists, dropDatabase } = require('../db/admin');
     const tag = randomUUID().replaceAll('-', '');
-    const database = `GksTest_${tag}`;
+    const database = `gkstest_${tag}`;
     const project = `gks-smoke-${tag.slice(0, 12)}`;
     const root = path.resolve(__dirname, '../..');
     const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gks-install-'));
@@ -28,9 +30,9 @@ async function main() {
     });
     const runtime = {
         DB_SERVER: process.env.GKS_DOCKER_DB_SERVER || (/^(localhost|127\.0\.0\.1)$/.test(process.env.DB_SERVER) ? 'host.docker.internal' : process.env.DB_SERVER),
-        DB_PORT: process.env.DB_PORT || '1433', DB_NAME: database,
+        DB_PORT: process.env.GKS_DOCKER_DB_PORT || process.env.DB_PORT || '5432', DB_NAME: database,
         DB_USER: process.env.DB_USER, DB_PASSWORD: process.env.DB_PASSWORD,
-        DB_ENCRYPT: process.env.DB_ENCRYPT || 'false', DB_TRUST_SERVER_CERTIFICATE: process.env.DB_TRUST_SERVER_CERTIFICATE || 'false',
+        DB_SSL: process.env.DB_SSL || 'false',
         JWT_SECRET: randomUUID() + randomUUID(), PORT: '3000', BUSINESS_TIMEZONE: 'Europe/Istanbul',
         DEMO_MODE: 'false', DEMO_SEED_CONFIRM: database,
         BOOTSTRAP_USERNAME: 'install-admin', BOOTSTRAP_PASSWORD: randomUUID() + '!Aa1',
@@ -43,11 +45,9 @@ async function main() {
     let owned = false;
     let dockerStarted = false;
     try {
-        master = await new sql.ConnectionPool({
-            server: process.env.DB_SERVER, port: Number(runtime.DB_PORT), user: runtime.DB_USER, password: runtime.DB_PASSWORD, database: 'master',
-            options: { encrypt: runtime.DB_ENCRYPT === 'true', trustServerCertificate: runtime.DB_TRUST_SERVER_CERTIFICATE === 'true' },
-        }).connect();
-        assert.equal((await master.request().input('name', sql.NVarChar, database).query('SELECT DB_ID(@name) AS id')).recordset[0].id, null);
+        master = new pg.Client(connectionConfig('postgres'));
+        await master.connect();
+        assert.equal(await databaseExists(master, database), false);
         writeEnv();
         console.log('Building application images.');
         docker(['build']);
@@ -125,11 +125,11 @@ async function main() {
         } finally {
             try {
                 if (owned && master) {
-                    await master.request().query(`IF DB_ID('${database}') IS NOT NULL BEGIN ALTER DATABASE [${database}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [${database}]; END`);
+                    await dropDatabase(master, database);
                     console.log('Owned install database removed.');
                 }
             } finally {
-                await master?.close();
+                await master?.end();
                 fs.rmSync(temp, { recursive: true, force: true });
             }
         }

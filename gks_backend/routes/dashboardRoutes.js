@@ -15,15 +15,15 @@ router.get('/dashboard/summary', verifyToken, validateQuery(dashboardSchema), as
         // 1. Genel İstatistikler
         const statsQuery = `
             SELECT 
-                (SELECT COUNT(*) FROM Logs WHERE CAST(Zaman AS DATE) = @today AND Basarili_Mi=1) AS BugunGecis,
-                (SELECT COUNT(*) FROM Users WHERE Durum = 1) AS AktifPersonel,
-                (SELECT COUNT(*) FROM Logs WHERE CAST(Zaman AS DATE) = @today AND Basarili_Mi = 0) AS YetkisizGiris,
-                (SELECT COUNT(*) FROM Doors WHERE Durum = 1 OR Durum IS NULL) AS AktifKapi
+                (SELECT COUNT(*) FROM Logs WHERE CAST(Zaman AS DATE) = @today AND Basarili_Mi=true) AS BugunGecis,
+                (SELECT COUNT(*) FROM Users WHERE Durum = true) AS AktifPersonel,
+                (SELECT COUNT(*) FROM Logs WHERE CAST(Zaman AS DATE) = @today AND Basarili_Mi = false) AS YetkisizGiris,
+                (SELECT COUNT(*) FROM Doors WHERE Durum = true OR Durum IS NULL) AS AktifKapi
         `;
         
         // 2. Son 10 Geçiş (Canlı İzleme İçin)
         const recentLogsQuery = `
-            SELECT TOP 10 
+            SELECT
                 L.ID, L.Zaman, L.Basarili_Mi, 
                 U.Ad_Soyad, U.Departman, U.Sicil_No,
                 D.Kapi_Adi, D.Kapi_Turu
@@ -31,6 +31,7 @@ router.get('/dashboard/summary', verifyToken, validateQuery(dashboardSchema), as
             LEFT JOIN Users U ON L.User_ID = U.ID
             LEFT JOIN Doors D ON L.Door_ID = D.ID
             ORDER BY L.Zaman DESC,L.ID DESC
+            LIMIT 10
         `;
 
         // 3. Departman Bazlı Gelen/Gelmeyen Analizi (Bar Grafik İçin)
@@ -38,11 +39,11 @@ router.get('/dashboard/summary', verifyToken, validateQuery(dashboardSchema), as
             SELECT 
                 U.Departman as name,
                 COUNT(DISTINCT U.ID) as ToplamPersonel,
-                COUNT(DISTINCT CASE WHEN L.Basarili_Mi = 1 THEN L.User_ID END) as Gelen
+                COUNT(DISTINCT CASE WHEN L.Basarili_Mi = true THEN L.User_ID END) as Gelen
             FROM Users U
             LEFT JOIN Logs L ON U.ID = L.User_ID
                 AND CAST(L.Zaman AS DATE) = @today
-            WHERE U.Durum = 1 AND U.Departman IS NOT NULL AND U.Departman != ''
+            WHERE U.Durum = true AND U.Departman IS NOT NULL AND U.Departman != ''
             GROUP BY U.Departman
         `;
 
@@ -53,9 +54,9 @@ router.get('/dashboard/summary', verifyToken, validateQuery(dashboardSchema), as
                 SELECT 
                     CAST(Zaman AS DATE) as Tarih,
                     SUM(CAST(Basarili_Mi AS INT)) as Basarili,
-                    SUM(CASE WHEN Basarili_Mi = 0 THEN 1 ELSE 0 END) as Yetkisiz
+                    SUM(CASE WHEN Basarili_Mi = false THEN 1 ELSE 0 END) as Yetkisiz
                 FROM Logs
-                WHERE Zaman >= DATEADD(day, -6, @today) AND Zaman<DATEADD(day,1,@today)
+                WHERE Zaman >= @today - 6 AND Zaman < @today + 1
                 GROUP BY CAST(Zaman AS DATE)
                 ORDER BY Tarih ASC
             `;
@@ -64,12 +65,12 @@ router.get('/dashboard/summary', verifyToken, validateQuery(dashboardSchema), as
         } else { // gunluk
             trendQuery = `
                 SELECT 
-                    DATEPART(HOUR, Zaman) as Saat,
+                    EXTRACT(HOUR FROM Zaman) as Saat,
                     SUM(CAST(Basarili_Mi AS INT)) as Basarili,
-                    SUM(CASE WHEN Basarili_Mi = 0 THEN 1 ELSE 0 END) as Yetkisiz
+                    SUM(CASE WHEN Basarili_Mi = false THEN 1 ELSE 0 END) as Yetkisiz
                 FROM Logs
                 WHERE CAST(Zaman AS DATE) = @today
-                GROUP BY DATEPART(HOUR, Zaman)
+                GROUP BY EXTRACT(HOUR FROM Zaman)
                 ORDER BY Saat ASC
             `;
         }
@@ -133,8 +134,8 @@ router.get('/logs', verifyToken, validateQuery(logsQuery), async (req, res, next
         const request = new sql.Request();
         let where = `WHERE 1=1`;
         if (baslangic) { where += ` AND L.Zaman >= @baslangic`; request.input('baslangic', sql.DateTime, baslangic); }
-        if (bitis)     { where += ` AND L.Zaman < DATEADD(day,1,@bitis)`;     request.input('bitis', sql.DateTime, bitis); }
-        if (arama)     { where += ` AND (U.Ad_Soyad LIKE @arama OR L.RFID_Kart_No LIKE @arama)`; request.input('arama', sql.NVarChar, `%${arama}%`); }
+        if (bitis)     { where += ` AND L.Zaman < @bitis + interval '1 day'`;     request.input('bitis', sql.DateTime, bitis); }
+        if (arama)     { where += ` AND (gks_search(U.Ad_Soyad) LIKE gks_search(@arama) OR gks_search(L.RFID_Kart_No) LIKE gks_search(@arama))`; request.input('arama', sql.NVarChar, `%${arama}%`); }
 
         request.input('offset', sql.Int, offset);
         request.input('limit',  sql.Int, limit);
@@ -152,7 +153,7 @@ router.get('/logs', verifyToken, validateQuery(logsQuery), async (req, res, next
                 LEFT JOIN Doors D ON L.Door_ID = D.ID
                 ${where}
                 ORDER BY L.Zaman DESC
-                OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+                LIMIT @limit OFFSET @offset
             `),
             countReq.query(`
                 SELECT COUNT(*) AS toplam
@@ -181,13 +182,13 @@ router.get('/system-logs', verifyToken, validateQuery(logsQuery), async (req, re
         const countReq = new sql.Request();
         let where = `WHERE 1=1`;
         if (baslangic) { where += ` AND Tarih >= @baslangic`; request.input('baslangic', sql.DateTime, baslangic); countReq.input('baslangic', sql.DateTime, baslangic); }
-        if (bitis)     { where += ` AND Tarih < DATEADD(day,1,@bitis)`;     request.input('bitis', sql.DateTime, bitis); countReq.input('bitis', sql.DateTime, bitis); }
-        if (arama)     { where += ` AND (Personel_Ad LIKE @arama OR Sicil_No LIKE @arama OR Islem_Tipi LIKE @arama)`; request.input('arama', sql.NVarChar, `%${arama}%`); countReq.input('arama', sql.NVarChar, `%${arama}%`); }
+        if (bitis)     { where += ` AND Tarih < @bitis + interval '1 day'`;     request.input('bitis', sql.DateTime, bitis); countReq.input('bitis', sql.DateTime, bitis); }
+        if (arama)     { where += ` AND (gks_search(Personel_Ad) LIKE gks_search(@arama) OR gks_search(Sicil_No) LIKE gks_search(@arama) OR gks_search(Islem_Tipi) LIKE gks_search(@arama))`; request.input('arama', sql.NVarChar, `%${arama}%`); countReq.input('arama', sql.NVarChar, `%${arama}%`); }
         request.input('offset', sql.Int, offset);
         request.input('limit',  sql.Int, limit);
 
         const [dataResult, countResult] = await Promise.all([
-            request.query(`SELECT * FROM SystemLogs ${where} ORDER BY Tarih DESC,ID DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`),
+            request.query(`SELECT * FROM SystemLogs ${where} ORDER BY Tarih DESC,ID DESC LIMIT @limit OFFSET @offset`),
             countReq.query(`SELECT COUNT(*) AS toplam FROM SystemLogs ${where}`)
         ]);
 
@@ -210,13 +211,13 @@ router.get('/door-logs', verifyToken, validateQuery(logsQuery), async (req, res,
         const countReq = new sql.Request();
         let where = `WHERE 1=1`;
         if (baslangic) { where += ` AND Tarih >= @baslangic`; request.input('baslangic', sql.DateTime, baslangic); countReq.input('baslangic', sql.DateTime, baslangic); }
-        if (bitis)     { where += ` AND Tarih < DATEADD(day,1,@bitis)`;     request.input('bitis', sql.DateTime, bitis); countReq.input('bitis', sql.DateTime, bitis); }
-        if (arama)     { where += ` AND (Kapi_Adi LIKE @arama OR Islem_Tipi LIKE @arama OR Detay LIKE @arama)`; request.input('arama', sql.NVarChar, `%${arama}%`); countReq.input('arama', sql.NVarChar, `%${arama}%`); }
+        if (bitis)     { where += ` AND Tarih < @bitis + interval '1 day'`;     request.input('bitis', sql.DateTime, bitis); countReq.input('bitis', sql.DateTime, bitis); }
+        if (arama)     { where += ` AND (gks_search(Kapi_Adi) LIKE gks_search(@arama) OR gks_search(Islem_Tipi) LIKE gks_search(@arama) OR gks_search(Detay) LIKE gks_search(@arama))`; request.input('arama', sql.NVarChar, `%${arama}%`); countReq.input('arama', sql.NVarChar, `%${arama}%`); }
         request.input('offset', sql.Int, offset);
         request.input('limit',  sql.Int, limit);
 
         const [dataResult, countResult] = await Promise.all([
-            request.query(`SELECT * FROM DoorLogs ${where} ORDER BY Tarih DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`),
+            request.query(`SELECT * FROM DoorLogs ${where} ORDER BY Tarih DESC LIMIT @limit OFFSET @offset`),
             countReq.query(`SELECT COUNT(*) AS toplam FROM DoorLogs ${where}`)
         ]);
 

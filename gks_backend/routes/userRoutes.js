@@ -11,6 +11,7 @@ const { validate, schemas } = require('../middlewares/validate');
 const { addSystemLog } = require('../utils/logger');
 const socket = require('../utils/socket');
 const logger = require('../utils/appLogger');
+const { isUniqueViolation } = require('../utils/dbErrors');
 
 // Generate Unique Sistem ID Yardımcı Fonksiyonu
 const generateUniqueSistemId = async () => {
@@ -75,12 +76,12 @@ router.get('/users', verifyToken, validateQuery(usersQuery), async (req, res) =>
             countReq.input('durum', sql.Bit, durumVal);
         }
         if (departman && departman.trim() !== '') {
-            where += ` AND Departman LIKE @departman`;
+            where += ` AND gks_search(Departman) LIKE gks_search(@departman)`;
             request.input('departman', sql.NVarChar, `%${departman}%`);
             countReq.input('departman', sql.NVarChar, `%${departman}%`);
         }
         if (arama && arama.trim() !== '') {
-            where += ` AND (Ad_Soyad LIKE @arama OR Sicil_No LIKE @arama OR TC_Kimlik LIKE @arama OR RFID_Kart_No LIKE @arama)`;
+            where += ` AND (gks_search(Ad_Soyad) LIKE gks_search(@arama) OR gks_search(Sicil_No) LIKE gks_search(@arama) OR TC_Kimlik LIKE @arama OR gks_search(RFID_Kart_No) LIKE gks_search(@arama))`;
             request.input('arama', sql.NVarChar, `%${arama}%`);
             countReq.input('arama', sql.NVarChar, `%${arama}%`);
         }
@@ -89,7 +90,7 @@ router.get('/users', verifyToken, validateQuery(usersQuery), async (req, res) =>
         request.input('limit',  sql.Int, limit);
 
         const [dataResult, countResult] = await Promise.all([
-            request.query(`SELECT * FROM Users ${where} ORDER BY ID DESC OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`),
+            request.query(`SELECT * FROM Users ${where} ORDER BY ID DESC LIMIT @limit OFFSET @offset`),
             countReq.query(`SELECT COUNT(*) AS toplam FROM Users ${where}`)
         ]);
 
@@ -140,7 +141,7 @@ router.post('/users', verifyToken, verifyAdmin, validate(schemas.personelSchema)
 
         await request.query(`
             INSERT INTO Users (Ad_Soyad, RFID_Kart_No, TC_Kimlik, Sicil_No, Sirket, Departman, Gorev, Durum, Sistem_ID, Ise_Giris_Tarihi) 
-            VALUES (@ad, @rfid, @tc, @sicil, @sirket, @departman, @gorev, 1, @sistemId, @ise_giris)
+            VALUES (@ad, @rfid, @tc, @sicil, @sirket, @departman, @gorev, true, @sistemId, @ise_giris)
         `);
         await addSystemLog(aktifKullanici, 'YENİ KAYIT', ad_soyad, sicil, `Sisteme yeni eklendi. Departman: ${departman || '-'}`, tx);
         });
@@ -149,7 +150,7 @@ router.post('/users', verifyToken, verifyAdmin, validate(schemas.personelSchema)
         socket.getIO().emit('system_updated');
         res.json({ success: true, message: 'Personel başarıyla eklendi.' });
     } catch (err) {
-        res.status([2601,2627].includes(err.number) ? 409 : 500).json({ success: false, message: 'Personel kaydedilemedi. Kart, TC ve sicil numarasını kontrol edin.' });
+        res.status(isUniqueViolation(err) ? 409 : 500).json({ success: false, message: 'Personel kaydedilemedi. Kart, TC ve sicil numarasını kontrol edin.' });
     }
 });
 
@@ -158,7 +159,7 @@ router.put('/users/:id', verifyToken, verifyAdmin, validate(schemas.personelSche
     try {
         await inTransaction(async tx => {
             const request = new sql.Request(tx).input('id', sql.Int, req.params.id);
-            const current = (await request.query('SELECT * FROM Users WITH(UPDLOCK,HOLDLOCK) WHERE ID=@id')).recordset[0];
+            const current = (await request.query('SELECT * FROM Users WHERE ID=@id FOR UPDATE')).recordset[0];
             if (!current) throw httpError(404, 'Personel bulunamadı.');
             const start = ise_giris || (current.Ise_Giris_Tarihi ? dateKey(current.Ise_Giris_Tarihi) : businessToday());
             const history = (await request.query('SELECT MAX(Bitis_Tarihi) AS LastExit FROM Personel_Calisma_Gecmisi WHERE User_ID=@id')).recordset[0];
@@ -176,7 +177,7 @@ router.put('/users/:id', verifyToken, verifyAdmin, validate(schemas.personelSche
         for (const event of ['users_updated','system_updated','new_system_log']) socket.getIO().emit(event);
         res.json({ success: true, message: 'Personel bilgileri güncellendi.' });
     } catch (error) {
-        if ([2601,2627].includes(error.number)) return res.status(400).json({success:false,message:'T.C., sicil veya kart numarası başka personele ait.'});
+        if (isUniqueViolation(error)) return res.status(400).json({success:false,message:'T.C., sicil veya kart numarası başka personele ait.'});
         next(error);
     }
 });

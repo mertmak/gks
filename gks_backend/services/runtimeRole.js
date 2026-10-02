@@ -1,3 +1,4 @@
+const { escapeIdentifier } = require('pg');
 const { sql } = require('../db');
 const { inTransaction } = require('../utils/transaction');
 
@@ -18,25 +19,33 @@ const permissions = Object.freeze({
     Yoneticiler: 'SELECT, INSERT, UPDATE, DELETE',
 });
 
+// PostgreSQL roles belong to the whole server, not to one database.
+function runtimeRoleName() {
+    const name = process.env.RUNTIME_DB_ROLE || 'gks_runtime';
+    if (!/^[a-z_][a-z0-9_]{0,62}$/.test(name)) throw new Error('RUNTIME_DB_ROLE küçük harf, rakam ve alt çizgiden oluşmalıdır.');
+    return name;
+}
+
 async function configureRuntimeRole(userName) {
-    if (typeof userName !== 'string' || !userName.trim() || userName.length > 128) {
-        throw new Error('RUNTIME_DB_USER mevcut bir veritabanı kullanıcısı olmalıdır (1–128 karakter).');
+    if (typeof userName !== 'string' || !userName.trim() || userName.length > 63) {
+        throw new Error('RUNTIME_DB_USER mevcut bir veritabanı kullanıcısı olmalıdır (1–63 karakter).');
     }
+    const role = runtimeRoleName();
     return inTransaction(async tx => {
-        const request = new sql.Request(tx).input('name', sql.NVarChar(128), userName);
-        const found = await request.query("SELECT principal_id FROM sys.database_principals WHERE name=@name AND type IN ('S','U','G','E','X') AND principal_id>4");
-        if (!found.recordset.length) throw new Error('Uygulama kullanıcısını önce hedef veritabanında oluşturun; dbo/guest/sistem hesapları kullanılamaz.');
-        await new sql.Request(tx).query("IF DATABASE_PRINCIPAL_ID(N'gks_runtime') IS NULL CREATE ROLE [gks_runtime] AUTHORIZATION [dbo]");
+        const found = await new sql.Request(tx).input('name', sql.NVarChar, userName).input('role', sql.NVarChar, role).query(`
+            SELECT 1 AS n FROM pg_roles WHERE rolname=@name AND rolname<>@role AND rolname<>current_user
+              AND NOT rolsuper AND NOT rolcreaterole AND NOT rolcreatedb AND NOT rolbypassrls AND rolname NOT LIKE 'pg\\_%'`);
+        if (!found.recordset.length) throw new Error('Uygulama kullanıcısını önce oluşturun; kurulum, süper kullanıcı ve sistem hesapları kullanılamaz.');
+        const exists = await new sql.Request(tx).input('role', sql.NVarChar, role).query('SELECT 1 AS n FROM pg_roles WHERE rolname=@role');
+        if (!exists.recordset.length) await new sql.Request(tx).query(`CREATE ROLE ${role} NOLOGIN`);
+        await new sql.Request(tx).query(`GRANT USAGE ON SCHEMA public TO ${role}`);
         for (const [table, grants] of Object.entries(permissions)) {
-            await new sql.Request(tx).query(`GRANT ${grants} ON OBJECT::dbo.[${table}] TO [gks_runtime]`);
+            await new sql.Request(tx).query(`GRANT ${grants} ON TABLE ${table} TO ${role}`);
         }
-        const escapedUser = '[' + userName.replaceAll(']', ']]') + ']';
-        await new sql.Request(tx).input('name', sql.NVarChar(128), userName).query(`
-            IF NOT EXISTS (SELECT 1 FROM sys.database_role_members
-                WHERE role_principal_id=DATABASE_PRINCIPAL_ID(N'gks_runtime')
-                  AND member_principal_id=DATABASE_PRINCIPAL_ID(@name))
-            ALTER ROLE [gks_runtime] ADD MEMBER ${escapedUser}`);
+        const member = await new sql.Request(tx).input('name', sql.NVarChar, userName).input('role', sql.NVarChar, role)
+            .query('SELECT 1 AS n FROM pg_auth_members M JOIN pg_roles R ON R.oid=M.roleid JOIN pg_roles U ON U.oid=M.member WHERE R.rolname=@role AND U.rolname=@name');
+        if (!member.recordset.length) await new sql.Request(tx).query(`GRANT ${role} TO ${escapeIdentifier(userName)}`);
     });
 }
 
-module.exports = { configureRuntimeRole, permissions };
+module.exports = { configureRuntimeRole, permissions, runtimeRoleName };

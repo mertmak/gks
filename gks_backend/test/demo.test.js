@@ -19,7 +19,7 @@ test('demo denies every business mutation even with an admin token', { skip: pro
         const setup = (await sql.query('SELECT * FROM SystemLogs')).recordset;
         assert.equal(setup.length, 1);
         assert.equal(setup[0].Islem_Tipi, 'İLK KURULUM');
-        const foreign = (await sql.query("INSERT INTO SystemLogs(Islem_Tipi,Islemi_Yapan,Personel_Ad,Detay) OUTPUT INSERTED.ID VALUES(N'PERSONEL',N'Test',N'Test Personel',N'Existing history')")).recordset[0].ID;
+        const foreign = (await sql.query("INSERT INTO SystemLogs(Islem_Tipi,Islemi_Yapan,Personel_Ad,Detay) VALUES('PERSONEL','Test','Test Personel','Existing history') RETURNING ID")).recordset[0].ID;
         await assert.rejects(seedDemo(), /boş iş tabloları/);
         assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Users')).recordset[0].n, 0);
         assert.equal((await sql.query('SELECT COUNT(*) AS n FROM SystemLogs')).recordset[0].n, 2);
