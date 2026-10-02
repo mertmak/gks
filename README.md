@@ -4,7 +4,7 @@ GKS; personel, kapı yetkisi, vardiya, izin ve devam/mesai akışlarını bir ar
 
 V1 hazırlanıyor. Salt okunur demo modu yerelde çalışıyor; public HTTPS demo adresi henüz yayınlanmadı. Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
 
-React/Vite arayüzü, Express API, SQL Server ve Socket.IO kullanır. Puantaj/gece vardiyası hesabı, transaction ile audit tutarlılığı, rol denetimi, geçmiş kayıtların korunması ve tekrar üretilebilir sentetik veri projenin temel teknik konularıdır.
+React/Vite arayüzü, Express API, PostgreSQL ve Socket.IO kullanır. Puantaj/gece vardiyası hesabı, transaction ile audit tutarlılığı, rol denetimi, geçmiş kayıtların korunması ve tekrar üretilebilir sentetik veri projenin temel teknik konularıdır.
 
 ## Lisans
 
@@ -23,12 +23,12 @@ Yerel salt okunur demodan alınmıştır; bütün kişi, kapı ve hareket kayıt
 ```mermaid
 flowchart LR
     UI[React / Vite] -->|JWT ile HTTP API| API[Express / Zod / RBAC]
-    API -->|Parametreli SQL ve transaction| DB[(SQL Server)]
+    API -->|Parametreli SQL ve transaction| DB[(PostgreSQL)]
     API -->|Commit sonrası Socket.IO| UI
     CLI[Migration / yönetici / demo seed CLI] --> DB
 ```
 
-Geliştirmede Vite istekleri backend'e yönlendirir. Docker düzeninde nginx derlenmiş arayüzü sunar ve API/Socket.IO bağlantılarını backend'e taşır. SQL ayrı yönetilir. Fiziksel kart okuyucu veya kapı açma bağlantısı yoktur.
+Geliştirmede Vite istekleri backend'e yönlendirir. Yerel Docker düzeninde nginx derlenmiş arayüzü sunar ve API/Socket.IO bağlantılarını backend'e taşır; PostgreSQL ayrı yönetilir. Tek sunuculu yayın düzeninde Caddy HTTPS'i sağlar, API/Socket.IO isteklerini doğrudan backend'e gönderir ve PostgreSQL aynı Compose yığınında, internete kapalı iç ağda TLS ile çalışır ([hosting kılavuzu](docs/hosting.md)). Fiziksel kart okuyucu veya kapı açma bağlantısı yoktur.
 
 [Hesaplama kuralları](docs/V1-hesaplama-kurallari.md), tolerans, gece vardiyası, eksik okutma, yemek/mola ve haftalık tatil örneklerini açıklar.
 
@@ -36,7 +36,7 @@ Geliştirmede Vite istekleri backend'e yönlendirir. Docker düzeninde nginx der
 
 ## Yerel çalışma
 
-Node.js 24 ve erişilebilir SQL Server gerekir. İki klasörde `npm ci` çalıştırın. Her klasörün `.env.example` dosyasını `.env` olarak kopyalayıp backend bağlantısını ve güçlü, rastgele `JWT_SECRET` değerini doldurun. Bu dosyaları Git'e eklemeyin.
+Node.js 24 ve erişilebilir PostgreSQL (18 önerilir) gerekir. Geliştirme için isteğe bağlı PostgreSQL 18 örneği `database/compose.development.yaml` dosyasındadır: `database/.env` içinde `GKS_DEV_PG_PASSWORD` tanımlayıp `docker compose -f database/compose.development.yaml -p gks-dev up -d` çalıştırın; sunucu yalnız `127.0.0.1:5433` adresine açılır, veriler `gks-pg-data` volume'unda kalır. İki klasörde `npm ci` çalıştırın. Her klasörün `.env.example` dosyasını `.env` olarak kopyalayıp backend bağlantısını ve güçlü, rastgele `JWT_SECRET` değerini doldurun. PostgreSQL tırnaksız adları küçük harfe çevirdiği için `DB_NAME` küçük harf, rakam ve alt çizgiden oluşur (ör. `gksdb`). Yerel geliştirmede `DB_SSL=false` kullanılabilir; üretimde TLS zorunludur. Bu dosyaları Git'e eklemeyin.
 
 Boş veritabanı için backend klasöründe:
 
@@ -61,7 +61,7 @@ npm run dev --prefix gks_frontend
 
 Arayüz: http://localhost:5173. Vite `/api` ve `/socket.io` isteklerini backend'e yönlendirir. Uygulama varsayılan olarak yalnızca yerel bilgisayardan erişilir.
 
-Docker ile tam yerel kurulum için [boş DB → migration → ilk yönetici → isteğe bağlı seed → nginx](docs/local-docker.md) adımlarını izleyin. Yerel kullanım `compose.local.yaml` ekini açıkça seçer; public/üretim kurulumu yalnız `compose.yaml` kullanır.
+Docker ile tam yerel kurulum için [boş DB → migration → ilk yönetici → isteğe bağlı seed → nginx](docs/local-docker.md) adımlarını izleyin. Yerel kullanım `compose.local.yaml` ekini açıkça seçer; ayrı yönetilen PostgreSQL'e bağlanan üretim kurulumu yalnız `compose.yaml` kullanır. PostgreSQL ve HTTPS dahil tek sunuculu kurulum için [hosting kılavuzunu](docs/hosting.md) izleyin.
 
 ## Kontroller
 
@@ -74,25 +74,26 @@ npm audit --prefix gks_backend
 npm audit --prefix gks_frontend
 ```
 
-Veritabanı testleri varsayılan olarak atlanır. Yerel SQL Server bağlantısını backend `.env` dosyasında hazırlayıp proje kökünden çalıştırın:
+Veritabanı testleri varsayılan olarak atlanır. Yerel PostgreSQL bağlantısını backend `.env` dosyasında hazırlayıp proje kökünden çalıştırın:
 
 ```sh
 npm run test:db --prefix gks_backend
 ```
 
-Her test grubu rastgele adlı yeni bir `GksTest_` veritabanı oluşturur, gerçek migration komutunu iki kez çalıştırır ve kendi sentetik hesap/personel/vardiya kayıtlarını hazırlar. Hazır demo hesabı, eski parola veya yedekten geri yükleme gerekmez. `.env` içindeki `DB_NAME` test veya temizlik hedefi olarak kullanılmaz. SQL bağlantı hesabı veritabanı oluşturma ve kaldırma yetkisine sahip olmalıdır; yalnız geliştirme SQL sunucusu kullanın. `NODE_ENV=production` ile testler reddedilir.
+Her test grubu rastgele adlı yeni bir `gkstest_` veritabanı oluşturur, gerçek migration komutunu iki kez çalıştırır ve kendi sentetik hesap/personel/vardiya kayıtlarını hazırlar. Hazır demo hesabı, eski parola veya yedekten geri yükleme gerekmez. `.env` içindeki `DB_NAME` test veya temizlik hedefi olarak kullanılmaz. Bağlantı hesabı veritabanı ve rol oluşturup kaldırabilmelidir (`CREATEDB`, `CREATEROLE`; rol testleri sunucu geneli geçici roller kullanır); yalnız geliştirme PostgreSQL sunucusu kullanın. `NODE_ENV=production` ile testler reddedilir.
 
 Temizlik yalnız o çalıştırmanın oluşturduğu veritabanını kaldırır; başarısız testte de çalışır. Süreç zorla öldürülürse geçici DB kalabilir; araç sonraki çalıştırmada eski DB'leri otomatik silmez. Tek grubu çalıştırmak için backend klasöründe `RUN_DB_TESTS=true node --test test/integration.test.js` veya `RUN_SIM_TESTS=true node --test test/seeder.test.js` kullanılabilir.
 
-GitHub Actions yapılandırması birim testlerini, kod kontrolünü, derlemeyi ve bağımlılık denetimini içerir. Ayrı SQL işi, geçici SQL Server 2022 Developer servisi hazır olduğunda temiz kurulum/migration, API, demo ve canlı bağlantı testlerini çalıştırır; backend/frontend Docker imajlarını derler ve migration dosyalarının backend imajına dahil olduğunu denetler. Bu işteki parola yalnız geçici CI servisine ait örnektir; gerçek ortam secret'ı kullanılmaz. Her test grubu yine kendi veritabanını oluşturup kaldırır. SQL Server 2022 üzerinde GitHub Actions çalıştırması henüz doğrulanmadı; yerel SQL ve Docker kontrolleri tamamlandı. Otomatik deployment yoktur.
+GitHub Actions yapılandırması birim testlerini, kod kontrolünü, derlemeyi ve bağımlılık denetimini içerir. Ayrı veritabanı işi, geçici PostgreSQL 18 servisi (tr-TR ICU) hazır olduğunda temiz kurulum/migration, API, demo, rol ve canlı bağlantı testlerini çalıştırır; backend/frontend Docker imajlarını derler, migration dosyasının backend imajına dahil olduğunu, hosting Compose dosyasını ve veritabanı sertifika betiğini denetler. Bu işteki parola yalnız geçici CI servisine ait örnektir; gerçek ortam secret'ı kullanılmaz. Her test grubu yine kendi veritabanını oluşturup kaldırır. Otomatik deployment yoktur.
 
 ## İşleyiş
 
 - `admin` kayıtları yönetir. `user` rapor ve listeleri okuyabilir; değişiklik API'leri yönetici gerektirir.
 - Parola değişikliği mevcut oturumları geçersiz kılar. Rol ve oturum sürümü API isteklerinde, açık socket bağlantılarında da düzenli kontrol edilir.
 - Raporlar vardiyanın ertesi güne sarkan çıkışını, vardiya tarihçesini, onaylı izinleri ve personelin işe giriş/çıkış tarihlerini dikkate alır. Hesaplanan mesai ile onaylanan mesai ayrıdır; sıfır dakika onayı korunur.
-- Mevcut SQL `datetime` kayıtları Türkiye yerel saatini temsil ediyor kabul edilir. Driver bunları UTC biçiminde taşısa da ekran tekrar üç saat eklemez. Gün seçimi `BUSINESS_TIMEZONE=Europe/Istanbul` kullanır. Gerçek cihaz zaman damgası entegrasyonu V1 kapsamı dışındadır.
-- Simülasyon varsayılan kapalıdır, üretimde çalışmaz. Açılması için backend `ENABLE_SIMULATION=true`, frontend `VITE_ENABLE_SIMULATION=true` ve ayrı `GksReview_`/`GksTest_` veritabanı gerekir. Yalnızca ekleme yapar; mevcut geçmişi topluca silmez.
+- Saklanan saat dilimsiz `timestamp` kayıtları Türkiye yerel saatini temsil ediyor kabul edilir. Sürücü bunları UTC biçiminde taşısa da ekran tekrar üç saat eklemez. Gün seçimi `BUSINESS_TIMEZONE=Europe/Istanbul` kullanır; veritabanı oturumu da aynı saat dilimiyle açıldığı için `LOCALTIMESTAMP` ve `CURRENT_DATE` iş gününü verir. Gerçek cihaz zaman damgası entegrasyonu V1 kapsamı dışındadır.
+- Personel, departman ve log aramaları büyük/küçük harf ve aksan duyarsızdır (`ISIK` → `Işık`, `isci` → `İŞÇİ`). Kart no, sicil no ve panel kullanıcı adı büyük/küçük harf duyarsız olarak tekildir.
+- Simülasyon varsayılan kapalıdır, üretimde çalışmaz. Açılması için backend `ENABLE_SIMULATION=true`, frontend `VITE_ENABLE_SIMULATION=true` ve ayrı `gksreview_`/`gkstest_` veritabanı gerekir. Yalnızca ekleme yapar; mevcut geçmişi topluca silmez.
 
 Yayın kapsamı ve geri dönüş adımları: [V1 sürüm notları taslağı](docs/V1-surum-notlari.md).
 
@@ -119,7 +120,7 @@ Tarayıcıda sayfalanan tablolarda filtreye uyan bütün sayfalar; sunucu taraf�
 
 Demo fiziksel cihaz bağlantısı olmayan, kişisel portföy amaçlı bir inceleme ortamıdır. Normal local kurulumda `DEMO_MODE=false` kalır ve yönetici işlemleri kullanılabilir.
 
-Ayrı demo için backend `.env` dosyasında bağlantıyı **yeni ve boş** `GksDemo_V1` veritabanına yönlendirin (`DB_NAME=GksDemo_V1`). `DEMO_MODE=true`, `DEMO_SEED_CONFIRM=GksDemo_V1`, `ENABLE_SETUP=false` ve `ENABLE_SIMULATION=false` ayarlayın. Güçlü `JWT_SECRET` ve bağlantı bilgilerini kendi ortamınızda doldurun. Backend klasöründe:
+Ayrı demo için backend `.env` dosyasında bağlantıyı **yeni ve boş** `gksdemo_v1` veritabanına yönlendirin (`DB_NAME=gksdemo_v1`). `DEMO_MODE=true`, `DEMO_SEED_CONFIRM=gksdemo_v1`, `ENABLE_SETUP=false` ve `ENABLE_SIMULATION=false` ayarlayın. Güçlü `JWT_SECRET` ve bağlantı bilgilerini kendi ortamınızda doldurun. Backend klasöründe:
 
 ```sh
 npm run db:init
@@ -130,11 +131,11 @@ npm start
 
 Frontend'i normal local çalışma komutuyla başlatın. “Demoyu İncele” düğmesi `user` rolünde kısa ömürlü oturum açar; paylaşılan yönetici parolası yoktur. `DEMO_USERNAME` değiştirilirse seed ve sunucuda aynı değer kullanılmalıdır. Mod sunucu başlangıcında okunur; değiştirdikten sonra backend yeniden başlatılır. Frontend demo bilgisini `/api/public-config` üzerinden alır; ayrıca bir frontend demo bayrağı gerekmez.
 
-Seed 12 sentetik personel, iki vardiya, altı kapı, farklı yetki setleri, izin/mesai kararları ve örnek işlem geçmişi oluşturur. Referans gün **7 Eylül 2026**; haftalık tatil örneği 6 Eylül, gece vardiyasının çıkışı 8 Eylül'dür. Dashboard ve varsayılan tarih filtreleri bu dönemi kullanır. Aynı seed sürümü yeniden çalıştırıldığında kayıt çoğalmaz. Boş olmayan iş tabloları reddedilir; veriler otomatik silinmez. Baştan kurulum için yeni bir `GksDemo_` veritabanı adı seçilip hem `DB_NAME` hem `DEMO_SEED_CONFIRM` güncellenir ve komutlar tekrarlanır. Seed onay değişkeni normal servis çalışmasında gerekli değildir.
+Seed 12 sentetik personel, iki vardiya, altı kapı, farklı yetki setleri, izin/mesai kararları ve örnek işlem geçmişi oluşturur. Referans gün **7 Eylül 2026**; haftalık tatil örneği 6 Eylül, gece vardiyasının çıkışı 8 Eylül'dür. Dashboard ve varsayılan tarih filtreleri bu dönemi kullanır. Aynı seed sürümü yeniden çalıştırıldığında kayıt çoğalmaz. Boş olmayan iş tabloları reddedilir; veriler otomatik silinmez. Baştan kurulum için yeni bir `gksdemo_` veritabanı adı seçilip hem `DB_NAME` hem `DEMO_SEED_CONFIRM` güncellenir ve komutlar tekrarlanır. Seed onay değişkeni normal servis çalışmasında gerekli değildir.
 
 Demo modu bütün iş verisi yazma çağrılarını, admin tokenı kullanılsa bile `403 DEMO_READ_ONLY` ile reddeder. Giriş uçları açık kalır; seed yalnız CLI komutudur. Yerel geliştirme simülatörü demo seed'inden ayrıdır. Public HTTPS yayını henüz tamamlanmadı.
 
-Backend Docker imajı proje kökünden `docker build -f gks_backend/Dockerfile -t gks-backend:local .` ile derlenir; migration klasörü imaja dahildir. Compose ayrı SQL Server bekler; SQL kurmaz veya mevcut DB'yi değiştirmez. Migration ve seed otomatik servis başlangıç adımları değildir. Üretim bağlantısında geçerli TLS sertifikalı SQL Server gerekir; localhost geliştirme sertifika ayarları üretim için kullanılmaz.
+Backend Docker imajı proje kökünden `docker build -f gks_backend/Dockerfile -t gks-backend:local .` ile derlenir; migration klasörü imaja dahildir. `compose.yaml` ayrı PostgreSQL bekler; veritabanı kurmaz veya mevcut DB'yi değiştirmez. `compose.hosting.yaml` PostgreSQL'i de içerir. Migration ve seed hiçbir düzende otomatik servis başlangıç adımı değildir. Üretimde (`NODE_ENV=production`) veritabanı bağlantısı her zaman TLS ve sertifika doğrulamasıyla kurulur (özel CA için `DB_SSL_CA`); `DB_SSL=false` bu modda yok sayılır. Sunucu ayrıca 32 karakterden kısa `JWT_SECRET`, varsayılan `admin` parolası ve süper kullanıcı veritabanı hesabıyla açılmayı reddeder.
 
 ## Geçmiş kayıt sözleşmesi (V1)
 
@@ -142,7 +143,7 @@ Backend Docker imajı proje kökünden `docker build -f gks_backend/Dockerfile -
 - **Vardiya:** `Personel_Vardiya` atama kaydı, o anki ad/saat/tolerans/mola/çalışma günü ayarlarının kopyasını taşır. Tanım düzenlemek mevcut atamaların hesabını değiştirmez. Yeni ayarları mevcut personele uygulamak için yeniden atama gerekir. Yeniden atama bugünden geçerlidir; mevcut aynı gün değiştirme/iptal kuralı korunur. Tamamlanmış önceki günler kendi atama ayarlarını kullanır.
 - **Çalışma dönemleri:** Yeniden işe alma önceki dönemi `Personel_Calisma_Gecmisi` tablosuna arşivler ve güncel işe giriş tarihini bugüne taşır. Eski çalışma günleri raporda kalır; aradaki çalışılmayan günler dahil edilmez. Aynı gün çıkışın geri alınması o dönemi yeniden açar. Aynı durumu tekrar göndermek kayıt çoğaltmaz. Çıkış mevcut işe giriş ile bugün arasında olmalıdır. Personel düzenlemesinde yeni işe giriş önceki arşivli dönemle çakışamaz; gönderilmeyen kart ve işe giriş alanları korunur. Durum/arşiv/audit ve profil/audit işlemleri atomiktir.
 
-`003_log_identity.sql` mevcut geçişleri **migration anındaki kart sahipleriyle**, `004_shift_snapshot.sql` eski atamaları **migration anındaki vardiya tanımlarıyla** eşleştirir. Önceden üzerine yazılmış kart sahipliği, vardiya tanımı veya çalışma dönemleri geri üretilemez. Bu başlangıç varsayımı mevcut sentetik geliştirme verisi içindir; doğrulanmamış gerçek geçmiş için doğruluk iddiası değildir. `005_employment_history.sql` sonraki çalışma dönemlerini saklamayı başlatır. Bu migration'lar eski şema üzerinde ve tekrar çalıştırma yoluyla izole testlerde doğrulanmıştır. Güncellemeden önce uygulamayı durdurun, `npm run db:migrate` çalıştırın ve güncel backend'i yeniden başlatın.
+Bu kurallar veritabanında iki `BEFORE INSERT` trigger'ı (geçişte kart sahibini, atamada vardiya alanlarını kopyalar) ve kapanan çalışma dönemleri tablosuyla uygulanır. PostgreSQL şeması tek temel migration'dır (`001_initial.sql`); önceki SQL Server sürümündeki eski veriyi dönüştüren adımları içermez ve eski veritabanından veri taşıma yolu sunulmaz. Demo ve geliştirme verisi sentetik seed ile yeniden kurulur. Önceden üzerine yazılmış kart sahipliği, vardiya tanımı veya çalışma dönemleri geri üretilemez. Güncellemeden önce uygulamayı durdurun, `npm run db:migrate` çalıştırın ve güncel backend'i yeniden başlatın.
 
 
 ## Denetim kayıtları

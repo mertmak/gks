@@ -1,0 +1,174 @@
+# Tek sunuculu kurulum (HTTPS + PostgreSQL)
+
+Bu kılavuz salt okunur public demoyu veya tek kurumlu küçük bir kurulumu, tek bir Linux sunucuda `compose.hosting.yaml` ile çalıştırır. Hedef örnek Ubuntu 24.04 (arm64 veya amd64) ve Docker Engine'dir; aynı dosya her iki mimaride değişmeden çalışır. Yerel geliştirme için [Docker ile yerel kurulum](local-docker.md) kullanılır.
+
+```
+İnternet → Caddy :80/:443 (Let's Encrypt)
+             ├─ /api, /socket.io → backend:3000  (TRUST_PROXY_HOPS=1)
+             └─ /                → frontend (nginx :80)
+           backend → postgres:5432  (iç ağ, TLS + SCRAM)
+```
+
+- Dışarıya yalnız Caddy port açar. PostgreSQL ve backend internete açılmaz; veritabanı ağı (`db`) dış bağlantısı olmayan iç ağdır.
+- PostgreSQL yalnız TLS ve SCRAM parolasıyla bağlantı kabul eder ([`hosting/pg_hba.conf`](../hosting/pg_hba.conf)). Backend sunucu sertifikasını kurulumla üretilen özel CA ile doğrular.
+- API ve Socket.IO doğrudan backend'e gider. Böylece backend tam bir güvenilir proxy görür ve giriş/demo rate-limit'i gerçek istemci adresine göre çalışır.
+- Migration, ilk yönetici ve seed hiçbir zaman servis açılışında çalışmaz; ayrı `installer` profiliyle elle çalıştırılır.
+- Loglar Docker `json-file` sürücüsüyle 3 × 10 MB ile sınırlıdır. Servisler sağlık kontrollüdür ve `restart: unless-stopped` ile sunucu yeniden başlayınca kendiliğinden açılır.
+
+## 1. Sunucu
+
+- Yalnız 22, 80 ve 443 numaralı portları açın (bulut sağlayıcının güvenlik listesi **ve** sunucudaki güvenlik duvarı). Bazı bulut imajları kendi `iptables` kurallarıyla 80/443'ü kapalı getirir; kurulumdan sonra dışarıdan erişimi mutlaka deneyin.
+- SSH'ta yalnız anahtarla giriş, otomatik güvenlik güncellemeleri (`unattended-upgrades`) ve Docker'ın resmi deposundan Docker Engine + Compose eklentisi kurulur.
+- Alan adının A (ve varsa AAAA) kaydı sunucuya yönlendirilir. Caddy sertifikayı ilk açılışta otomatik alır; bunun için 80 ve 443 dışarıdan erişilebilir olmalıdır.
+- Kod salt okunur bir deploy anahtarıyla klonlanır; örneklerde `/opt/gks/app`.
+
+## 2. Gizli dosyalar
+
+Gizli dosyalar repodan ayrı bir klasörde tutulur (varsayılan `/opt/gks/env`). Klasör `700`, dosyalar `600` olmalıdır ve yalnız Docker'ı çalıştıran yönetici kullanıcıya ait olmalıdır.
+
+```sh
+sudo install -d -m 700 -o "$USER" /opt/gks/env
+cd /opt/gks/app
+scripts/hosting/make-db-cert.sh /opt/gks/env/db-tls
+```
+
+Betik özel bir CA ile `postgres` adına sunucu sertifikası üretir (EC P-256, varsayılan 825 gün, `GKS_DB_CERT_DAYS` ile değişir) ve var olan bir klasörün üzerine yazmaz. `ca.key` yalnız yeni sertifika üretmek içindir; kurulumdan sonra sunucudan alıp güvenli bir yerde saklayın. Sunucuda `ca.crt`, `server.crt` ve `server.key` kalır.
+
+Dört metin dosyası oluşturun (`umask 077` ile). Rastgele değerler için `openssl rand -base64 48` (JWT) ve `openssl rand -hex 24` (parolalar) yeterlidir. Değerleri sohbet, issue veya commit'e yazmayın.
+
+`/opt/gks/env/compose.env` — yalnız Compose değişkenleri, gizli değer içermez:
+
+```sh
+GKS_SITE_ADDRESS=gks.example.com
+GKS_ENV_DIR=/opt/gks/env
+```
+
+`/opt/gks/env/postgres.env` — PostgreSQL kurulum (yönetici) hesabının parolası:
+
+```sh
+POSTGRES_PASSWORD=<rastgele>
+```
+
+`/opt/gks/env/backend.env` — servis ortamı; uygulama hesabını kullanır:
+
+```sh
+DB_NAME=gksdemo_v1
+DB_USER=gks_app
+DB_PASSWORD=<rastgele, uygulama hesabı>
+JWT_SECRET=<en az 32 karakter rastgele>
+FRONTEND_URL=https://gks.example.com
+BUSINESS_TIMEZONE=Europe/Istanbul
+DEMO_MODE=true
+DEMO_USERNAME=gks-demo
+```
+
+`/opt/gks/env/install.env` — yalnız kurulum sırasında var olur; `backend.env` değerlerinin üzerine yazar:
+
+```sh
+DB_USER=gks_admin
+DB_PASSWORD=<postgres.env ile aynı parola>
+BOOTSTRAP_USERNAME=<ilk yönetici>
+BOOTSTRAP_PASSWORD=<en az 10 karakter>
+DEMO_SEED_CONFIRM=gksdemo_v1
+RUNTIME_DB_USER=gks_app
+RUNTIME_DB_CONFIRM=gksdemo_v1
+```
+
+`DB_SERVER`, `DB_PORT`, `DB_SSL`, `DB_SSL_CA`, `NODE_ENV=production`, `TRUST_PROXY_HOPS=1` ve kapalı kurulum/simülasyon ayarları Compose dosyasında sabittir. Salt okunur public demoda ilk yönetici zorunlu değildir; `BOOTSTRAP_*` satırları atlanırsa `admin:create` adımı da atlanır.
+
+Kısaltma olarak:
+
+```sh
+alias gks='docker compose --env-file /opt/gks/env/compose.env -f /opt/gks/app/compose.hosting.yaml'
+```
+
+## 3. İlk kurulum
+
+```sh
+gks --profile install build
+gks up -d --wait postgres
+```
+
+PostgreSQL ilk açılışta UTF-8 ve `tr-TR` ICU ile kurulur; `gks_admin` kurulum hesabıdır. Uygulama giriş rolünü oluşturun (`psql` önce `gks_admin` parolasını, sonra yeni parolayı iki kez sorar; parola ekranda ve geçmişte görünmez):
+
+```sh
+gks exec postgres psql -U gks_admin -d postgres -c 'CREATE ROLE gks_app LOGIN'
+gks exec postgres psql -U gks_admin -d postgres -c '\password gks_app'
+```
+
+Kurulum komutları TLS üzerinden, üretim modunda çalışır. Her komut tekrarlanabilir: `db:init` mevcut DB'ye dokunmaz, `db:migrate` uygulanmış dosyayı atlar, `admin:create` panel hesabı varsa bir şey yapmaz, `seed:demo` aynı sürümü çoğaltmaz.
+
+```sh
+gks --profile install run --rm installer npm run db:init
+gks --profile install run --rm installer npm run db:migrate
+gks --profile install run --rm installer npm run admin:create
+gks --profile install run --rm installer npm run seed:demo
+gks --profile install run --rm installer npm run db:runtime-role
+```
+
+Ardından kurulum değerlerini kaldırıp yığını açın:
+
+```sh
+rm /opt/gks/env/install.env
+gks up -d --wait
+gks ps
+```
+
+Backend açılışta 32 karakterden kısa `JWT_SECRET`, varsayılan `admin` parolası veya süper kullanıcı veritabanı hesabıyla çalışmayı reddeder; bu durumda `gks logs backend` nedeni gösterir. Uygulama hesabının yetkileri [veritabanı rolleri](database-roles.md) belgesinde açıklanır.
+
+## 4. Kabul kontrolü
+
+Dış ağdan ve gizli tarayıcı oturumundan:
+
+- `https://<alan adı>/api/status` → `200`; sayfa HTTPS ile açılır, tarayıcı konsolunda mixed-content uyarısı yoktur.
+- “Demoyu İncele” ile giriş; gezinti, Türkçe karakterli arama, 7 Eylül 2026 puantajı ve bir Excel indirmesi.
+- Bütün yazma işlemleri `403 DEMO_READ_ONLY` döner (yönetici oturumunda da).
+- Canlı yenileme (Socket.IO) bağlantısı kurulur.
+- `sudo reboot` sonrası servisler kendiliğinden açılır.
+
+Sunucuda bağlantının uygulama hesabıyla ve TLS ile kurulduğu şöyle görülür (`gks_admin` parolasını sorar):
+
+```sh
+gks exec postgres psql -U gks_admin -d postgres -c "SELECT a.usename, s.ssl, s.version FROM pg_stat_ssl s JOIN pg_stat_activity a USING (pid) WHERE a.usename = 'gks_app'"
+```
+
+## 5. Güncelleme
+
+```sh
+cd /opt/gks/app && git pull --ff-only
+gks --profile install build
+```
+
+Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın ve dosyayı tekrar silin. Sonra:
+
+```sh
+gks up -d --wait
+```
+
+Otomatik aşağı migration yoktur. Önceki sürüme dönmek için önceki commit'i derleyip açın; şema değiştiyse o sürümle alınmış yedeği yeni bir veritabanına geri yükleyip `DB_NAME` değerini ona çevirin. Salt okunur demo verisi sentetik olduğundan en kötü durumda yeni bir DB adıyla `db:init` → `db:migrate` → `seed:demo` → `db:runtime-role` yeniden kurulabilir.
+
+## 6. Yedek ve geri yükleme
+
+Yedek, konteynerdeki kurulum parolasını kullanır; parola komut satırına yazılmaz:
+
+```sh
+install -d -m 700 /opt/gks/backups
+gks exec -T postgres sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U gks_admin -Fc gksdemo_v1' > /opt/gks/backups/gks-$(date +%F).dump
+find /opt/gks/backups -name 'gks-*.dump' -mtime +7 -delete
+```
+
+Bu üç satır gece çalışan bir cron işine konabilir. Yedeklerin bir kopyasını sunucu dışında saklayın.
+
+Geri yükleme her zaman **yeni** bir veritabanına yapılır; çalışan DB'nin üzerine yazılmaz. Boş DB'yi `db:init` doğru dil/saat dilimi ayarlarıyla oluşturur; bunun için `install.env` dosyasını kurulum hesabıyla geçici olarak yeniden oluşturun:
+
+```sh
+gks --profile install run --rm -e DB_NAME=gksdemo_restore installer npm run db:init
+gks exec -T postgres sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -U gks_admin -d gksdemo_restore --no-owner' < /opt/gks/backups/gks-YYYY-MM-DD.dump
+gks --profile install run --rm -e DB_NAME=gksdemo_restore -e RUNTIME_DB_CONFIRM=gksdemo_restore installer npm run db:runtime-role
+```
+
+Ardından `install.env` dosyasını silin, `backend.env` içindeki `DB_NAME` değerini değiştirin ve `gks up -d --force-recreate backend` çalıştırın. Eski DB'yi doğrulama bitmeden silmeyin. Geri yükleme yayından önce en az bir kez denenmelidir.
+
+## Sınırlar
+
+Bu düzen tek sunuculudur: yüksek erişilebilirlik, otomatik yük devretme veya yönetilen veritabanı yedeği içermez. TLS sertifikası süresi dolmadan (varsayılan 825 gün) yeni sertifika üretilip PostgreSQL yeniden başlatılmalıdır. Secret yönetimi dosya izinlerine dayanır.
