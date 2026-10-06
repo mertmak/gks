@@ -17,8 +17,17 @@ Bu kılavuz salt okunur public demoyu veya tek kurumlu küçük bir kurulumu, te
 
 ## 1. Sunucu
 
-- Yalnız 22, 80 ve 443 numaralı portları açın (bulut sağlayıcının güvenlik listesi **ve** sunucudaki güvenlik duvarı). Bazı bulut imajları kendi `iptables` kurallarıyla 80/443'ü kapalı getirir; kurulumdan sonra dışarıdan erişimi mutlaka deneyin.
-- SSH'ta yalnız anahtarla giriş, otomatik güvenlik güncellemeleri (`unattended-upgrades`) ve Docker'ın resmi deposundan Docker Engine + Compose eklentisi kurulur.
+- Yalnız 22, 80 ve 443 numaralı portları açın (bulut sağlayıcının güvenlik listesi **ve** sunucudaki güvenlik duvarı). Bazı bulut imajları kendi `iptables` kurallarıyla 80/443'ü kapalı getirir; kurulumdan sonra dışarıdan erişimi mutlaka deneyin. Örneğin Oracle Cloud'un Ubuntu imajında `INPUT` zinciri 22'den sonra her şeyi reddeder; kuralları bu `REJECT` satırından önce ekleyip **Docker'ı kurmadan önce** kalıcı yapın (sonradan kaydedilirse Docker'ın kendi kuralları da dosyaya yazılır):
+
+  ```sh
+  sudo iptables -S INPUT    # REJECT satırının sırasını görün
+  sudo iptables -I INPUT 5 -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
+  sudo iptables -I INPUT 6 -p tcp -m state --state NEW -m tcp --dport 443 -j ACCEPT
+  sudo iptables -I INPUT 7 -p udp -m udp --dport 443 -j ACCEPT
+  sudo netfilter-persistent save
+  ```
+
+- SSH'ta yalnız anahtarla giriş ve root girişi kapalı (`/etc/ssh/sshd_config.d/` altında `PermitRootLogin no`, `PasswordAuthentication no`), otomatik güvenlik güncellemeleri (`unattended-upgrades`) ve Docker'ın resmi deposundan Docker Engine + Compose eklentisi kurulur.
 - Alan adının A (ve varsa AAAA) kaydı sunucuya yönlendirilir. Caddy sertifikayı ilk açılışta otomatik alır; bunun için 80 ve 443 dışarıdan erişilebilir olmalıdır.
 - Kod salt okunur bir deploy anahtarıyla klonlanır; örneklerde `/opt/gks/app`.
 
@@ -82,12 +91,21 @@ Kısaltma olarak:
 alias gks='docker compose --env-file /opt/gks/env/compose.env -f /opt/gks/app/compose.hosting.yaml'
 ```
 
+Alias yalnız etkileşimli kabukta çalışır. Cron ve betikler için aynı komutu küçük bir dosyaya koyun:
+
+```sh
+printf '#!/bin/sh\nexec docker compose --env-file /opt/gks/env/compose.env -f /opt/gks/app/compose.hosting.yaml "$@"\n' > /opt/gks/gks
+chmod 755 /opt/gks/gks
+```
+
 ## 3. İlk kurulum
 
 ```sh
 gks --profile install build
 gks up -d --wait postgres
 ```
+
+Alan adı henüz sunucuyu göstermiyorsa önce `compose.env` içinde `GKS_SITE_ADDRESS=:80` ile yalnız HTTP açıp kurulumu doğrulayabilirsiniz; DNS kaydı yayılınca alan adını yazıp `gks up -d --force-recreate caddy backend` çalıştırın ve `FRONTEND_URL` değerinde yalnız `https://` adres bırakın. Caddy sertifikayı birkaç dakika içinde alır.
 
 PostgreSQL ilk açılışta UTF-8 ve `tr-TR` ICU ile kurulur; `gks_admin` kurulum hesabıdır. Uygulama giriş rolünü oluşturun (`psql` önce `gks_admin` parolasını, sonra yeni parolayı iki kez sorar; parola ekranda ve geçmişte görünmez):
 
@@ -149,16 +167,28 @@ Otomatik aşağı migration yoktur. Önceki sürüme dönmek için önceki commi
 
 ## 6. Yedek ve geri yükleme
 
-Yedek, konteynerdeki kurulum parolasını kullanır; parola komut satırına yazılmaz. `umask 077` yedek dosyasının yalnız sahibince okunabilmesini (`600`) sağlar:
+Yedek, konteynerdeki kurulum parolasını kullanır; parola komut satırına yazılmaz. `umask 077` yedek dosyasının yalnız sahibince okunabilmesini (`600`) sağlar. `/opt/gks/backup.sh` olarak kaydedip `chmod 700` verin:
 
 ```sh
+#!/bin/sh
+set -eu
 umask 077
-install -d -m 700 /opt/gks/backups
-gks exec -T postgres sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U gks_admin -Fc gksdemo_v1' > /opt/gks/backups/gks-$(date +%F).dump
+out=/opt/gks/backups/gks-$(date +%F).dump
+/opt/gks/gks exec -T postgres sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U gks_admin -Fc gksdemo_v1' > "$out.tmp"
+mv "$out.tmp" "$out"
 find /opt/gks/backups -name 'gks-*.dump' -mtime +7 -delete
 ```
 
-Bu satırlar gece çalışan bir cron işine konabilir; cron'da `umask 077` satırı da korunmalıdır. Yedeklerin bir kopyasını sunucu dışında saklayın.
+Yarım kalan döküm `.tmp` olarak kalır ve 7 günlük setteki tam yedeklerin yerini almaz. Gece çalıştırmak için (sunucu saati genelde UTC'dir):
+
+```sh
+install -d -m 700 /opt/gks/backups
+echo '30 3 * * * /opt/gks/backup.sh >> /opt/gks/backups/backup.log 2>&1' | crontab -
+crontab -l
+/opt/gks/backup.sh && /opt/gks/gks exec -T postgres pg_restore --list < "$(ls /opt/gks/backups/gks-*.dump | tail -1)" | head
+```
+
+`crontab -` mevcut tabloyu tümüyle değiştirir; başka cron işleri varsa önce `crontab -l` ile birleştirin. Yedeklerin bir kopyasını sunucu dışında saklayın.
 
 Geri yükleme her zaman **yeni** bir veritabanına yapılır; çalışan DB'nin üzerine yazılmaz. Boş DB'yi `db:init` doğru dil/saat dilimi ayarlarıyla oluşturur; bunun için `install.env` dosyasını kurulum hesabıyla geçici olarak yeniden oluşturun:
 

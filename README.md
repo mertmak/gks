@@ -2,7 +2,7 @@
 
 GKS; personel, kapı yetkisi, vardiya, izin ve devam/mesai akışlarını bir araya getiren bağımsız, kişisel bir full-stack portföy projesidir. Fiziksel cihaz katmanı sentetik geçiş kayıtlarıyla temsil edilir; uygulama ticari bir erişim kontrol ürünü değildir.
 
-V1 hazırlanıyor. Salt okunur demo modu yerelde çalışıyor; public HTTPS demo adresi henüz yayınlanmadı. Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
+V1 hazırlanıyor. Salt okunur demo: **https://gksdemo.com** ("Demoyu İncele" ile giriş; veriler sentetik, değişiklik işlemleri kapalı). Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
 
 React/Vite arayüzü, Express API, PostgreSQL ve Socket.IO kullanır. Puantaj/gece vardiyası hesabı, transaction ile audit tutarlılığı, rol denetimi, geçmiş kayıtların korunması ve tekrar üretilebilir sentetik veri projenin temel teknik konularıdır.
 
@@ -133,7 +133,7 @@ Frontend'i normal local çalışma komutuyla başlatın. “Demoyu İncele” d�
 
 Seed 12 sentetik personel, iki vardiya, altı kapı, farklı yetki setleri, izin/mesai kararları ve örnek işlem geçmişi oluşturur. Referans gün **7 Eylül 2026**; haftalık tatil örneği 6 Eylül, gece vardiyasının çıkışı 8 Eylül'dür. Dashboard ve varsayılan tarih filtreleri bu dönemi kullanır. Aynı seed sürümü yeniden çalıştırıldığında kayıt çoğalmaz. Boş olmayan iş tabloları reddedilir; veriler otomatik silinmez. Baştan kurulum için yeni bir `gksdemo_` veritabanı adı seçilip hem `DB_NAME` hem `DEMO_SEED_CONFIRM` güncellenir ve komutlar tekrarlanır. Seed onay değişkeni normal servis çalışmasında gerekli değildir.
 
-Demo modu bütün iş verisi yazma çağrılarını, admin tokenı kullanılsa bile `403 DEMO_READ_ONLY` ile reddeder. Giriş uçları açık kalır; seed yalnız CLI komutudur. Yerel geliştirme simülatörü demo seed'inden ayrıdır. Public HTTPS yayını henüz tamamlanmadı.
+Demo modu bütün iş verisi yazma çağrılarını, admin tokenı kullanılsa bile `403 DEMO_READ_ONLY` ile reddeder. Giriş uçları açık kalır; seed yalnız CLI komutudur. Yerel geliştirme simülatörü demo seed'inden ayrıdır. Public demo tek sunuculu düzende ([hosting kılavuzu](docs/hosting.md)) yayındadır.
 
 Backend Docker imajı proje kökünden `docker build -f gks_backend/Dockerfile -t gks-backend:local .` ile derlenir; migration klasörü imaja dahildir. `compose.yaml` ayrı PostgreSQL bekler; veritabanı kurmaz veya mevcut DB'yi değiştirmez. `compose.hosting.yaml` PostgreSQL'i de içerir. Migration ve seed hiçbir düzende otomatik servis başlangıç adımı değildir. Üretimde (`NODE_ENV=production`) veritabanı bağlantısı her zaman TLS ve sertifika doğrulamasıyla kurulur (özel CA için `DB_SSL_CA`); `DB_SSL=false` bu modda yok sayılır. Sunucu ayrıca 32 karakterden kısa `JWT_SECRET`, varsayılan `admin` parolası ve süper kullanıcı veritabanı hesabıyla açılmayı reddeder.
 
@@ -161,7 +161,7 @@ Geliştirme ortamında backend'in `/api-docs` adresi OpenAPI arayüzünü açar;
 - Olmayan kayıt 404, geçersiz girdi 400, izin/çalışma dönemi çakışması 409, demo yazması 403 döndürür. Bozuk JSON 400, 256 kB üzerindeki gövde 413 alır; cevaplarda gönderilen parola veya SQL hata ayrıntısı yer almaz.
 - Toplu işe alım yalnız pasif kişilere; diğer toplu personel işlemleri aktif kişilere uygulanır. Şirket/departman hedefi tam eşleşir. Form önerileri de bu hedef kitleyi kullanır. Veri listesi yüklenirken veya yüklenemediğinde toplu işlem başlatılamaz.
 
-Demo ortamında genel API sınırı IP başına dakikada 300, demo girişi dakikada 30 istektir. Normal girişin başarısız deneme sınırı ayrı uygulanır. Gerçek proxy ortamındaki IP/CORS/HTTPS kabulü yayın öncesi yapılmalıdır.
+Demo ortamında genel API sınırı IP başına dakikada 300, demo girişi dakikada 30 istektir. Normal girişin başarısız deneme sınırı ayrı uygulanır. Bu sınırlar, CORS, HTTPS ve WebSocket yönlendirmesi public demo sunucusunda doğrulandı.
 
 ## Yerel geliştirme simülasyonu
 

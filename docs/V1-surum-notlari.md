@@ -1,6 +1,6 @@
 # GKS V1 — sürüm notları taslağı
 
-Bu metin yayın hazırlığı içindir. V1 etiketi ve public HTTPS demo henüz yayımlanmadı; aşağıdaki yerel doğrulamalar yayın ortamının kabulü yerine geçmez.
+Bu metin yayın hazırlığı içindir. Public HTTPS demo https://gksdemo.com adresinde yayındadır; V1 etiketi henüz oluşturulmadı.
 
 GKS, personel, kapı yetkileri, vardiya, izin ve devam/mesai takibini birlikte incelemek için geliştirilmiş bağımsız bir kişisel portföy projesidir. Fiziksel geçişler tamamen sentetik kayıtlarla temsil edilir.
 
@@ -37,12 +37,15 @@ Yeni kurulum için [yerel Docker kılavuzunu](local-docker.md) veya [tek sunucul
 
 Geri dönüş gerektiğinde önceki uygulama sürümünü sonradan değişmiş şemaya doğrudan bağlamayın. Önceki sürümle doğrulanmış yedeği ayrı bir veritabanına geri yükleyip o sürümün bağlantısını bu kopyaya yöneltin. Yerel yönetim ortamında yedekten sonraki işlemler ayrıca değerlendirilmelidir. Salt okunur demoda sentetik veriler aynı sürümün migration ve seed komutlarıyla yeni, açıkça seçilmiş demo veritabanında tekrar üretilebilir. Eski veritabanını doğrulama tamamlanmadan silmeyin.
 
+## Yayın ortamı
+
+Demo tek bir Ubuntu 24.04 (arm64) sunucuda `compose.hosting.yaml` ile çalışır: Caddy (Let's Encrypt), nginx, Express ve iç ağda TLS'li PostgreSQL 18. Sunucuda HTTPS yönlendirmesi, HSTS, demo girişi, puantaj, yazma engeli, WebSocket, hız sınırı, CORS, veritabanının uygulama hesabıyla TLS bağlantısı, dış portların kapalılığı ve sunucu yeniden başlatıldıktan sonra kendiliğinden açılma doğrulandı. Veritabanı her gece yedeklenir (7 gün).
+
 ## Yayından önce tamamlanacaklar
 
-- Hedef sunucuda HTTPS, proxy, rate-limit ve dış ağ kontrolü; yedekten geri yüklemenin hedefte bir kez denenmesi.
-- Son kaynaklarla uzaktaki GitHub CI.
-- Yayımlanacak dosya ve Git geçmişinin incelenmesi; sentetik ekran görüntüleri.
-- Gerçek demo adresi, sürüm etiketi ve yayın tarihi.
+- Yedeğin hedef sunucuda yeni bir veritabanına geri yüklenmesinin denenmesi ve sunucu dışı kopya.
+- Yayımlanacak dosya ve Git geçmişinin incelenmesi (secret taraması); sentetik ekran görüntüleri.
+- PostgreSQL dalının ana dala birleştirilmesi, sürüm etiketi ve yayın tarihi.
 
 ## Repository bilgileri taslağı
 
