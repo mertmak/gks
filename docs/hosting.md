@@ -190,12 +190,12 @@ crontab -l
 
 `crontab -` mevcut tabloyu tümüyle değiştirir; başka cron işleri varsa önce `crontab -l` ile birleştirin. Yedeklerin bir kopyasını sunucu dışında saklayın.
 
-Geri yükleme her zaman **yeni** bir veritabanına yapılır; çalışan DB'nin üzerine yazılmaz. Boş DB'yi `db:init` doğru dil/saat dilimi ayarlarıyla oluşturur; bunun için `install.env` dosyasını kurulum hesabıyla geçici olarak yeniden oluşturun:
+Geri yükleme her zaman **yeni** bir veritabanına yapılır; çalışan DB'nin üzerine yazılmaz. Boş DB'yi `db:init` doğru dil/saat dilimi ayarlarıyla oluşturur; bunun için `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun:
 
 ```sh
 gks --profile install run --rm -e DB_NAME=gksdemo_restore installer npm run db:init
 gks exec -T postgres sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" pg_restore -U gks_admin -d gksdemo_restore --no-owner' < /opt/gks/backups/gks-YYYY-MM-DD.dump
-gks --profile install run --rm -e DB_NAME=gksdemo_restore -e RUNTIME_DB_CONFIRM=gksdemo_restore installer npm run db:runtime-role
+gks --profile install run --rm -e DB_NAME=gksdemo_restore -e RUNTIME_DB_USER=gks_app -e RUNTIME_DB_CONFIRM=gksdemo_restore installer npm run db:runtime-role
 ```
 
 Ardından `install.env` dosyasını silin, `backend.env` içindeki `DB_NAME` değerini değiştirin ve `gks up -d --force-recreate backend` çalıştırın. Eski DB'yi doğrulama bitmeden silmeyin. Geri yükleme yayından önce en az bir kez denenmelidir.
