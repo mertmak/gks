@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import api from '../api/axios';
 import AlertMessage from '../components/AlertMessage';
 import { readSession } from '../utils/session';
+import { defaultTemplateShift } from '../utils/shifts';
 
 const SHIFT_EVENTS = ['shifts_updated'];
 
@@ -37,7 +38,7 @@ function Simulation() {
   });
 
 
-  const selectedShiftId = formData.vardiyaId || shifts[0]?.ID || '';
+  const selectedShiftId = formData.vardiyaId || defaultTemplateShift(shifts)?.ID || '';
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
