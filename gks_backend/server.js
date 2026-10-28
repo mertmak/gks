@@ -20,10 +20,13 @@ app.get('/api/status',async(req,res)=>{
     try {await sql.query('SELECT 1 AS ready');res.json({success:true,durum:'Başarılı'});}
     catch {res.status(503).json({success:false,message:'Veritabanına erişilemiyor.'});}
 });
-app.get('/api/features',verifyToken,(req,res)=>res.json({simulation:!demo.enabled&&process.env.NODE_ENV!=='production'&&process.env.ENABLE_SIMULATION==='true'}));
+const sandbox = require('./config/sandbox');
+const localSimulation=!demo.enabled&&process.env.NODE_ENV!=='production'&&process.env.ENABLE_SIMULATION==='true';
+app.get('/api/features',verifyToken,(req,res)=>res.json({simulation:localSimulation||!!req.user.sandbox}));
+app.use('/api',require('./routes/sandboxRoutes'));
 app.use('/api',require('./routes/authRoutes'));
 for(const name of ['dashboard','user','door','shift','report','leave','overtime']) app.use('/api',require(`./routes/${name}Routes`));
-if(!demo.enabled&&process.env.NODE_ENV!=='production'&&process.env.ENABLE_SIMULATION==='true') app.use('/api',require('./routes/seederRoutes'));
+if(localSimulation||sandbox.enabled) app.use('/api',require('./routes/seederRoutes'));
 if(process.env.NODE_ENV!=='production') {
     const swagger=require('swagger-ui-express');
     app.use('/api-docs',swagger.serve,swagger.setup(require('./utils/swagger')));
@@ -47,12 +50,18 @@ async function start() {
     await connectDB();
     if(production) await assertProductionDatabase();
     socket.init(server);
+    if(sandbox.enabled) {
+        // Copies built by an earlier release may not match the current migrations.
+        const services=require('./services/sandbox');
+        logger.info(`${await services.purge({all:true})} simülasyon alanı temizlendi.`);
+        setInterval(()=>services.purge().catch(e=>logger.error('Simülasyon temizliği başarısız: '+e.message)),5*60000).unref();
+    }
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(process.env.PORT||3000,process.env.HOST||'127.0.0.1',resolve);});
     logger.info(`GKS ${process.env.PORT||3000} portunda hazır.`);
 }
 async function shutdown() {
     const deadline=setTimeout(()=>process.exit(1),10000);deadline.unref();
-    socket.getIO().close();
+    socket.close();
     server.close(async()=>{await sql.close();clearTimeout(deadline);process.exit(0);});
 }
 if(require.main===module) {start().catch(e=>{logger.error(e.message);process.exit(1);});process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);}

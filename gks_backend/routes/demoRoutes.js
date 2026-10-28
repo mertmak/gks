@@ -1,10 +1,11 @@
 const router = require('express').Router();
 const demo = require('../config/demo');
+const sandbox = require('../config/sandbox');
 const business = require('../config/business');
 const { sql } = require('../db');
 const jwt = require('jsonwebtoken');
 const { SECRET_KEY } = require('../middlewares/auth');
-router.get('/public-config', (req, res) => res.json({ demo: demo.enabled, referenceDate: demo.enabled ? demo.referenceDate : null, businessTimeZone: business.timeZone }));
+router.get('/public-config', (req, res) => res.json({ demo: demo.enabled, referenceDate: demo.enabled ? demo.referenceDate : null, businessTimeZone: business.timeZone, sandbox: sandbox.enabled, sandboxMinutes: sandbox.enabled ? sandbox.ttlMinutes : null }));
 router.post('/demo-login', require('express-rate-limit').rateLimit({ windowMs: 60000, limit: 30, standardHeaders: true, legacyHeaders: false, message: { success: false, message: 'Çok fazla demo giriş isteği. Bir dakika sonra tekrar deneyin.' } }), async (req, res, next) => {
     if (!demo.enabled) return res.status(404).json({ success: false, message: 'Demo girişi kapalı.' });
     try {

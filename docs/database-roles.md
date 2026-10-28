@@ -41,8 +41,9 @@ PostgreSQL rolleri veritabanına değil bütün sunucuya aittir. Aynı sunucuda 
 | `Personel_Vardiya`, `Yoneticiler` | Okuma, ekleme, güncelleme, silme |
 | `Permissions`, `Izinler` | Okuma, ekleme, silme |
 | `Personel_Calisma_Gecmisi`, `Logs`, `SystemLogs`, `DoorLogs` | Okuma, ekleme |
+| `GksSandboxes` | Okuma, ekleme, silme |
 
-Rol `public` şemasını kullanma (`USAGE`) dışında yeni tablo/şema oluşturma veya değiştirme, migration/seed metadatasına erişim, audit/geçiş geçmişini değiştirme veya silme izni vermez. Yeni bir iş akışı eklenirse izinler ayrıca gözden geçirilmelidir. Public demoda aynı rolün mevcut olması HTTP yazma engelini kaldırmaz; salt okunur koruma API'de ayrıca uygulanır.
+Rol `public` şemasını kullanma (`USAGE`) dışında yeni tablo/şema oluşturma veya değiştirme, migration/seed metadatasına erişim, audit/geçiş geçmişini değiştirme veya silme izni vermez. Tek istisna: komut `SANDBOX_MODE=true` ile çalıştırılırsa rol veritabanında `CREATE` alır; public demodaki kişisel simülasyon alanları uygulama hesabına ait `sbx_…` şemalarında kurulur ve süre dolunca silinir. Bu izin `public` şemasındaki tablolara yeni yetki vermez; ayar kapalıyken komut yeniden çalıştırıldığında izin geri alınır. Yeni bir iş akışı eklenirse izinler ayrıca gözden geçirilmelidir. Public demoda aynı rolün mevcut olması HTTP yazma engelini kaldırmaz; salt okunur koruma API'de ayrıca uygulanır.
 
 Komut tekrarlanabilir; rol/üyelik zaten varsa yeniden oluşturmaz. Bütün grant ve üyelik değişiklikleri tek transaction içindedir. Eksik tablo veya bulunmayan kullanıcıda değişiklikler geri alınır.
 

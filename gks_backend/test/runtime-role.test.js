@@ -71,8 +71,31 @@ test('runtime role supports business writes and triggers without schema or audit
             'SELECT * FROM GksMigrations',
             'CREATE TABLE RuntimeForbidden(ID int)',
             'ALTER TABLE Users ADD RuntimeForbidden int',
+            'CREATE SCHEMA runtime_forbidden',
         ]) await assert.rejects(asRuntime(query => query(forbidden)), /permission denied|must be owner/i, forbidden);
         assert.equal((await sql.query('SELECT COUNT(*) AS n FROM SystemLogs')).recordset[0].n, 1);
+        // The demo's personal simulation copies are built by the runtime account.
+        await configureRuntimeRole(user, { sandbox: true });
+        const fs = require('node:fs');
+        const migrations = path.resolve(__dirname, '../../database/migrations');
+        const tx = new sql.Transaction();
+        await tx.begin();
+        try {
+            const client = tx.activeClient();
+            await client.query(`SET LOCAL ROLE ${user}`);
+            await client.query('CREATE SCHEMA sbx_00000000000000aa');
+            await client.query('SET LOCAL search_path TO sbx_00000000000000aa, public');
+            for (const name of fs.readdirSync(migrations).filter(name => name.endsWith('.sql')).sort()) await client.query(fs.readFileSync(path.join(migrations, name), 'utf8'));
+            await client.query('INSERT INTO Users OVERRIDING SYSTEM VALUE SELECT * FROM public.Users');
+            assert.equal((await client.query('SELECT gks_search(Ad_Soyad) AS name FROM Users')).rows[0].name, 'runtime updated');
+            await client.query('DROP SCHEMA sbx_00000000000000aa CASCADE');
+            await tx.commit();
+        } catch (error) { await tx.rollback(); throw error; }
+        const canCreate = async () => (await new sql.Request().input('user', sql.NVarChar, user)
+            .query("SELECT has_database_privilege(@user, current_database(), 'CREATE') AS n")).recordset[0].n;
+        assert.equal(await canCreate(), true);
+        await configureRuntimeRole(user);
+        assert.equal(await canCreate(), false);
     } finally {
         await sql.query(`DROP OWNED BY ${user}; DROP ROLE ${user}`);
         if (await roleCount()) await sql.query(`DROP OWNED BY ${role}; DROP ROLE ${role}`);
