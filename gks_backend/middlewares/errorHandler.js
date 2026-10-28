@@ -1,3 +1,5 @@
+const { isUniqueViolation } = require('../utils/dbErrors');
+
 const errorHandler = (err, req, res, next) => {
     // Parser error messages may quote the request body, including passwords.
     if (err.type === 'entity.parse.failed') return res.status(400).json({ success: false, message: 'İstek gövdesi geçerli JSON olmalıdır.' });
@@ -5,7 +7,7 @@ const errorHandler = (err, req, res, next) => {
     console.error("🔥 Sistem Hatası Yakalandı:", err.stack);
     
     // Eğer hata SQL ile ilgili bir unique constraint (çakışma) hatasıysa (Örn: Aynı TC veya Sicil)
-    if ([2601, 2627].includes(err.number)) {
+    if (isUniqueViolation(err)) {
         return res.status(400).json({ 
             success: false, 
             message: 'Bu kayıt sistemde zaten mevcut. (Çift kayıt hatası)' 

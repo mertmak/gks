@@ -18,10 +18,10 @@ async function approve(items,durum,aciklama,actor) {
     // Consistent order and SERIALIZABLE protect concurrent insert/update approvals.
     await inTransaction(async transaction => {
         for(const item of [...items].sort((a,b)=>a.user_id-b.user_id||a.tarih.localeCompare(b.tarih))) {
-            // Lock the person before reading its report/decision to avoid shared-lock
-            // conversion deadlocks when two administrators decide the same day.
+            // Lock the person before reading its report/decision so two administrators
+            // deciding the same day are serialized instead of failing at commit.
             await new sql.Request(transaction).input('uid',sql.Int,item.user_id)
-                .query('SELECT ID FROM Users WITH (UPDLOCK,HOLDLOCK) WHERE ID=@uid');
+                .query('SELECT ID FROM Users WHERE ID=@uid FOR UPDATE');
             const [row]=await attendance(item.tarih,item.tarih,{transaction,userId:item.user_id});
             if(!row) {const error=new Error('Personel bu tarihte rapor kapsamında bulunamadı.');error.statusCode=404;throw error;}
             if(row.Izin_Cakismasi) throw httpError(409, `${row.Sicil_No} sicilli personelin ${item.tarih} gününde birden fazla onaylı izni var. Önce İzinler ekranındaki çakışmayı düzeltin.`);
@@ -34,9 +34,11 @@ async function approve(items,durum,aciklama,actor) {
             req.input('uid',sql.Int,item.user_id);req.input('day',sql.Date,item.tarih);
             req.input('computed',sql.Int,computed);req.input('approved',sql.Int,durum==='Onaylandı'?item.onaylanan_dk:0);
             req.input('status',sql.NVarChar,durum);req.input('note',sql.NVarChar,aciklama);req.input('actor',sql.NVarChar,actor);
-            await req.query(`IF NOT EXISTS(SELECT 1 FROM Users WHERE ID=@uid) THROW 50001,N'Personel bulunamadı.',1;
-              UPDATE Mesai_Onaylari WITH (UPDLOCK,HOLDLOCK) SET Hesaplanan_Dk=@computed,Onaylanan_Dk=@approved,Durum=@status,Aciklama=@note,Islemi_Yapan=@actor,Islem_Zamani=GETDATE() WHERE User_ID=@uid AND Tarih=@day;
-              IF @@ROWCOUNT=0 INSERT INTO Mesai_Onaylari(User_ID,Tarih,Hesaplanan_Dk,Onaylanan_Dk,Durum,Aciklama,Islemi_Yapan) VALUES(@uid,@day,@computed,@approved,@status,@note,@actor);`);
+            // The person exists (locked and reported above); FK_Overtime_User guards the rest.
+            await req.query(`INSERT INTO Mesai_Onaylari(User_ID,Tarih,Hesaplanan_Dk,Onaylanan_Dk,Durum,Aciklama,Islemi_Yapan)
+              VALUES(@uid,@day,@computed,@approved,@status,@note,@actor)
+              ON CONFLICT (User_ID,Tarih) DO UPDATE SET Hesaplanan_Dk=EXCLUDED.Hesaplanan_Dk,Onaylanan_Dk=EXCLUDED.Onaylanan_Dk,
+                Durum=EXCLUDED.Durum,Aciklama=EXCLUDED.Aciklama,Islemi_Yapan=EXCLUDED.Islemi_Yapan,Islem_Zamani=LOCALTIMESTAMP`);
             await addSystemLog(actor,'MESAİ KARARI',row.Ad_Soyad,row.Sicil_No,
                 JSON.stringify({user_id:item.user_id,tarih:item.tarih,onceki_durum:row.Mesai_Durumu,onceki_onaylanan_dk:row.Onaylanan_Dk,durum,hesaplanan_dk:computed,onaylanan_dk:durum==='Onaylandı'?item.onaylanan_dk:0,aciklama}),transaction);
         }

@@ -6,33 +6,34 @@ const path = require('node:path');
 async function createTestDatabase(t, { beforeMigration } = {}) {
     require('dotenv').config({ quiet: true });
     if (process.env.NODE_ENV === 'production') throw new Error('DB tests cannot run in production mode.');
-    const sql = require('mssql');
-    const name = `GksTest_${randomUUID().replaceAll('-', '')}`;
-    const master = await new sql.ConnectionPool({
-        server: process.env.DB_SERVER, port: Number(process.env.DB_PORT || 1433),
-        user: process.env.DB_USER, password: process.env.DB_PASSWORD, database: 'master',
-        options: { encrypt: process.env.DB_ENCRYPT === 'true', trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE === 'true' },
-    }).connect();
+    const pg = require('pg');
+    const { sql, connectionConfig } = require('../db');
+    const { createDatabase, dropDatabase } = require('../db/admin');
+    const name = `gkstest_${randomUUID().replaceAll('-', '')}`;
+    const admin = new pg.Client(connectionConfig('postgres'));
+    await admin.connect();
     let created = false;
     t.after(async () => {
         await sql.close();
         try {
             if (created) {
-                await master.request().query(`ALTER DATABASE [${name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [${name}]`);
+                await dropDatabase(admin, name);
                 t.diagnostic('Owned test database removed.');
             }
-        } finally { await master.close(); }
+        } finally { await admin.end(); }
     });
-    await master.request().query(`CREATE DATABASE [${name}]`);
+    await createDatabase(admin, name);
     created = true;
     process.env.DB_NAME = name;
     process.env.JWT_SECRET = randomUUID() + randomUUID();
     process.env.DEMO_MODE = 'false';
     process.env.ENABLE_SETUP = 'false';
     process.env.ENABLE_SIMULATION = 'false';
+    process.env.GKS_STRICT_COLUMN_NAMES = 'true';
     if (beforeMigration) {
-        const legacy = await new sql.ConnectionPool({ ...master.config, database: name }).connect();
-        try { await beforeMigration(legacy); } finally { await legacy.close(); }
+        const client = new pg.Client(connectionConfig(name));
+        await client.connect();
+        try { await beforeMigration(client); } finally { await client.end(); }
     }
     const backend = path.resolve(__dirname, '..');
     // Run the actual migration command twice, including its skip path.

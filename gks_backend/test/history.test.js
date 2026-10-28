@@ -8,33 +8,33 @@ test('card replacement and reassignment preserve captured event ownership', { sk
     const { attendance } = require('../services/attendance');
     await sql.query(`
       INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Sicil_No,Sistem_ID,Ise_Giris_Tarihi) VALUES
-        (N'History A',N'card-a',N'history-a',N'history-a','2026-01-01'),
-        (N'History B',N'card-b',N'history-b',N'history-b','2026-01-01');
-      INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis,Calisma_Gunleri) VALUES(N'History Shift','09:00','18:00','1,2,3,4,5');
+        ('History A','card-a','history-a','history-a','2026-01-01'),
+        ('History B','card-b','history-b','history-b','2026-01-01');
+      INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis,Calisma_Gunleri) VALUES('History Shift','09:00','18:00','1,2,3,4,5');
       INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi) SELECT ID,(SELECT ID FROM Vardiyalar),'2026-01-01' FROM Users;
-      INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES(N'History In',N'Ana Giriş'),(N'History Out',N'Ana Çıkış');
+      INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES('History In','Ana Giriş'),('History Out','Ana Çıkış');
       INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi) VALUES
-        (N'card-a',(SELECT ID FROM Doors WHERE Kapi_Adi=N'History In'),'2026-09-07T09:00:00',1),
-        (N'card-a',(SELECT ID FROM Doors WHERE Kapi_Adi=N'History Out'),'2026-09-07T19:00:00',1),
-        (N'unknown',(SELECT ID FROM Doors WHERE Kapi_Adi=N'History In'),'2026-09-07T09:00:00',1);
+        ('card-a',(SELECT ID FROM Doors WHERE Kapi_Adi='History In'),'2026-09-07T09:00:00',true),
+        ('card-a',(SELECT ID FROM Doors WHERE Kapi_Adi='History Out'),'2026-09-07T19:00:00',true),
+        ('unknown',(SELECT ID FROM Doors WHERE Kapi_Adi='History In'),'2026-09-07T09:00:00',true);
     `);
     const users = (await sql.query('SELECT ID FROM Users ORDER BY ID')).recordset;
     const [a, b] = users.map(user => user.ID);
     const before = await attendance('2026-09-07', '2026-09-07');
     assert.equal(before.find(row => row.User_ID === a).Hesaplanan_Dk, 60);
-    await sql.query("UPDATE Users SET RFID_Kart_No=N'card-new' WHERE Sicil_No=N'history-a'; UPDATE Users SET RFID_Kart_No=N'card-a' WHERE Sicil_No=N'history-b'");
+    await sql.query("UPDATE Users SET RFID_Kart_No='card-new' WHERE Sicil_No='history-a'; UPDATE Users SET RFID_Kart_No='card-a' WHERE Sicil_No='history-b'");
     const after = await attendance('2026-09-07', '2026-09-07');
     assert.equal(after.find(row => row.User_ID === a).Hesaplanan_Dk, 60);
     assert.equal(after.find(row => row.User_ID === b).Durum, 'Devamsız');
     assert.equal((await attendance('2026-09-07','2026-09-07',{userId:a}))[0].Hesaplanan_Dk,60);
     await sql.query(`INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi)
-      SELECT N'card-a',ID,'2026-09-08T09:00:00',1 FROM Doors WHERE Kapi_Adi=N'History In'`);
+      SELECT 'card-a',ID,'2026-09-08T09:00:00',true FROM Doors WHERE Kapi_Adi='History In'`);
     assert.equal((await sql.query("SELECT User_ID FROM Logs WHERE Zaman='2026-09-08T09:00:00'")).recordset[0].User_ID,b);
-    await sql.query("UPDATE Users SET RFID_Kart_No=N'unknown' WHERE Sicil_No=N'history-b'");
-    assert.equal((await sql.query("SELECT User_ID FROM Logs WHERE RFID_Kart_No=N'unknown'")).recordset[0].User_ID,null);
+    await sql.query("UPDATE Users SET RFID_Kart_No='unknown' WHERE Sicil_No='history-b'");
+    assert.equal((await sql.query("SELECT User_ID FROM Logs WHERE RFID_Kart_No='unknown'")).recordset[0].User_ID,null);
     assert.equal((await attendance('2026-09-07','2026-09-07',{userId:b}))[0].Durum,'Devamsız');
     await t.test('editing a definition changes new assignments but preserves old reports', async () => {
-        await sql.query("UPDATE Vardiyalar SET Vardiya_Adi=N'Changed Shift',Mesai_Bitis='20:00',Tolerans_Dk=120,Calisma_Gunleri='0,6'");
+        await sql.query("UPDATE Vardiyalar SET Vardiya_Adi='Changed Shift',Mesai_Bitis='20:00',Tolerans_Dk=120,Calisma_Gunleri='0,6'");
         const historical = (await attendance('2026-09-07','2026-09-07',{userId:a}))[0];
         assert.equal(historical.Vardiya_Adi,'History Shift');
         assert.equal(historical.Hesaplanan_Dk,60);

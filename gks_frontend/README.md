@@ -4,7 +4,7 @@ React 19 ve Vite ile geliştirilen personel, vardiya, izin ve puantaj paneli. Ta
 
 ## Geliştirme
 
-Önce [ana kurulum kılavuzuna](../README.md) göre backend ve SQL bağlantısını hazırlayın. Bu klasörde:
+Önce [ana kurulum kılavuzuna](../README.md) göre backend ve PostgreSQL bağlantısını hazırlayın. Bu klasörde:
 
 ```sh
 npm ci

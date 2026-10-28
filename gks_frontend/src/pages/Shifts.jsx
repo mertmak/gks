@@ -10,7 +10,7 @@ import AlertMessage from '../components/AlertMessage';
 import ConfirmAction from '../components/ConfirmAction';
 import { usePendingAction } from '../hooks/usePendingAction';
 
-// MSSQL'den gelen saat verisini HH:mm formatına çeviren yardımcı fonksiyon
+// API'den gelen saat verisini HH:mm formatına çeviren yardımcı fonksiyon
 const formatTimeForInput = (val) => {
   if (!val) return '';
   if (val.includes('T')) return val.split('T')[1].substring(0, 5);

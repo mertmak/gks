@@ -6,10 +6,10 @@ const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 
 const root = path.resolve(__dirname, '..');
-const allowedRoots = new Set(['.github', 'database', 'docs', 'gks_backend', 'gks_frontend', 'scripts']);
-const allowedRootFiles = new Set(['.gitignore', '.dockerignore', 'README.md', 'compose.yaml', 'compose.local.yaml', 'LICENSE']);
+const allowedRoots = new Set(['.github', 'database', 'docs', 'gks_backend', 'gks_frontend', 'hosting', 'scripts']);
+const allowedRootFiles = new Set(['.gitignore', '.dockerignore', 'README.md', 'compose.yaml', 'compose.local.yaml', 'compose.hosting.yaml', 'LICENSE']);
 const blockedDirectories = new Set(['.git', '.codex', '.agents', 'node_modules', 'logs', 'dist', 'build', 'coverage', '.npm']);
-const allowedExtensions = new Set(['.js', '.jsx', '.json', '.md', '.sql', '.yaml', '.yml', '.css', '.html', '.svg', '.png', '.conf']);
+const allowedExtensions = new Set(['.js', '.jsx', '.json', '.md', '.sql', '.yaml', '.yml', '.css', '.html', '.svg', '.png', '.conf', '.sh']);
 
 function isReleaseFile(relative) {
     const parts = relative.split('/');
@@ -18,7 +18,7 @@ function isReleaseFile(relative) {
     if (name.startsWith('.env') && name !== '.env.example') return false;
     if (parts.length === 1) return allowedRootFiles.has(name);
     if (!allowedRoots.has(parts[0])) return false;
-    return ['Dockerfile', '.gitignore', '.dockerignore', '.env.example'].includes(name) || allowedExtensions.has(path.extname(name));
+    return ['Dockerfile', 'Caddyfile', '.gitignore', '.dockerignore', '.env.example'].includes(name) || allowedExtensions.has(path.extname(name));
 }
 
 function findings(relative, buffer) {

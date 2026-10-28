@@ -10,11 +10,12 @@ test('release allowlist excludes history, runtime data, credentials and traversa
     for (const file of ['.git/config', 'gks_backend/.env', 'gks_backend/.env.production', 'gks_backend/logs/a.json',
         'gks_frontend/node_modules/a/index.js', 'database/full.bak', 'database/data.mdf', 'docs/secret.pem',
         '../README.md', 'docs/../README.md', '/README.md', 'docs\\secret.md', 'personal.json', '.codex/settings.json',
-        'notlar/V1-kalan-isler.md', 'notlar/docs/V1-durum-ozeti.md', 'V1-roadmap.md', 'project-inventory.md', 'CLAUDE.md']) {
+        'notlar/V1-kalan-isler.md', 'hosting/env/backend.env', 'hosting/server.key', 'Caddyfile', 'notlar/docs/V1-durum-ozeti.md', 'V1-roadmap.md', 'project-inventory.md', 'CLAUDE.md']) {
         assert.equal(isReleaseFile(file), false, file);
     }
     for (const file of ['README.md', 'gks_backend/.env.example', 'gks_frontend/.dockerignore', '.github/workflows/checks.yml',
-        'database/migrations/001_initial.sql', 'gks_frontend/src/App.jsx', 'gks_backend/test/audit.test.js']) {
+        'database/migrations/001_initial.sql', 'gks_frontend/src/App.jsx', 'gks_backend/test/audit.test.js',
+        'compose.hosting.yaml', 'hosting/Caddyfile', 'hosting/pg_hba.conf', 'scripts/hosting/make-db-cert.sh']) {
         assert.equal(isReleaseFile(file), true, file);
     }
 });

@@ -13,8 +13,8 @@ test('administrative writes and audit records commit or roll back together', {sk
         const response=await fetch(root+path,{method,headers:{'Content-Type':'application/json',...(auth?{Authorization:`Bearer ${auth}`}:{})},body:body===undefined?undefined:JSON.stringify(body)});
         return {status:response.status,data:await response.json()};
     };
-    const failAudit=()=>sql.query("CREATE TRIGGER Fixture_Audit_Reject ON SystemLogs INSTEAD OF INSERT AS THROW 51000, 'fixture audit failure', 1;");
-    const restoreAudit=()=>sql.query('DROP TRIGGER Fixture_Audit_Reject');
+    let restoreAudit;
+    const failAudit=async()=>{restoreAudit=await require('../test-support/failures').failInsertsOn(sql,'SystemLogs','fixture audit failure');};
     const password='Fixture-Audit-Password-123';
     await failAudit();
     assert.equal((await call('POST','/ilk-kurulum',{username:'audit-admin',password})).status,500);

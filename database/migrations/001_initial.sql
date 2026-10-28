@@ -1,169 +1,192 @@
--- Existing GksDB schema, captured 2026-09-07. Contains no personnel or credentials.
+-- GKS PostgreSQL base schema. Equivalent to the final SQL Server schema
+-- (migrations 001-005, tag v1-mssql-son). Unquoted names fold to lower case;
+-- the backend maps result keys back to their canonical spelling.
+-- Stored timestamps are Turkey local wall-clock time without a zone.
 
-IF OBJECT_ID(N'dbo.DoorLogs', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[DoorLogs] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [Islem_Tipi] [nvarchar](50) NOT NULL,
-  [Kapi_Adi] [nvarchar](100) NOT NULL,
-  [Detay] [nvarchar](max) NULL,
-  [Tarih] [datetime] NULL CONSTRAINT [DF_DoorLogs_Tarih] DEFAULT (getdate()),
-  [Islemi_Yapan] [nvarchar](100) NULL CONSTRAINT [DF_DoorLogs_Islemi_Yapan] DEFAULT ('Sistem'),
-  CONSTRAINT [PK_DoorLogs] PRIMARY KEY ([ID])
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
+-- Case-insensitive comparison for identifiers people type (user name, card
+-- and registry numbers). Root ICU rules fold I/i like the previous database;
+-- Turkish rules would turn 'ADMIN' into 'admın'.
+CREATE FUNCTION gks_ci(value text) RETURNS text
+    LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+    RETURN lower(value COLLATE "und-x-icu");
+
+-- Case- and accent-insensitive search: 'ISIK' finds 'Işık', 'isci' finds 'İŞÇİ'.
+-- unaccent maps Turkish letters to ASCII first, so lower() needs no locale.
+CREATE FUNCTION gks_search(value text) RETURNS text
+    LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+    RETURN lower(public.unaccent('public.unaccent'::regdictionary, value) COLLATE "C");
+
+CREATE TABLE doors (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_doors PRIMARY KEY,
+    kapi_adi varchar(100) NOT NULL,
+    departman varchar(255),
+    konum varchar(255),
+    durum boolean DEFAULT true,
+    kapi_turu varchar(50) DEFAULT 'İç Geçiş'
 );
-END;
 
-IF OBJECT_ID(N'dbo.Doors', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Doors] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [Kapi_Adi] [nvarchar](100) NOT NULL,
-  [Departman] [nvarchar](255) NULL,
-  [Konum] [nvarchar](255) NULL,
-  [Durum] [bit] NULL CONSTRAINT [DF_Doors_Durum] DEFAULT ((1)),
-  [Kapi_Turu] [nvarchar](50) NULL CONSTRAINT [DF_Doors_Kapi_Turu] DEFAULT (N'İç Geçiş'),
-  CONSTRAINT [PK_Doors] PRIMARY KEY ([ID])
+CREATE TABLE doorlogs (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_doorlogs PRIMARY KEY,
+    islem_tipi varchar(50) NOT NULL,
+    kapi_adi varchar(100) NOT NULL,
+    detay text,
+    tarih timestamp(3) DEFAULT LOCALTIMESTAMP,
+    islemi_yapan varchar(100) DEFAULT 'Sistem'
 );
-END;
 
-IF OBJECT_ID(N'dbo.Izinler', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Izinler] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [User_ID] [int] NOT NULL,
-  [Izin_Turu] [nvarchar](50) NOT NULL,
-  [Baslangic_Tarihi] [date] NOT NULL,
-  [Bitis_Tarihi] [date] NOT NULL,
-  [Aciklama] [nvarchar](255) NULL,
-  [Durum] [nvarchar](20) NULL CONSTRAINT [DF_Izinler_Durum] DEFAULT (N'Onaylandı'),
-  [Olusturulma_Tarihi] [datetime] NULL CONSTRAINT [DF_Izinler_Olusturulma_Tarihi] DEFAULT (getdate()),
-  CONSTRAINT [PK_Izinler] PRIMARY KEY ([ID])
+CREATE TABLE users (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_users PRIMARY KEY,
+    ad_soyad varchar(100) NOT NULL,
+    rfid_kart_no varchar(50) NOT NULL,
+    durum boolean DEFAULT true,
+    tc_kimlik varchar(11),
+    sicil_no varchar(50),
+    sirket varchar(100),
+    departman varchar(100),
+    gorev varchar(100),
+    sistem_id varchar(11),
+    ise_giris_tarihi date,
+    isten_cikis_tarihi date,
+    cikis_nedeni varchar(255)
 );
-END;
+CREATE UNIQUE INDEX ux_users_rfid ON users (gks_ci(rfid_kart_no));
+CREATE UNIQUE INDEX ux_users_tc ON users (tc_kimlik) WHERE tc_kimlik IS NOT NULL AND tc_kimlik <> '';
+CREATE UNIQUE INDEX ux_users_sicil ON users (gks_ci(sicil_no)) WHERE sicil_no IS NOT NULL AND sicil_no <> '';
+CREATE UNIQUE INDEX ux_users_sistem ON users (sistem_id) WHERE sistem_id IS NOT NULL AND sistem_id <> '';
 
-IF OBJECT_ID(N'dbo.Logs', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Logs] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [RFID_Kart_No] [nvarchar](50) NOT NULL,
-  [Door_ID] [int] NOT NULL,
-  [Zaman] [datetime] NULL CONSTRAINT [DF_Logs_Zaman] DEFAULT (getdate()),
-  [Basarili_Mi] [bit] NOT NULL,
-  CONSTRAINT [PK_Logs] PRIMARY KEY ([ID])
+CREATE TABLE izinler (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_izinler PRIMARY KEY,
+    user_id integer NOT NULL CONSTRAINT fk_izinler_user REFERENCES users (id) ON DELETE CASCADE,
+    izin_turu varchar(50) NOT NULL,
+    baslangic_tarihi date NOT NULL,
+    bitis_tarihi date NOT NULL,
+    aciklama varchar(255),
+    durum varchar(20) DEFAULT 'Onaylandı',
+    olusturulma_tarihi timestamp(3) DEFAULT LOCALTIMESTAMP,
+    CONSTRAINT ck_leave_dates CHECK (bitis_tarihi >= baslangic_tarihi)
 );
-END;
 
-IF OBJECT_ID(N'dbo.Mesai_Onaylari', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Mesai_Onaylari] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [User_ID] [int] NOT NULL,
-  [Tarih] [date] NOT NULL,
-  [Hesaplanan_Dk] [int] NOT NULL,
-  [Onaylanan_Dk] [int] NULL,
-  [Durum] [nvarchar](50) NULL CONSTRAINT [DF_Mesai_Onaylari_Durum] DEFAULT ('Bekliyor'),
-  [Aciklama] [nvarchar](255) NULL,
-  [Islemi_Yapan] [nvarchar](100) NULL,
-  [Islem_Zamani] [datetime] NULL CONSTRAINT [DF_Mesai_Onaylari_Islem_Zamani] DEFAULT (getdate()),
-  CONSTRAINT [PK_Mesai_Onaylari] PRIMARY KEY ([ID])
+CREATE TABLE logs (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_logs PRIMARY KEY,
+    rfid_kart_no varchar(50) NOT NULL,
+    door_id integer NOT NULL CONSTRAINT fk_logs_door REFERENCES doors (id) ON DELETE NO ACTION,
+    zaman timestamp(3) DEFAULT LOCALTIMESTAMP,
+    basarili_mi boolean NOT NULL,
+    user_id integer CONSTRAINT fk_logs_user REFERENCES users (id)
 );
-END;
+CREATE INDEX ix_logs_card_time ON logs (rfid_kart_no, zaman) INCLUDE (door_id, basarili_mi);
+CREATE INDEX ix_logs_time ON logs (zaman) INCLUDE (rfid_kart_no, door_id, basarili_mi);
+CREATE INDEX ix_logs_user_time ON logs (user_id, zaman) INCLUDE (door_id, basarili_mi, rfid_kart_no);
 
-IF OBJECT_ID(N'dbo.Permissions', N'U') IS NULL
+-- Freeze the owner at capture time. Unmatched cards stay unassigned
+-- permanently; later card registration must not claim old events.
+CREATE FUNCTION tr_logs_capture_owner() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-CREATE TABLE [dbo].[Permissions] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [User_ID] [int] NOT NULL,
-  [Door_ID] [int] NOT NULL,
-  CONSTRAINT [PK_Permissions] PRIMARY KEY ([ID])
-);
+    NEW.user_id := (SELECT u.id FROM users u WHERE gks_ci(u.rfid_kart_no) = gks_ci(NEW.rfid_kart_no));
+    RETURN NEW;
 END;
+$$;
+CREATE TRIGGER tr_logs_capture_owner BEFORE INSERT ON logs
+    FOR EACH ROW EXECUTE FUNCTION tr_logs_capture_owner();
 
-IF OBJECT_ID(N'dbo.Personel_Vardiya', N'U') IS NULL
+CREATE TABLE mesai_onaylari (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_mesai_onaylari PRIMARY KEY,
+    user_id integer NOT NULL CONSTRAINT fk_overtime_user REFERENCES users (id),
+    tarih date NOT NULL,
+    hesaplanan_dk integer NOT NULL,
+    onaylanan_dk integer,
+    durum varchar(50) DEFAULT 'Bekliyor',
+    aciklama varchar(255),
+    islemi_yapan varchar(100),
+    islem_zamani timestamp(3) DEFAULT LOCALTIMESTAMP,
+    CONSTRAINT ck_overtime_minutes CHECK (hesaplanan_dk >= 0 AND (onaylanan_dk IS NULL OR onaylanan_dk >= 0))
+);
+CREATE UNIQUE INDEX ux_mesai_onayi ON mesai_onaylari (user_id, tarih);
+
+CREATE TABLE permissions (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_permissions PRIMARY KEY,
+    user_id integer NOT NULL CONSTRAINT fk_permissions_user REFERENCES users (id) ON DELETE CASCADE,
+    door_id integer NOT NULL CONSTRAINT fk_permissions_door REFERENCES doors (id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX ux_permissions_user_door ON permissions (user_id, door_id);
+
+CREATE TABLE vardiyalar (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_vardiyalar PRIMARY KEY,
+    vardiya_adi varchar(100) NOT NULL,
+    mesai_baslangic time NOT NULL,
+    mesai_bitis time NOT NULL,
+    yemek_baslangic time,
+    yemek_bitis time,
+    tolerans_dk integer DEFAULT 0,
+    mola_hakki_dk integer DEFAULT 0,
+    durum boolean DEFAULT true,
+    calisma_gunleri varchar(50) DEFAULT '1,2,3,4,5'
+);
+
+-- Snapshot_* columns keep the shift definition valid at assignment time.
+CREATE TABLE personel_vardiya (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_personel_vardiya PRIMARY KEY,
+    user_id integer NOT NULL CONSTRAINT fk_pv_user REFERENCES users (id),
+    vardiya_id integer NOT NULL CONSTRAINT fk_pv_shift REFERENCES vardiyalar (id),
+    baslangic_tarihi date DEFAULT CURRENT_DATE,
+    bitis_tarihi date,
+    snapshot_vardiya_adi varchar(100),
+    snapshot_mesai_baslangic time,
+    snapshot_mesai_bitis time,
+    snapshot_calisma_gunleri varchar(50),
+    snapshot_tolerans_dk integer,
+    snapshot_mola_hakki_dk integer,
+    snapshot_yemek_baslangic time,
+    snapshot_yemek_bitis time,
+    CONSTRAINT ck_shift_dates CHECK (bitis_tarihi IS NULL OR bitis_tarihi >= baslangic_tarihi)
+);
+CREATE UNIQUE INDEX ux_personel_vardiya_open ON personel_vardiya (user_id) WHERE bitis_tarihi IS NULL;
+CREATE INDEX ix_personel_vardiya_history ON personel_vardiya (user_id, baslangic_tarihi DESC, id DESC) INCLUDE (vardiya_id, bitis_tarihi);
+
+CREATE FUNCTION tr_personel_vardiya_snapshot() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-CREATE TABLE [dbo].[Personel_Vardiya] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [User_ID] [int] NOT NULL,
-  [Vardiya_ID] [int] NOT NULL,
-  [Baslangic_Tarihi] [date] NULL CONSTRAINT [DF_Personel_Vardiya_Baslangic_Tarihi] DEFAULT (getdate()),
-  [Bitis_Tarihi] [date] NULL,
-  CONSTRAINT [PK_Personel_Vardiya] PRIMARY KEY ([ID])
-);
+    SELECT v.vardiya_adi, v.mesai_baslangic, v.mesai_bitis, v.calisma_gunleri,
+           v.tolerans_dk, v.mola_hakki_dk, v.yemek_baslangic, v.yemek_bitis
+      INTO NEW.snapshot_vardiya_adi, NEW.snapshot_mesai_baslangic, NEW.snapshot_mesai_bitis, NEW.snapshot_calisma_gunleri,
+           NEW.snapshot_tolerans_dk, NEW.snapshot_mola_hakki_dk, NEW.snapshot_yemek_baslangic, NEW.snapshot_yemek_bitis
+      FROM vardiyalar v WHERE v.id = NEW.vardiya_id;
+    RETURN NEW;
 END;
+$$;
+CREATE TRIGGER tr_personel_vardiya_snapshot BEFORE INSERT ON personel_vardiya
+    FOR EACH ROW EXECUTE FUNCTION tr_personel_vardiya_snapshot();
 
-IF OBJECT_ID(N'dbo.SystemLogs', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[SystemLogs] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [Islem_Tipi] [nvarchar](50) NOT NULL,
-  [Personel_Ad] [nvarchar](100) NOT NULL,
-  [Sicil_No] [nvarchar](50) NULL,
-  [Detay] [nvarchar](max) NULL,
-  [Tarih] [datetime] NULL CONSTRAINT [DF_SystemLogs_Tarih] DEFAULT (getdate()),
-  [Islemi_Yapan] [nvarchar](100) NULL CONSTRAINT [DF_SystemLogs_Islemi_Yapan] DEFAULT ('Sistem'),
-  CONSTRAINT [PK_SystemLogs] PRIMARY KEY ([ID])
+-- Closed periods are archived when a person starts a new employment period.
+-- Users retains the current/latest period for existing management screens.
+CREATE TABLE personel_calisma_gecmisi (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_personel_calisma_gecmisi PRIMARY KEY,
+    user_id integer NOT NULL CONSTRAINT fk_calisma_gecmisi_user REFERENCES users (id),
+    baslangic_tarihi date,
+    bitis_tarihi date NOT NULL,
+    cikis_nedeni varchar(255),
+    CONSTRAINT ck_calisma_gecmisi_dates CHECK (baslangic_tarihi IS NULL OR bitis_tarihi >= baslangic_tarihi)
 );
-END;
+CREATE INDEX ix_calisma_gecmisi_user_dates ON personel_calisma_gecmisi (user_id, baslangic_tarihi, bitis_tarihi);
 
-IF OBJECT_ID(N'dbo.Users', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Users] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [Ad_Soyad] [nvarchar](100) NOT NULL,
-  [RFID_Kart_No] [nvarchar](50) NOT NULL,
-  [Durum] [bit] NULL CONSTRAINT [DF_Users_Durum] DEFAULT ((1)),
-  [TC_Kimlik] [nvarchar](11) NULL,
-  [Sicil_No] [nvarchar](50) NULL,
-  [Sirket] [nvarchar](100) NULL,
-  [Departman] [nvarchar](100) NULL,
-  [Gorev] [nvarchar](100) NULL,
-  [Sistem_ID] [nvarchar](11) NULL,
-  [Ise_Giris_Tarihi] [date] NULL,
-  [Isten_Cikis_Tarihi] [date] NULL,
-  [Cikis_Nedeni] [nvarchar](255) NULL,
-  CONSTRAINT [PK_Users] PRIMARY KEY ([ID])
+CREATE TABLE systemlogs (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_systemlogs PRIMARY KEY,
+    islem_tipi varchar(50) NOT NULL,
+    personel_ad varchar(100) NOT NULL,
+    sicil_no varchar(50),
+    detay text,
+    tarih timestamp(3) DEFAULT LOCALTIMESTAMP,
+    islemi_yapan varchar(100) DEFAULT 'Sistem'
 );
-END;
 
-IF OBJECT_ID(N'dbo.Vardiyalar', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Vardiyalar] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [Vardiya_Adi] [nvarchar](100) NOT NULL,
-  [Mesai_Baslangic] [time] NOT NULL,
-  [Mesai_Bitis] [time] NOT NULL,
-  [Yemek_Baslangic] [time] NULL,
-  [Yemek_Bitis] [time] NULL,
-  [Tolerans_Dk] [int] NULL CONSTRAINT [DF_Vardiyalar_Tolerans_Dk] DEFAULT ((0)),
-  [Mola_Hakki_Dk] [int] NULL CONSTRAINT [DF_Vardiyalar_Mola_Hakki_Dk] DEFAULT ((0)),
-  [Durum] [bit] NULL CONSTRAINT [DF_Vardiyalar_Durum] DEFAULT ((1)),
-  [Calisma_Gunleri] [nvarchar](50) NULL CONSTRAINT [DF_Vardiyalar_Calisma_Gunleri] DEFAULT ('1,2,3,4,5'),
-  CONSTRAINT [PK_Vardiyalar] PRIMARY KEY ([ID])
+-- Panel accounts (admin/user); unrelated to personnel in users.
+CREATE TABLE yoneticiler (
+    id integer GENERATED ALWAYS AS IDENTITY CONSTRAINT pk_yoneticiler PRIMARY KEY,
+    kullanici_adi varchar(50) NOT NULL,
+    sifre_hash varchar(255) NOT NULL,
+    rol varchar(20) DEFAULT 'admin',
+    olusturulma_tarihi timestamp(3) DEFAULT LOCALTIMESTAMP,
+    token_version integer NOT NULL DEFAULT 0
 );
-END;
-
-IF OBJECT_ID(N'dbo.Yoneticiler', N'U') IS NULL
-BEGIN
-CREATE TABLE [dbo].[Yoneticiler] (
-  [ID] [int] IDENTITY(1,1) NOT NULL,
-  [Kullanici_Adi] [varchar](50) NOT NULL,
-  [Sifre_Hash] [varchar](255) NOT NULL,
-  [Rol] [varchar](20) NULL CONSTRAINT [DF_Yoneticiler_Rol] DEFAULT ('admin'),
-  [Olusturulma_Tarihi] [datetime] NULL CONSTRAINT [DF_Yoneticiler_Olusturulma_Tarihi] DEFAULT (getdate()),
-  CONSTRAINT [PK_Yoneticiler] PRIMARY KEY ([ID])
-);
-END;
-
-IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name=N'UQ_Mesai_Onayi' AND object_id=OBJECT_ID(N'dbo.Mesai_Onaylari')) CREATE UNIQUE INDEX [UQ_Mesai_Onayi] ON [dbo].[Mesai_Onaylari]([User_ID],[Tarih]);
-
-IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name=N'UQ__Users__09FCEDD9458EF37C' AND object_id=OBJECT_ID(N'dbo.Users')) CREATE UNIQUE INDEX [UQ__Users__09FCEDD9458EF37C] ON [dbo].[Users]([RFID_Kart_No]);
-
-IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name=N'UQ__Yonetici__E1FCC656A826C809' AND object_id=OBJECT_ID(N'dbo.Yoneticiler')) CREATE UNIQUE INDEX [UQ__Yonetici__E1FCC656A826C809] ON [dbo].[Yoneticiler]([Kullanici_Adi]);
-
-IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name=N'FK__Izinler__User_ID__04E4BC85') ALTER TABLE [dbo].[Izinler] ADD CONSTRAINT [FK__Izinler__User_ID__04E4BC85] FOREIGN KEY ([User_ID]) REFERENCES [dbo].[Users]([ID]) ON DELETE CASCADE;
-
-IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name=N'FK__Permissio__User___3D5E1FD2') ALTER TABLE [dbo].[Permissions] ADD CONSTRAINT [FK__Permissio__User___3D5E1FD2] FOREIGN KEY ([User_ID]) REFERENCES [dbo].[Users]([ID]) ON DELETE CASCADE;
-
-IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name=N'FK__Permissio__Door___3E52440B') ALTER TABLE [dbo].[Permissions] ADD CONSTRAINT [FK__Permissio__Door___3E52440B] FOREIGN KEY ([Door_ID]) REFERENCES [dbo].[Doors]([ID]) ON DELETE CASCADE;
-
-IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name=N'FK__Logs__Door_ID__4222D4EF') ALTER TABLE [dbo].[Logs] ADD CONSTRAINT [FK__Logs__Door_ID__4222D4EF] FOREIGN KEY ([Door_ID]) REFERENCES [dbo].[Doors]([ID]) ON DELETE NO ACTION;
+CREATE UNIQUE INDEX ux_yoneticiler_kullanici_adi ON yoneticiler (gks_ci(kullanici_adi));

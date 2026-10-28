@@ -1,5 +1,7 @@
-# App-only deployment. Use a separately managed, supported SQL Server with a
-# valid TLS certificate and externally verified backups. No database is replaced.
+# App-only deployment against a separately managed PostgreSQL server with a
+# valid TLS certificate and verified backups. No database is installed or
+# replaced. For a single server including PostgreSQL and HTTPS, use
+# compose.hosting.yaml instead.
 services:
   backend:
     build:

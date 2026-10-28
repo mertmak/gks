@@ -32,11 +32,7 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
     if (!parsed.success) return res.status(400).json({success:false,message:'En fazla 31 günlük, yalnızca ekleme yapan bir simülasyon seçiniz.'});
     req.body=parsed.data;
     const transaction = new sql.Transaction();
-    const query = (strings, ...values) => {
-      const request = new sql.Request(transaction);
-      values.forEach((v,i)=>request.input('p'+i,v));
-      return request.query(strings.reduce((text,part,i)=>text+(i?'@p'+(i-1):'')+part,''));
-    };
+    const query = (strings, ...values) => new sql.Request(transaction).query(strings, ...values);
 
     const { 
         userAction, doorAction, kapiSayisi, personelSayisi,
@@ -61,7 +57,7 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
 
     try {
         await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
-        const vardiyalarRes = await query`SELECT ID, Vardiya_Adi, Mesai_Baslangic, Mesai_Bitis, Yemek_Baslangic, Calisma_Gunleri FROM Vardiyalar WHERE ID = ${vardiyaId} AND Durum=1`;
+        const vardiyalarRes = await query`SELECT ID, Vardiya_Adi, Mesai_Baslangic, Mesai_Bitis, Yemek_Baslangic, Calisma_Gunleri FROM Vardiyalar WHERE ID = ${vardiyaId} AND Durum=true`;
         if (!vardiyalarRes.recordset.length) throw httpError(404, 'Seçilen aktif vardiya bulunamadı.');
 
         const hedefVardiya = vardiyalarRes.recordset[0];
@@ -78,31 +74,31 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
                 const temizTur = tur.includes('-') ? tur.split('-')[1].trim() : tur; // Örn: "Arge-İç Geçiş" için türü ayrıştır
                 const finalTur = ['Ana Giriş', 'Ana Çıkış', 'Yemekhane Giriş', 'Yemekhane Çıkış', 'Mola / Sigara Alanı'].includes(temizTur) ? temizTur : 'İç Geçiş';
                 
-                await query`INSERT INTO Doors (Kapi_Adi, Departman, Konum, Kapi_Turu, Durum) VALUES (${kapiAd}, 'Genel', 'Belirtilmedi', ${finalTur}, 1)`;
+                await query`INSERT INTO Doors (Kapi_Adi, Departman, Konum, Kapi_Turu, Durum) VALUES (${kapiAd}, 'Genel', 'Belirtilmedi', ${finalTur}, true)`;
             }
         }
         
-        const dbDoors = await query`SELECT ID as id, Kapi_Turu as tur FROM Doors WHERE Durum = 1`;
-        doors = dbDoors.recordset;
+        const dbDoors = await query`SELECT ID, Kapi_Turu as tur FROM Doors WHERE Durum = true`;
+        doors = dbDoors.recordset.map(d => ({ id: d.ID, tur: d.tur }));
         if (doors.length === 0) throw new Error('Aktif personel ve kapı gereklidir.');
 
         if (userAction === 'append') {
             for (let i = 0; i < Number(personelSayisi); i++) {
                 const u = generateRandomUser();
-                await query`INSERT INTO Users (Ad_Soyad, RFID_Kart_No, TC_Kimlik, Sicil_No, Departman, Durum, Ise_Giris_Tarihi, Sistem_ID) VALUES (${u.adSoyad}, ${u.rfid}, ${u.tc}, ${u.sicil}, ${u.departman}, 1, CAST(${startDateStr} AS DATE), ${u.rfid})`;
+                await query`INSERT INTO Users (Ad_Soyad, RFID_Kart_No, TC_Kimlik, Sicil_No, Departman, Durum, Ise_Giris_Tarihi, Sistem_ID) VALUES (${u.adSoyad}, ${u.rfid}, ${u.tc}, ${u.sicil}, ${u.departman}, true, CAST(${startDateStr} AS DATE), ${u.rfid})`;
             }
         }
         
-        const dbUsers = await query`SELECT ID as id, RFID_Kart_No as rfid, Ad_Soyad as adSoyad FROM Users WHERE Durum = 1`;
-        const users = dbUsers.recordset;
+        const dbUsers = await query`SELECT ID, RFID_Kart_No as rfid, Ad_Soyad as adSoyad FROM Users WHERE Durum = true`;
+        const users = dbUsers.recordset.map(u => ({ id: u.ID, rfid: u.rfid, adSoyad: u.adSoyad }));
         if (users.length === 0) throw new Error('Aktif personel ve kapı gereklidir.');
 
         // Only fill missing assignments and permissions; preserve existing history.
         await query`INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi)
-          SELECT U.ID, ${hedefVardiya.ID}, CAST(${startDateStr} AS DATE) FROM Users U WHERE U.Durum=1
+          SELECT U.ID, CAST(${hedefVardiya.ID} AS INT), CAST(${startDateStr} AS DATE) FROM Users U WHERE U.Durum=true
           AND NOT EXISTS(SELECT 1 FROM Personel_Vardiya P WHERE P.User_ID=U.ID)`;
         await query`INSERT INTO Permissions(User_ID,Door_ID) SELECT U.ID,D.ID FROM Users U CROSS JOIN Doors D
-          WHERE U.Durum=1 AND D.Durum=1 AND D.Kapi_Turu IN(N'Ana Giriş',N'Ana Çıkış')
+          WHERE U.Durum=true AND D.Durum=true AND D.Kapi_Turu IN('Ana Giriş','Ana Çıkış')
           AND NOT EXISTS(SELECT 1 FROM Permissions P WHERE P.User_ID=U.ID AND P.Door_ID=D.ID)`;
         let logValues = [];
         for (let dt = new Date(startDate); dt <= endDate; dt.setUTCDate(dt.getUTCDate() + 1)) {
@@ -163,13 +159,11 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
             }
         }
         
-        const table = new sql.Table('Logs');
-        table.columns.add('RFID_Kart_No',sql.NVarChar(50),{nullable:false});
-        table.columns.add('Door_ID',sql.Int,{nullable:false});
-        table.columns.add('Basarili_Mi',sql.Bit,{nullable:false});
-        table.columns.add('Zaman',sql.DateTime,{nullable:true});
-        for(const row of logValues) table.rows.add(...row);
-        if(logValues.length) await new sql.Request(transaction).bulk(table, { fireTriggers: true });
+        // One set-based insert; the row trigger still captures each card owner.
+        const column = i => logValues.map(row => row[i]);
+        if(logValues.length) await new sql.Request(transaction).input('cards',column(0)).input('doors',column(1))
+            .input('ok',column(2).map(Boolean)).input('times',column(3))
+            .query('INSERT INTO Logs(RFID_Kart_No,Door_ID,Basarili_Mi,Zaman) SELECT * FROM unnest(@cards::varchar[],@doors::int[],@ok::boolean[],@times::timestamp[])');
         const basariliKayit=logValues.length;
         await transaction.commit();
         socket.getIO().emit('users_updated'); socket.getIO().emit('doors_updated'); socket.getIO().emit('system_updated'); socket.getIO().emit('new_rfid_log'); 

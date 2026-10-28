@@ -6,7 +6,7 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
  const fixturePassword='Fixture-Admin-Password-123';
  const hash=await require('bcrypt').hash(fixturePassword,10);
  await new sql.Request().input('hash',sql.VarChar,hash).query("INSERT INTO Yoneticiler(Kullanici_Adi,Sifre_Hash,Rol) VALUES('fixture-admin',@hash,'admin'),('fixture-viewer',@hash,'user')");
- await sql.query("INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis) VALUES(N'Fixture Day','09:00','18:00'); INSERT INTO Users(Ad_Soyad,RFID_Kart_No,TC_Kimlik,Sicil_No,Ise_Giris_Tarihi) VALUES(N'Fixture 1','11000000001','22000000001','10001','2026-01-01'),(N'Fixture 2','11000000002','22000000002','10002','2026-01-01')");
+ await sql.query("INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis) VALUES('Fixture Day','09:00','18:00'); INSERT INTO Users(Ad_Soyad,RFID_Kart_No,TC_Kimlik,Sicil_No,Ise_Giris_Tarihi) VALUES('Fixture 1','11000000001','22000000001','10001','2026-01-01'),('Fixture 2','11000000002','22000000002','10002','2026-01-01')");
  const {app}=require('../server');const server=require('http').createServer(app);const io=require('../utils/socket').init(server);
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const root=`http://127.0.0.1:${server.address().port}/api`;
  const jwt=require('jsonwebtoken');const accounts=(await sql.query('SELECT ID,Rol,Kullanici_Adi,Token_Version FROM Yoneticiler')).recordset;
@@ -22,16 +22,15 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
   await t.test('pagination and invalid date range',async()=>{const page=await call('GET','/users?limit=1&page=2');assert.equal(page.data.data.length,1);assert.equal(page.data.pagination.page,2);assert.equal((await call('GET','/overtimes?baslangic=2026-02-30&bitis=2026-03-01')).status,400);});
   await t.test('create a disposable person with valid form',async()=>{const r=await call('POST','/users',{ad_soyad:'GKS TEST '+stamp,tc,sicil,rfid:card,ise_giris:'2026-01-01'});assert.equal(r.status,200,JSON.stringify(r.data));uid=(await new sql.Request().input('card',sql.NVarChar,card).query('SELECT ID FROM Users WHERE RFID_Kart_No=@card')).recordset[0].ID;});
   if(!uid)throw new Error('Fixture creation failed');
-  const shift=(await sql.query('SELECT TOP 1 ID FROM Vardiyalar WHERE Durum=1 ORDER BY ID')).recordset[0].ID;
+  const shift=(await sql.query('SELECT ID FROM Vardiyalar WHERE Durum=true ORDER BY ID LIMIT 1')).recordset[0].ID;
   await t.test('same-day assignment replacement then cancellation is consistent',async()=>{assert.equal((await call('POST',`/users/${uid}/shift`,{vardiya_id:String(shift)})).status,200);assert.equal((await call('POST',`/users/${uid}/shift`,{vardiya_id:String(shift)})).status,200);assert.equal((await call('POST',`/users/${uid}/shift`,{vardiya_id:''})).status,200);const rows=await new sql.Request().input('id',sql.Int,uid).query('SELECT * FROM Personel_Vardiya WHERE User_ID=@id');assert.equal(rows.recordset.length,0);});
   await t.test('failed bulk approval rolls back earlier rows',async()=>{const r=await call('POST','/overtimes/approve-bulk',{mesailer:[{user_id:uid,tarih:'2026-09-01',hesaplanan_dk:60,onaylanan_dk:0},{user_id:2147483647,tarih:'2026-09-01',hesaplanan_dk:60,onaylanan_dk:0}],durum:'Onaylandı'});assert.equal(r.status,404);const rows=await new sql.Request().input('id',sql.Int,uid).query("SELECT ID FROM Mesai_Onaylari WHERE User_ID=@id AND Tarih='2026-09-01'");assert.equal(rows.recordset.length,0);});
   await t.test('overtime uses server calculation, enforces limit and preserves decision metadata',async()=>{
-    await new sql.Request().input('uid',sql.Int,uid).input('shift',sql.Int,shift).input('card',sql.NVarChar,card).query(`
-      INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi,Bitis_Tarihi) VALUES(@uid,@shift,'2026-09-07','2026-09-07');
-      INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES(N'Fixture Entry',N'Ana Giriş'),(N'Fixture Exit',N'Ana Çıkış');
-      INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi)
-        SELECT @card,ID,CASE WHEN Kapi_Turu=N'Ana Giriş' THEN '2026-09-07T09:00:00' ELSE '2026-09-07T19:00:00' END,1 FROM Doors;
-    `);
+    await new sql.Request().input('uid',sql.Int,uid).input('shift',sql.Int,shift)
+      .query("INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi,Bitis_Tarihi) VALUES(@uid,@shift,'2026-09-07','2026-09-07')");
+    await sql.query("INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES('Fixture Entry','Ana Giriş'),('Fixture Exit','Ana Çıkış')");
+    await new sql.Request().input('card',sql.NVarChar,card).query(`INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi)
+        SELECT @card,ID,CAST(CASE WHEN Kapi_Turu='Ana Giriş' THEN '2026-09-07T09:00:00' ELSE '2026-09-07T19:00:00' END AS timestamp),true FROM Doors`);
     const body={user_id:uid,tarih:'2026-09-07',hesaplanan_dk:2880,onaylanan_dk:180,durum:'Onaylandı',aciklama:'Fixture decision'};
     assert.equal((await call('POST','/overtimes/approve',body)).status,200);
     const read=async()=> (await new sql.Request().input('uid',sql.Int,uid).query("SELECT * FROM Mesai_Onaylari WHERE User_ID=@uid AND Tarih='2026-09-07'")).recordset[0];
@@ -79,11 +78,11 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
     const before=await read();
     assert.equal((await call('PUT',`/users/${uid}`,body)).status,200);
     assert.deepEqual(await read(),before);
-    await sql.query("CREATE TRIGGER Fixture_ProfileAudit_Fail ON SystemLogs INSTEAD OF INSERT AS THROW 51000, 'fixture profile audit failure', 1;");
+    await require('../test-support/failures').failInsertsOn(sql,'SystemLogs','fixture profile audit failure');
     try {
       assert.equal((await call('PUT',`/users/${uid}`,{...body,rfid:'66000000001'})).status,500);
       assert.deepEqual(await read(),before);
-    } finally { await sql.query('DROP TRIGGER Fixture_ProfileAudit_Fail'); }
+    } finally { await require('../test-support/failures').restoreInserts(sql,'SystemLogs'); }
     assert.equal((await call('PUT',`/users/${uid}`,{...body,rfid:'66000000001'})).status,200);
     assert.equal((await read()).RFID_Kart_No,'66000000001');
   });

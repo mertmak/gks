@@ -4,11 +4,11 @@ Bu belge uygulamanın sentetik verilerle doğrulanan hesaplama sözleşmesidir. 
 
 ## Tarih ve vardiyaya bağlama
 
-SQL tarih/saatleri iş yerel saatini temsil eder. Driver'ın UTC gösterimi ikinci kez saat dilimine çevrilmez. İş günü `BUSINESS_TIMEZONE` ile seçilir; varsayılan `Europe/Istanbul`. Public demo sabit 7 Eylül 2026 gününü kullanır.
+Veritabanındaki saat dilimsiz tarih/saatler iş yerel saatini temsil eder. Driver'ın UTC gösterimi ikinci kez saat dilimine çevrilmez. İş günü `BUSINESS_TIMEZONE` ile seçilir; varsayılan `Europe/Istanbul`. Public demo sabit 7 Eylül 2026 gününü kullanır.
 
-İş saat dilimi sunucu açılırken doğrulanır ve `/api/public-config` üzerinden arayüze iletilir. Böylece yerel kurulumda dashboard ile tarih filtreleri aynı iş gününü kullanır. Takvim aritmetiği ziyaretçinin cihaz saat diliminden bağımsızdır: bir hafta önce gün sayısıyla, bir ay önce ise önceki ayın son gününe sınırlandırılarak hesaplanır (31 Mart → 28/29 Şubat). Bu ayar mevcut SQL kayıtlarının saatlerini dönüştürmez; değiştirilirse sunucu ve açık tarayıcı sayfaları yeniden başlatılmalıdır.
+İş saat dilimi sunucu açılırken doğrulanır ve `/api/public-config` üzerinden arayüze iletilir. Böylece yerel kurulumda dashboard ile tarih filtreleri aynı iş gününü kullanır. Takvim aritmetiği ziyaretçinin cihaz saat diliminden bağımsızdır: bir hafta önce gün sayısıyla, bir ay önce ise önceki ayın son gününe sınırlandırılarak hesaplanır (31 Mart → 28/29 Şubat). Bu ayar mevcut veritabanı kayıtlarının saatlerini dönüştürmez; değiştirilirse sunucu ve açık tarayıcı sayfaları yeniden başlatılmalıdır.
 
-Dashboard'daki “Son 28 Gün” grafiği referans günü dahil dört ardışık yedi günlük dönem gösterir; 1. hafta en eski, 4. hafta en yenidir. Boş dönemler sıfırla gösterilir. Yıl değişiminde sıfırlanan takvim hafta numarası ve SQL hafta başlangıcı ayarı bu sıralamayı değiştirmez.
+Dashboard'daki “Son 28 Gün” grafiği referans günü dahil dört ardışık yedi günlük dönem gösterir; 1. hafta en eski, 4. hafta en yenidir. Boş dönemler sıfırla gösterilir. Yıl değişiminde sıfırlanan takvim hafta numarası ve veritabanı hafta başlangıcı ayarı bu sıralamayı değiştirmez.
 
 Bitiş saati başlangıçtan küçükse vardiya ertesi gün biter. Örneğin 22:00–06:00 ataması, ertesi sabah 06:30 çıkışından 30 dakika mesai hesaplar. 16:00–00:00 geçerlidir; başlangıç ve bitişin aynı olması doğrulamada reddedilir.
 

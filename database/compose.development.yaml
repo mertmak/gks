@@ -1,15 +1,22 @@
-# Optional fresh development database on supported SQL Server. Never remove or
-# replace gks_db before restoring and validating an external backup.
+# Optional fresh development database on PostgreSQL. Runs natively on arm64 and
+# amd64. Data lives in the named volume; never remove it before taking a dump.
 services:
-  sql:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    platform: linux/amd64
+  postgres:
+    image: postgres:18
     environment:
-      ACCEPT_EULA: 'Y'
-      MSSQL_PID: Developer
-      MSSQL_SA_PASSWORD: ${GKS_DEV_SA_PASSWORD:?Set a strong development password}
-    ports: ['127.0.0.1:1434:1433']
-    volumes: ['gks-sql-data:/var/opt/mssql']
+      POSTGRES_USER: gks_admin
+      POSTGRES_PASSWORD: ${GKS_DEV_PG_PASSWORD:?Set a strong development password}
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale-provider=icu --icu-locale=tr-TR
+      TZ: Europe/Istanbul
+      PGTZ: Europe/Istanbul
+    ports: ['127.0.0.1:5433:5432']
+    volumes: ['gks-pg-data:/var/lib/postgresql']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gks_admin -d postgres']
+      interval: 5s
+      timeout: 3s
+      retries: 20
     restart: unless-stopped
 volumes:
-  gks-sql-data:
+  gks-pg-data:

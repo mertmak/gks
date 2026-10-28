@@ -44,7 +44,7 @@ test('fresh setup and administrative integrity', { skip: process.env.RUN_DB_TEST
     await t.test('legacy overlapping approvals are flagged and block atomic overtime decisions until corrected', async () => {
         const inserted = await new sql.Request().input('uid', sql.Int, uid).query(`
           INSERT INTO Izinler(User_ID,Izin_Turu,Baslangic_Tarihi,Bitis_Tarihi,Durum)
-          OUTPUT INSERTED.ID VALUES(@uid,N'Raporlu','2026-09-08','2026-09-09',N'Onaylandı')`);
+          VALUES(@uid,'Raporlu','2026-09-08','2026-09-09','Onaylandı') RETURNING ID`);
         const conflictId = inserted.recordset[0].ID;
         const report = await call('GET', '/reports/daily-attendance?tarih=2026-09-09');
         assert.equal(report.status, 200);
@@ -63,7 +63,7 @@ test('fresh setup and administrative integrity', { skip: process.env.RUN_DB_TEST
         assert.equal((await call('POST', '/overtimes/approve', decision)).status, 409);
         assert.equal((await call('POST', '/overtimes/approve-bulk', { mesailer: [{ ...decision, tarih: '2026-09-07' }, decision], durum: 'Onaylandı' })).status, 409);
         assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Mesai_Onaylari')).recordset[0].n, 0);
-        assert.equal((await sql.query("SELECT COUNT(*) AS n FROM SystemLogs WHERE Islem_Tipi=N'MESAİ KARARI'")).recordset[0].n, 0);
+        assert.equal((await sql.query("SELECT COUNT(*) AS n FROM SystemLogs WHERE Islem_Tipi='MESAİ KARARI'")).recordset[0].n, 0);
         assert.equal((await call('DELETE', `/leaves/${conflictId}`)).status, 200);
         const corrected = (await call('GET', '/reports/daily-attendance?tarih=2026-09-09')).data.find(row => row.User_ID === uid);
         assert.equal(corrected.Durum, 'Yıllık İzin');
@@ -96,21 +96,21 @@ test('fresh setup and administrative integrity', { skip: process.env.RUN_DB_TEST
             assert.equal((await call('GET', `${path}?baslangic=2026-02-30`)).status, 400);
             assert.equal((await call('GET', `${path}?baslangic=2026-09-02&bitis=2026-09-01`)).status, 400);
         }
-        await sql.query("INSERT INTO DoorLogs(Islem_Tipi,Kapi_Adi,Tarih) VALUES(N'Fixture',N'Fixture','2026-09-07T23:59:59.997'),(N'Fixture',N'Fixture','2026-09-08T00:00:00')");
+        await sql.query("INSERT INTO DoorLogs(Islem_Tipi,Kapi_Adi,Tarih) VALUES('Fixture','Fixture','2026-09-07T23:59:59.997'),('Fixture','Fixture','2026-09-08T00:00:00')");
         const result = await call('GET', '/door-logs?baslangic=2026-09-07&bitis=2026-09-07');
         assert.equal(result.status, 200);assert.equal(result.data.pagination.total, 1);
         assert.equal((await call('GET', '/users?arama=88000000001')).data.data[0].ID, uid);
     });
     await t.test('audit failure rolls back leave insertion and deletion', async () => {
         const before = (await sql.query('SELECT * FROM Izinler')).recordset;
-        await sql.query("CREATE TRIGGER Fixture_Audit_Failure ON SystemLogs INSTEAD OF INSERT AS THROW 51000, 'Fixture audit failure', 1;");
+        await require('../test-support/failures').failInsertsOn(sql,'SystemLogs','Fixture audit failure');
         try {
             assert.equal((await call('POST', '/leaves', { ...body, baslangic: '2026-09-20', bitis: '2026-09-20' })).status, 500);
             assert.equal((await call('DELETE', `/leaves/${before[0].ID}`)).status, 500);
             assert.deepEqual((await sql.query('SELECT * FROM Izinler')).recordset, before);
             assert.equal((await call('POST', '/shifts', { vardiya_adi: 'Fixture', mesai_baslangic: '09:00', mesai_bitis: '18:00' })).status, 500);
             assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Vardiyalar')).recordset[0].n, 0);
-        } finally { await sql.query('DROP TRIGGER Fixture_Audit_Failure'); }
+        } finally { await require('../test-support/failures').restoreInserts(sql,'SystemLogs'); }
         assert.equal((await call('DELETE', `/leaves/${before[0].ID}`)).status, 200);
         assert.equal((await call('DELETE', `/leaves/${before[0].ID}`)).status, 404);
     });
@@ -119,7 +119,7 @@ test('fresh setup and administrative integrity', { skip: process.env.RUN_DB_TEST
             const result = await call('GET', '/reports/daily-attendance?tarih=' + value);
             assert.equal(result.status, 400, value);
             assert.equal(result.data.success, false);
-            assert.doesNotMatch(result.data.message, /SELECT|mssql|RequestError/);
+            assert.doesNotMatch(result.data.message, /SELECT|relation|syntax|DatabaseError/);
         }
         for (const query of ['', 'baslangic=2026-09-07', 'baslangic=2026-09-08&bitis=2026-09-07', 'baslangic=2024-01-01&bitis=2025-01-01', 'baslangic=2026-09-07&baslangic=2026-09-08&bitis=2026-09-09']) {
             assert.equal((await call('GET', '/overtimes?' + query)).status, 400, query);

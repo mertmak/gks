@@ -1,0 +1,137 @@
+# Single-server hosting: Caddy (HTTPS) -> frontend/backend -> PostgreSQL.
+# Only Caddy publishes ports. PostgreSQL is reachable from the backend only,
+# over TLS (hosting/pg_hba.conf). Secrets live outside the repository in
+# GKS_ENV_DIR (default /opt/gks/env, chmod 600): backend.env, postgres.env,
+# install.env (installation only) and db-tls/ from scripts/hosting/make-db-cert.sh.
+# Migrations and seed never run at startup; see docs/hosting.md.
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 10m, max-file: '3' }
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: gks_backend/Dockerfile
+  image: gks-backend:${GKS_IMAGE_TAG:-local}
+  environment: &backend-environment
+    NODE_ENV: production
+    HOST: 0.0.0.0
+    PORT: '3000'
+    DB_SERVER: postgres
+    DB_PORT: '5432'
+    DB_SSL: 'true'
+    DB_SSL_CA: /run/gks/db-ca.crt
+    ENABLE_SIMULATION: 'false'
+    ENABLE_SETUP: 'false'
+    TRUST_PROXY_HOPS: '1'
+  volumes:
+    - ${GKS_ENV_DIR:-/opt/gks/env}/db-tls/ca.crt:/run/gks/db-ca.crt:ro
+  logging: *logging
+
+services:
+  postgres:
+    image: postgres:18
+    env_file: ${GKS_ENV_DIR:-/opt/gks/env}/postgres.env
+    environment:
+      POSTGRES_USER: gks_admin
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale-provider=icu --icu-locale=tr-TR
+      TZ: Europe/Istanbul
+      PGTZ: Europe/Istanbul
+    # The image runs as root first; copy the key so only the postgres user can read it.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        install -d -o postgres -g postgres -m 700 /run/gks-tls &&
+        install -o postgres -g postgres -m 600 /tls/server.crt /tls/server.key /run/gks-tls/ &&
+        exec docker-entrypoint.sh postgres -c ssl=on
+        -c ssl_cert_file=/run/gks-tls/server.crt -c ssl_key_file=/run/gks-tls/server.key
+        -c hba_file=/etc/gks/pg_hba.conf
+    volumes:
+      - pg-data:/var/lib/postgresql
+      - ${GKS_ENV_DIR:-/opt/gks/env}/db-tls:/tls:ro
+      - ./hosting/pg_hba.conf:/etc/gks/pg_hba.conf:ro
+    networks: [db]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U gks_admin -d postgres]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *logging
+
+  backend:
+    <<: *backend
+    env_file: ${GKS_ENV_DIR:-/opt/gks/env}/backend.env
+    networks: [db, web]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  # Installation commands only (db:init, db:migrate, admin:create, seed:demo,
+  # db:runtime-role): `docker compose -f compose.hosting.yaml --profile install
+  # run --rm installer npm run <command>`. install.env overrides backend.env.
+  installer:
+    <<: *backend
+    profiles: [install]
+    env_file:
+      - ${GKS_ENV_DIR:-/opt/gks/env}/backend.env
+      - ${GKS_ENV_DIR:-/opt/gks/env}/install.env
+    networks: [db]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  frontend:
+    build: ./gks_frontend
+    image: gks-frontend:${GKS_IMAGE_TAG:-local}
+    networks: [web]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    logging: *logging
+
+  caddy:
+    image: caddy:2
+    environment:
+      GKS_SITE_ADDRESS: ${GKS_SITE_ADDRESS:?Set the public site address, e.g. gks.example.com}
+    ports:
+      - ${GKS_HTTP_BIND:-80}:80
+      - ${GKS_HTTPS_BIND:-443}:443
+      - ${GKS_HTTPS_BIND:-443}:443/udp
+    volumes:
+      - ./hosting/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [web]
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    logging: *logging
+
+networks:
+  # No route to the internet or the host for the database network.
+  db:
+    internal: true
+  web: {}
+
+volumes:
+  pg-data:
+  caddy-data:
+  caddy-config:

@@ -5,63 +5,76 @@ const path = require('node:path');
 
 test('runtime role supports business writes and triggers without schema or audit deletion rights', { skip: process.env.RUN_DB_TESTS !== 'true' }, async t => {
     await require('../test-support/database').createTestDatabase(t);
+    // Roles are server-wide in PostgreSQL; this suite owns uniquely named ones.
+    const suffix = process.env.DB_NAME.slice(-12);
+    const role = `gksrt_${suffix}`;
+    const user = `gksrt_user_${suffix}`;
+    process.env.RUNTIME_DB_ROLE = role;
     const { sql, connectDB } = require('../db');
     await connectDB();
+    const roleCount = async () => (await new sql.Request().input('role', sql.NVarChar, role)
+        .query('SELECT COUNT(*) AS n FROM pg_roles WHERE rolname=@role')).recordset[0].n;
     const { configureRuntimeRole } = require('../services/runtimeRole');
-    await assert.rejects(configureRuntimeRole('missing-user'), /önce hedef veritabanında/);
-    await assert.rejects(configureRuntimeRole('dbo'), /sistem hesapları/);
-    assert.equal((await sql.query("SELECT DATABASE_PRINCIPAL_ID(N'gks_runtime') AS id")).recordset[0].id, null);
-    await sql.query('CREATE USER [runtime-fixture] WITHOUT LOGIN');
-    // A failure after earlier GRANTs must roll the entire setup back.
-    await sql.query("EXEC sp_rename N'dbo.Yoneticiler', N'RoleTestAccounts'");
+    await assert.rejects(configureRuntimeRole('missing-user'), /önce oluşturun/);
+    const installer = (await sql.query('SELECT current_user AS name')).recordset[0].name;
+    await assert.rejects(configureRuntimeRole(installer), /sistem hesapları/);
+    assert.equal(await roleCount(), 0);
+    await sql.query(`CREATE ROLE ${user} NOLOGIN`);
     try {
-        await assert.rejects(configureRuntimeRole('runtime-fixture'), /Yoneticiler/);
-        assert.equal((await sql.query("SELECT DATABASE_PRINCIPAL_ID(N'gks_runtime') AS id")).recordset[0].id, null);
-    } finally { await sql.query("EXEC sp_rename N'dbo.RoleTestAccounts', N'Yoneticiler'"); }
-    await configureRuntimeRole('runtime-fixture');
-    const cliOptions = { cwd: path.resolve(__dirname, '..'), stdio: 'pipe',
-        env: { ...process.env, RUNTIME_DB_USER: 'runtime-fixture', RUNTIME_DB_CONFIRM: process.env.DB_NAME } };
-    assert.throws(() => execFileSync(process.execPath, ['scripts/configure-runtime-role.js'], {
-        ...cliOptions, env: { ...cliOptions.env, RUNTIME_DB_CONFIRM: 'WrongTarget' },
-    }));
-    execFileSync(process.execPath, ['scripts/configure-runtime-role.js'], cliOptions);
-    const asRuntime = statement => sql.query(`
-      EXECUTE AS USER=N'runtime-fixture';
-      BEGIN TRY
-        ${statement}
-      END TRY
-      BEGIN CATCH
-        REVERT;
-        THROW;
-      END CATCH;
-      REVERT;
-    `);
-    const result = await asRuntime(`
-      INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Sicil_No,Sistem_ID,Ise_Giris_Tarihi)
-        VALUES(N'Runtime Person',N'runtime-card',N'runtime-1',N'runtime-1','2026-09-01');
-      DECLARE @uid int=SCOPE_IDENTITY();
-      INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis,Calisma_Gunleri)
-        VALUES(N'Runtime Shift','09:00','18:00','1,2,3,4,5');
-      DECLARE @shift int=SCOPE_IDENTITY();
-      INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi) VALUES(@uid,@shift,'2026-09-01');
-      INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES(N'Runtime Door',N'Ana Giriş');
-      DECLARE @door int=SCOPE_IDENTITY();
-      INSERT INTO Permissions(User_ID,Door_ID) VALUES(@uid,@door);
-      INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi) VALUES(N'runtime-card',@door,'2026-09-07T09:00:00',1);
-      INSERT INTO SystemLogs(Islem_Tipi,Personel_Ad,Detay) VALUES(N'KABUL',N'Runtime Person',N'Fixture');
-      UPDATE Users SET Ad_Soyad=N'Runtime Updated' WHERE ID=@uid;
-      DELETE FROM Permissions WHERE User_ID=@uid;
-      SELECT L.User_ID,P.Snapshot_Vardiya_Adi FROM Logs L JOIN Personel_Vardiya P ON P.User_ID=L.User_ID;
-    `);
-    assert.equal(result.recordset.length, 1);
-    assert.equal(result.recordset[0].Snapshot_Vardiya_Adi, 'Runtime Shift');
-    for (const forbidden of [
-        'DELETE FROM SystemLogs',
-        'UPDATE DoorLogs SET Detay=N\'changed\'',
-        'DELETE FROM Logs',
-        'SELECT * FROM dbo.GksMigrations',
-        'CREATE TABLE dbo.RuntimeForbidden(ID int)',
-        'ALTER TABLE dbo.Users ADD RuntimeForbidden int',
-    ]) await assert.rejects(asRuntime(forbidden), /permission|denied|does not exist/i, forbidden);
-    assert.equal((await sql.query('SELECT COUNT(*) AS n FROM SystemLogs')).recordset[0].n, 1);
+        // A failure after earlier GRANTs must roll the entire setup back.
+        await sql.query('ALTER TABLE Yoneticiler RENAME TO RoleTestAccounts');
+        try {
+            await assert.rejects(configureRuntimeRole(user), /yoneticiler/i);
+            assert.equal(await roleCount(), 0);
+        } finally { await sql.query('ALTER TABLE RoleTestAccounts RENAME TO Yoneticiler'); }
+        await configureRuntimeRole(user);
+        const cliOptions = { cwd: path.resolve(__dirname, '..'), stdio: 'pipe',
+            env: { ...process.env, RUNTIME_DB_USER: user, RUNTIME_DB_CONFIRM: process.env.DB_NAME } };
+        assert.throws(() => execFileSync(process.execPath, ['scripts/configure-runtime-role.js'], {
+            ...cliOptions, env: { ...cliOptions.env, RUNTIME_DB_CONFIRM: 'wrong_target' },
+        }));
+        execFileSync(process.execPath, ['scripts/configure-runtime-role.js'], cliOptions);
+        // Runs `work` with only the application user's privileges.
+        const asRuntime = async work => {
+            const tx = new sql.Transaction();
+            await tx.begin();
+            try {
+                await new sql.Request(tx).query(`SET LOCAL ROLE ${user}`);
+                const result = await work(text => new sql.Request(tx).query(text));
+                await tx.commit();
+                return result;
+            } catch (error) {
+                await tx.rollback();
+                throw error;
+            }
+        };
+        const result = await asRuntime(async query => {
+            const uid = (await query(`INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Sicil_No,Sistem_ID,Ise_Giris_Tarihi)
+                VALUES('Runtime Person','runtime-card','runtime-1','runtime-1','2026-09-01') RETURNING ID`)).recordset[0].ID;
+            const shift = (await query(`INSERT INTO Vardiyalar(Vardiya_Adi,Mesai_Baslangic,Mesai_Bitis,Calisma_Gunleri)
+                VALUES('Runtime Shift','09:00','18:00','1,2,3,4,5') RETURNING ID`)).recordset[0].ID;
+            await query(`INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi) VALUES(${uid},${shift},'2026-09-01')`);
+            const door = (await query("INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES('Runtime Door','Ana Giriş') RETURNING ID")).recordset[0].ID;
+            await query(`INSERT INTO Permissions(User_ID,Door_ID) VALUES(${uid},${door})`);
+            await query(`INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi) VALUES('RUNTIME-CARD',${door},'2026-09-07T09:00:00',true)`);
+            await query("INSERT INTO SystemLogs(Islem_Tipi,Personel_Ad,Detay) VALUES('KABUL','Runtime Person','Fixture')");
+            await query(`UPDATE Users SET Ad_Soyad='Runtime Updated' WHERE ID=${uid}`);
+            await query(`DELETE FROM Permissions WHERE User_ID=${uid}`);
+            return query('SELECT L.User_ID,P.Snapshot_Vardiya_Adi FROM Logs L JOIN Personel_Vardiya P ON P.User_ID=L.User_ID');
+        });
+        assert.equal(result.recordset.length, 1);
+        assert.equal(result.recordset[0].Snapshot_Vardiya_Adi, 'Runtime Shift');
+        for (const forbidden of [
+            'DELETE FROM SystemLogs',
+            "UPDATE DoorLogs SET Detay='changed'",
+            'DELETE FROM Logs',
+            'SELECT * FROM GksMigrations',
+            'CREATE TABLE RuntimeForbidden(ID int)',
+            'ALTER TABLE Users ADD RuntimeForbidden int',
+        ]) await assert.rejects(asRuntime(query => query(forbidden)), /permission denied|must be owner/i, forbidden);
+        assert.equal((await sql.query('SELECT COUNT(*) AS n FROM SystemLogs')).recordset[0].n, 1);
+    } finally {
+        await sql.query(`DROP OWNED BY ${user}; DROP ROLE ${user}`);
+        if (await roleCount()) await sql.query(`DROP OWNED BY ${role}; DROP ROLE ${role}`);
+    }
 });
