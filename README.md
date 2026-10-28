@@ -2,7 +2,7 @@
 
 GKS; personel, kapı yetkisi, vardiya, izin ve devam/mesai akışlarını bir araya getiren bağımsız, kişisel bir full-stack portföy projesidir. Fiziksel cihaz katmanı sentetik geçiş kayıtlarıyla temsil edilir; uygulama ticari bir erişim kontrol ürünü değildir.
 
-V1 hazırlanıyor. Salt okunur demo: **https://gksdemo.com** ("Demoyu İncele" ile giriş; veriler sentetik, değişiklik işlemleri kapalı). Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
+V1 yayında. Salt okunur demo: **https://gksdemo.com** ("Demoyu İncele" ile giriş; veriler sentetik, değişiklik işlemleri kapalı). Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
 
 React/Vite arayüzü, Express API, PostgreSQL ve Socket.IO kullanır. Puantaj/gece vardiyası hesabı, transaction ile audit tutarlılığı, rol denetimi, geçmiş kayıtların korunması ve tekrar üretilebilir sentetik veri projenin temel teknik konularıdır.
 
@@ -95,7 +95,7 @@ GitHub Actions yapılandırması birim testlerini, kod kontrolünü, derlemeyi v
 - Personel, departman ve log aramaları büyük/küçük harf ve aksan duyarsızdır (`ISIK` → `Işık`, `isci` → `İŞÇİ`). Kart no, sicil no ve panel kullanıcı adı büyük/küçük harf duyarsız olarak tekildir.
 - Simülasyon varsayılan kapalıdır, üretimde çalışmaz. Açılması için backend `ENABLE_SIMULATION=true`, frontend `VITE_ENABLE_SIMULATION=true` ve ayrı `gksreview_`/`gkstest_` veritabanı gerekir. Yalnızca ekleme yapar; mevcut geçmişi topluca silmez.
 
-Yayın kapsamı ve geri dönüş adımları: [V1 sürüm notları taslağı](docs/V1-surum-notlari.md).
+Yayın kapsamı ve geri dönüş adımları: [V1 sürüm notları](docs/V1-surum-notlari.md).
 
 
 ## Mesai karar sözleşmesi (V1)
