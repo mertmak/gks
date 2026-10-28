@@ -110,6 +110,7 @@ services:
     image: caddy:2
     environment:
       GKS_SITE_ADDRESS: ${GKS_SITE_ADDRESS:?Set the public site address, e.g. gks.example.com}
+      GKS_REDIRECT_ADDRESSES: ${GKS_REDIRECT_ADDRESSES:-http://redirect.invalid}
     ports:
       - ${GKS_HTTP_BIND:-80}:80
       - ${GKS_HTTPS_BIND:-443}:443

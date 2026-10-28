@@ -107,6 +107,12 @@ gks up -d --wait postgres
 
 Alan adı henüz sunucuyu göstermiyorsa önce `compose.env` içinde `GKS_SITE_ADDRESS=:80` ile yalnız HTTP açıp kurulumu doğrulayabilirsiniz; DNS kaydı yayılınca alan adını yazıp `gks up -d --force-recreate caddy backend` çalıştırın ve `FRONTEND_URL` değerinde yalnız `https://` adres bırakın. Caddy sertifikayı birkaç dakika içinde alır.
 
+İsteğe bağlı ek adlar (ör. `www`), ana adrese kalıcı (301) yönlendirme alır; yol ve sorgu korunur ve kendi sertifikasını kullanır. Önce DNS'te ek adı da sunucuya yöneltin (A kaydı ya da ana ada CNAME), kayıt yayılınca `compose.env` dosyasına ekleyin ve `gks up -d --force-recreate caddy` çalıştırın. Birden fazla ad virgülle ayrılır (`www.gks.example.com, eski.example.com`). `FRONTEND_URL` değişmez; tarayıcı uygulamayı her zaman ana adreste açar.
+
+```sh
+GKS_REDIRECT_ADDRESSES=www.gks.example.com
+```
+
 PostgreSQL ilk açılışta UTF-8 ve `tr-TR` ICU ile kurulur; `gks_admin` kurulum hesabıdır. Uygulama giriş rolünü oluşturun (`psql` önce `gks_admin` parolasını, sonra yeni parolayı iki kez sorar; parola ekranda ve geçmişte görünmez):
 
 ```sh
