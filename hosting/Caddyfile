@@ -14,3 +14,10 @@
 		reverse_proxy frontend:80
 	}
 }
+
+# Extra names (e.g. www.gks.example.com) answer with a permanent redirect to the main
+# address and get their own certificate. Unset, this is an HTTP-only placeholder that
+# matches no real host, so no certificate is requested.
+{$GKS_REDIRECT_ADDRESSES} {
+	redir https://{$GKS_SITE_ADDRESS}{uri} permanent
+}
