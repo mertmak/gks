@@ -22,11 +22,13 @@ const Settings = lazy(() => import('./pages/Settings'));
 const HesapEkle = lazy(() => import('./pages/HesapEkle'));
 const Login = lazy(() => import('./pages/Login'));
 const Overtimes = lazy(() => import('./pages/Overtimes'));
+import SandboxBanner from './components/SandboxBanner';
 
 // Fixed texts only; logout events never carry server-provided content.
 const LOGOUT_NOTICES = {
   'password-changed': { text: 'Şifreniz değiştirildi. Yeni şifrenizle yeniden giriş yapın.', tone: 'success' },
   'session-expired': { text: 'Oturumunuzun süresi doldu. Devam etmek için yeniden giriş yapın.', tone: 'warning' },
+  'sandbox-expired': { text: 'Simülasyon alanınızın süresi doldu ve kopya silindi. Yeni bir alan başlatabilirsiniz.', tone: 'warning' },
 };
 
   // Açılır Menü (Dropdown) Kapsayıcı Bileşeni
@@ -92,7 +94,12 @@ function App() {
   const session = readSession();
   const userRole = session?.role;
   const username = session?.kullanici_adi || 'Kullanıcı';
+  const sandbox = !!session?.sandbox;
   const isActive = path => location.pathname === path;
+  const closeSandbox = async () => {
+    try { await api.delete('/sandbox'); } catch { /* The copy also expires on its own. */ }
+    handleLogout();
+  };
   const handleLogout = () => {
     setLoginNotice(null);
     disconnectSocket();
@@ -125,10 +132,11 @@ function App() {
       }}>Tekrar dene</button>}
     </section>
   </main>;
-  if (!isAuthenticated) return <Suspense fallback={<p className="p-8">Yükleniyor…</p>}><Login setAuth={setIsAuthenticated} demo={config.demo} notice={loginNotice} /></Suspense>;
+  if (!isAuthenticated) return <Suspense fallback={<p className="p-8">Yükleniyor…</p>}><Login setAuth={setIsAuthenticated} demo={config.demo} sandbox={config.sandbox ? config.sandboxMinutes : null} notice={loginNotice} /></Suspense>;
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
-      {config.demo && <p className="bg-amber-100 text-amber-950 px-6 py-3 text-sm">Salt okunur demo · Verilerin tamamı sentetiktir · Referans gün: {config.referenceDate}. Değişiklikler local kurulumda kullanılabilir.</p>}
+      {sandbox && <SandboxBanner expiresAt={expiresAt} referenceDate={config.referenceDate} onClose={closeSandbox} />}
+      {config.demo && !sandbox && <p className="bg-amber-100 text-amber-950 px-6 py-3 text-sm">Salt okunur demo · Verilerin tamamı sentetiktir · Referans gün: {config.referenceDate}. Değişiklikler local kurulumda kullanılabilir.</p>}
       
       {/* ÜST MENÜ (NAVBAR) */}
       <nav className="bg-slate-900 px-6 py-4 shadow-lg flex flex-col lg:flex-row justify-between items-center gap-4 z-50 relative">
@@ -174,16 +182,16 @@ function App() {
           </DropdownMenu>
 
           {/* SİMÜLASYON (Admin) */}
-          {userRole === 'admin' && import.meta.env.VITE_ENABLE_SIMULATION === 'true' && (
+          {userRole === 'admin' && (sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true') && (
             <Link to="/simulasyon" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/simulasyon') ? 'bg-slate-800 text-amber-500' : 'text-amber-500/70 hover:text-amber-400 hover:bg-slate-800'}`}>Simülasyon</Link>
           )}
 
         </div>
 
         <DropdownMenu title={username + ' · ' + (userRole === 'admin' ? 'Yönetici' : 'Kullanıcı')} activePaths={['/settings', '/hesap-ekle']} align="right">
-          {userRole === 'admin' && <DropdownItem to="/hesap-ekle" label="Yönetici Hesapları" />}
+          {userRole === 'admin' && !sandbox && <DropdownItem to="/hesap-ekle" label="Yönetici Hesapları" />}
           {!config.demo && <DropdownItem to="/settings" label="Hesap Ayarları" />}
-          <button type="button" onClick={handleLogout} className="px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 text-left">Güvenli Çıkış</button>
+          <button type="button" onClick={sandbox ? closeSandbox : handleLogout} className="px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 text-left">{sandbox ? 'Alanı Kapat ve Çık' : 'Güvenli Çıkış'}</button>
         </DropdownMenu>
       </nav>
 
@@ -215,7 +223,7 @@ function App() {
 
           {/* Admin Rotaları */}
           <Route path="/simulasyon" element={adminOnly(<Simulation />)} />
-          <Route path="/hesap-ekle" element={adminOnly(<HesapEkle />)} />
+          <Route path="/hesap-ekle" element={sandbox ? <Navigate to="/" replace /> : adminOnly(<HesapEkle />)} />
           
           {/* Ortak Rotalar */}
           <Route path="/settings" element={config.demo ? <Navigate to="/" replace /> : <Settings />} />

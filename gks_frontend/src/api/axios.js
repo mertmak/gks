@@ -24,7 +24,8 @@ api.interceptors.response.use(response => response, error => {
         // Only an open session can expire; anonymous 401s must not show the notice.
         const hadSession = !!localStorage.getItem('token');
         localStorage.removeItem('token');
-        window.dispatchEvent(new CustomEvent('gks:logout', { detail: { reason: hadSession ? 'session-expired' : '' } }));
+        const reason = error.response.data?.code === 'SANDBOX_EXPIRED' ? 'sandbox-expired' : hadSession ? 'session-expired' : '';
+        window.dispatchEvent(new CustomEvent('gks:logout', { detail: { reason } }));
     }
     return Promise.reject(error);
 });

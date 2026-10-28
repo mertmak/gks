@@ -10,7 +10,7 @@ const rateLimit = require('express-rate-limit');
 const { sql } = require('../db');
 const locks = require('../db/locks');
 const { isUniqueViolation } = require('../utils/dbErrors');
-const { verifyToken, verifyAdmin, SECRET_KEY } = require('../middlewares/auth');
+const { verifyToken, verifyAdmin, rejectSandbox, SECRET_KEY } = require('../middlewares/auth');
 const { validate, schemas } = require('../middlewares/validate');
 const logger = require('../utils/appLogger');
 
@@ -73,7 +73,7 @@ router.post('/ilk-kurulum', (req,res,next) => process.env.NODE_ENV !== 'producti
     }
 });
 
-router.post('/hesap-ekle', verifyToken, verifyAdmin, validate(schemas.hesapEkleSchema), async (req, res, next) => {
+router.post('/hesap-ekle', verifyToken, rejectSandbox, verifyAdmin, validate(schemas.hesapEkleSchema), async (req, res, next) => {
     const { username, password, rol } = req.body;
     try {
         const hash = await bcrypt.hash(password, 10);
@@ -90,7 +90,7 @@ router.post('/hesap-ekle', verifyToken, verifyAdmin, validate(schemas.hesapEkleS
     }
 });
 
-router.post('/sifre-degistir', verifyToken, validate(schemas.sifreDegistirSchema), async (req, res, next) => {
+router.post('/sifre-degistir', verifyToken, rejectSandbox, validate(schemas.sifreDegistirSchema), async (req, res, next) => {
     try {
         const user = (await new sql.Request().input('id', sql.Int, req.user.id)
             .query('SELECT ID,Kullanici_Adi,Sifre_Hash,Token_Version FROM Yoneticiler WHERE ID=@id')).recordset[0];
@@ -108,7 +108,7 @@ router.post('/sifre-degistir', verifyToken, validate(schemas.sifreDegistirSchema
     } catch (error) { next(error); }
 });
 
-router.get('/hesaplar', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/hesaplar', verifyToken, rejectSandbox, verifyAdmin, async (req, res) => {
     // Hesapları çekme kodlarınız...
         try {
         const result = await sql.query('SELECT ID, Kullanici_Adi, Rol, Olusturulma_Tarihi FROM Yoneticiler ORDER BY ID DESC');
@@ -118,7 +118,7 @@ router.get('/hesaplar', verifyToken, verifyAdmin, async (req, res) => {
     }
 });
 
-router.delete('/hesap-sil/:id', verifyToken, verifyAdmin, async (req, res, next) => {
+router.delete('/hesap-sil/:id', verifyToken, rejectSandbox, verifyAdmin, async (req, res, next) => {
     if (req.user.id == req.params.id) return res.status(403).json({ success: false, message: 'Kendi hesabınızı silemezsiniz!' });
     try {
         await inTransaction(async tx => {

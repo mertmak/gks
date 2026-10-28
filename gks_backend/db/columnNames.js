@@ -21,6 +21,7 @@ const tables = {
         'Tolerans_Dk', 'Mola_Hakki_Dk', 'Durum', 'Calisma_Gunleri'],
     Yoneticiler: ['ID', 'Kullanici_Adi', 'Sifre_Hash', 'Rol', 'Olusturulma_Tarihi', 'Token_Version'],
     GksSeedState: ['Version'],
+    GksSandboxes: ['ID', 'Schema_Adi', 'Olusturulma', 'Bitis'],
 };
 
 // SELECT aliases used by routes, services, scripts and tests.

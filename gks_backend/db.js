@@ -5,6 +5,7 @@ const logger = require('./utils/appLogger');
 const business = require('./config/business');
 const { translateParams } = require('./db/params');
 const { canonical } = require('./db/columnNames');
+const { currentSchema } = require('./db/context');
 
 // Return the same JavaScript values the mssql driver produced (useUTC): stored
 // wall-clock times are read as UTC and never shifted by the server timezone.
@@ -74,6 +75,10 @@ function toResult(raw) {
 
 let pool = null;
 
+// A sandbox schema shadows the public business tables for one transaction;
+// public stays on the path for the shared functions and extensions.
+const searchPath = schema => `SET LOCAL search_path TO ${pg.escapeIdentifier(schema)}, public`;
+
 const connectDB = async () => {
     if (pool) return pool;
     const next = new pg.Pool({ ...connectionConfig(), max: 10, idleTimeoutMillis: 30000 });
@@ -116,10 +121,22 @@ class Request {
     async query(text, ...values) {
         if (Array.isArray(text) && text.raw) text = fromTemplate(this, text, values);
         const translated = translateParams(text, this.params);
-        const target = this.transaction ? this.transaction.activeClient() : getPool();
         const config = { text: translated.text, rowMode: 'array' };
         if (translated.values.length) config.values = translated.values;
-        return toResult(await target.query(config));
+        const schema = currentSchema();
+        if (this.transaction || !schema) {
+            const target = this.transaction ? this.transaction.activeClient() : getPool();
+            return toResult(await target.query(config));
+        }
+        const tx = await new Transaction().begin();
+        try {
+            const result = await tx.activeClient().query(config);
+            await tx.commit();
+            return toResult(result);
+        } catch (err) {
+            if (tx.client) await tx.rollback().catch(() => {});
+            throw err;
+        }
     }
 }
 
@@ -132,6 +149,8 @@ class Transaction {
         const client = await getPool().connect();
         try {
             await client.query(`BEGIN ISOLATION LEVEL ${isolationLevel}`);
+            const schema = currentSchema();
+            if (schema) await client.query(searchPath(schema));
         } catch (err) {
             client.release(err);
             throw err;
@@ -177,4 +196,4 @@ const sql = {
     },
 };
 
-module.exports = { sql, connectDB, getPool, connectionConfig, internal: { columnName, toResult } };
+module.exports = { sql, connectDB, getPool, connectionConfig, searchPath, internal: { columnName, toResult } };

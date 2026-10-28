@@ -16,6 +16,14 @@ const verifyToken = (req, res, next) => {
                 return res.status(401).json({ success: false, message: 'Token geçersiz veya süresi dolmuş.' });
             } else {
                 try {
+                    if (authData.sandbox) {
+                        // A personal simulation copy: full rights inside its own schema only.
+                        if (!await require('../services/sandbox').isActive(authData.sandbox)) {
+                            return res.status(401).json({ success: false, code: 'SANDBOX_EXPIRED', message: 'Simülasyon alanının süresi doldu.' });
+                        }
+                        req.user = { role: 'admin', sandbox: authData.sandbox, demo: true, kullanici_adi: require('../config/sandbox').visitorName, exp: authData.exp };
+                        return require('../db/context').runInSchema(authData.sandbox, next);
+                    }
                     const { sql } = require('../db');
                     const result = await new sql.Request().input('id', sql.Int, authData.id).query('SELECT Rol,Kullanici_Adi,Token_Version FROM Yoneticiler WHERE ID=@id');
                     const account = result.recordset[0];
@@ -38,4 +46,9 @@ const verifyAdmin = (req, res, next) => {
     }
 };
 
-module.exports = { verifyToken, verifyAdmin, SECRET_KEY };
+// Panel accounts live outside the sandbox copies and cannot be managed from them.
+const rejectSandbox = (req, res, next) => req.user?.sandbox
+    ? res.status(403).json({ success: false, code: 'SANDBOX_FORBIDDEN', message: 'Hesap işlemleri simülasyon alanında kapalıdır.' })
+    : next();
+
+module.exports = { verifyToken, verifyAdmin, rejectSandbox, SECRET_KEY };
