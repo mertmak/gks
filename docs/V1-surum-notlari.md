@@ -1,6 +1,6 @@
-# GKS V1 — sürüm notları taslağı
+# GKS V1 — sürüm notları
 
-Bu metin yayın hazırlığı içindir. Public HTTPS demo https://gksdemo.com adresinde yayındadır; V1 etiketi henüz oluşturulmadı.
+V1 (`v1.0.0`) 28 Ekim 2026'da yayımlandı. Salt okunur public demo: https://gksdemo.com.
 
 GKS, personel, kapı yetkileri, vardiya, izin ve devam/mesai takibini birlikte incelemek için geliştirilmiş bağımsız bir kişisel portföy projesidir. Fiziksel geçişler tamamen sentetik kayıtlarla temsil edilir.
 
@@ -18,7 +18,9 @@ GKS, personel, kapı yetkileri, vardiya, izin ve devam/mesai takibini birlikte i
 
 ## Doğrulama ve sınırlar
 
-2 Ekim 2026 yerel kontrolünde PostgreSQL 18'e karşı 68 backend veritabanı testi, 26 backend birim testi, 11 frontend testi, frontend kod kontrolü ve üretim derlemesi başarılıdır; GitHub Actions'ta da aynı kontroller geçici PostgreSQL servisiyle geçti. Test veritabanları ayrıdır. Tek sunuculu Compose yığını yerelde HTTPS'siz uçtan uca denendi: uygulama hesabı veritabanına TLS 1.3 ile bağlanır, yedekten yeni veritabanına geri yükleme çalışır. Puantaj, mesai ve üç log tablosundan indirilen dosyalar daha önceki kabulde açılarak kontrol edildi.
+PostgreSQL 18'e karşı 68 backend veritabanı testi, 26 backend birim testi, 11 frontend testi, frontend kod kontrolü, üretim derlemesi ve bağımlılık denetimi başarılıdır; GitHub Actions bu kontrolleri her değişiklikte geçici PostgreSQL servisiyle çalıştırır. Test veritabanları ayrıdır. Tek sunuculu Compose yığını önce yerelde, sonra yayın sunucusunda uçtan uca denendi: uygulama hesabı veritabanına TLS 1.3 ile bağlanır; yayın sunucusunun yedeği yeni bir veritabanına geri yüklenip satır sayıları ve içerikleri canlı veritabanıyla karşılaştırıldı. Puantaj, mesai ve üç log tablosundan indirilen dosyalar daha önceki kabulde açılarak kontrol edildi.
+
+Toplu mesai kararında yeniden deneme, yazmadan önce dönen geçici hatayı kapsar; yanıtın ağda kaybolduğu durumda tekrar gönderimin aynı sonucu vereceği (idempotentlik) garanti edilmez. Sunucuda sayfalanan listelerde Excel indirme yalnız yüklenmiş sayfayı kapsar.
 
 Gerçek kart okuyucu/kapı cihazı bağlantısı, bordro, resmî tatil takvimi, izin bakiyesi, çok kiracılı kullanım ve kurumsal yüksek erişilebilirlik bu sürümün kapsamı dışındadır. Hesaplama varsayımları [hesaplama kurallarında](V1-hesaplama-kurallari.md), geçmiş verilerin sınırları [veri modelinde](V1-veri-modeli.md) açıklanır.
 
@@ -40,17 +42,3 @@ Geri dönüş gerektiğinde önceki uygulama sürümünü sonradan değişmiş �
 ## Yayın ortamı
 
 Demo tek bir Ubuntu 24.04 (arm64) sunucuda `compose.hosting.yaml` ile çalışır: Caddy (Let's Encrypt), nginx, Express ve iç ağda TLS'li PostgreSQL 18. Sunucuda HTTPS yönlendirmesi, HSTS, demo girişi, puantaj, yazma engeli, WebSocket, hız sınırı, CORS, veritabanının uygulama hesabıyla TLS bağlantısı, dış portların kapalılığı ve sunucu yeniden başlatıldıktan sonra kendiliğinden açılma doğrulandı. Veritabanı her gece yedeklenir (7 gün).
-
-## Yayından önce tamamlanacaklar
-
-- Yedeğin hedef sunucuda yeni bir veritabanına geri yüklenmesinin denenmesi ve sunucu dışı kopya.
-- Yayımlanacak dosya ve Git geçmişinin incelenmesi (secret taraması); sentetik ekran görüntüleri.
-- PostgreSQL dalının ana dala birleştirilmesi, sürüm etiketi ve yayın tarihi.
-
-## Repository bilgileri taslağı
-
-**Açıklama:** Sentetik verili personel, vardiya, izin ve devam/mesai yönetimi portföy projesi. React, Express, PostgreSQL ve salt okunur demo.
-
-**Topic önerileri:** `react`, `express`, `postgresql`, `socket-io`, `attendance-management`, `portfolio-project`, `docker`.
-
-Bu bilgiler GitHub'a uygulanmış değildir. CI yapılandırması otomatik deployment anlamına gelmez.
