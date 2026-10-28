@@ -3,14 +3,26 @@ import { businessDate } from '../utils/dates';
 import { readSession } from '../utils/session';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { ModuleRegistry, AllCommunityModule, ValidationModule } from 'ag-grid-community';
+import {
+  ModuleRegistry, ValidationModule, ClientSideRowModelModule, ClientSideRowModelApiModule,
+  TextFilterModule, NumberFilterModule, DateFilterModule, QuickFilterModule, PaginationModule,
+  RowSelectionModule, CellStyleModule, TooltipModule, LocaleModule, RowAutoHeightModule,
+  CellApiModule, ColumnApiModule,
+} from 'ag-grid-community';
 
 import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-quartz.css'; 
+import 'ag-grid-community/styles/ag-theme-quartz.css';
 
 import { AG_GRID_LOCALE_TR } from '../utils/constants';
 
-ModuleRegistry.registerModules([AllCommunityModule, ValidationModule]);
+// Only the features the tables use; AllCommunityModule roughly doubles the grid chunk.
+// ValidationModule reports a missing module in development and is dropped from the build.
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule, ClientSideRowModelApiModule, TextFilterModule, NumberFilterModule,
+  DateFilterModule, QuickFilterModule, PaginationModule, RowSelectionModule, CellStyleModule,
+  TooltipModule, LocaleModule, RowAutoHeightModule, CellApiModule, ColumnApiModule,
+  ...(import.meta.env.DEV ? [ValidationModule] : []),
+]);
 
 const CustomDataGrid = forwardRef(({ 
   rowData, 
