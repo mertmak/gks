@@ -69,6 +69,8 @@ FRONTEND_URL=https://gks.example.com
 BUSINESS_TIMEZONE=Europe/Istanbul
 DEMO_MODE=true
 DEMO_USERNAME=gks-demo
+# İsteğe bağlı: ziyaretçiye özel, yazılabilir simülasyon alanı (bkz. aşağıdaki not)
+SANDBOX_MODE=true
 ```
 
 `/opt/gks/env/install.env` — yalnız kurulum sırasında var olur; `backend.env` değerlerinin üzerine yazar:
@@ -82,6 +84,8 @@ DEMO_SEED_CONFIRM=gksdemo_v1
 RUNTIME_DB_USER=gks_app
 RUNTIME_DB_CONFIRM=gksdemo_v1
 ```
+
+`SANDBOX_MODE=true` demoda "Kendi Simülasyon Alanını Başlat" düğmesini açar: her ziyaretçi için demo verisinin kopyası olan ayrı bir PostgreSQL şeması (`sbx_…`) kurulur, `SANDBOX_TTL_MIN` (varsayılan 120) dakika sonra silinir; aynı anda en fazla `SANDBOX_MAX` (varsayılan 30) alan açılır. Uygulama hesabının şema oluşturabilmesi için `db:runtime-role` bu ayar `backend.env` içindeyken çalıştırılmalıdır (rol veritabanında `CREATE` alır; ayar kapalıyken yeniden çalıştırmak bu izni geri alır). Backend her açılışta eski alanları siler; sürüm güncellemesi açık alanları kapatır.
 
 `DB_SERVER`, `DB_PORT`, `DB_SSL`, `DB_SSL_CA`, `NODE_ENV=production`, `TRUST_PROXY_HOPS=1` ve kapalı kurulum/simülasyon ayarları Compose dosyasında sabittir. Salt okunur public demoda ilk yönetici zorunlu değildir; `BOOTSTRAP_*` satırları atlanırsa `admin:create` adımı da atlanır.
 

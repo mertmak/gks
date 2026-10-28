@@ -20,7 +20,8 @@ const parseCustomList = (str, defaultList) => {
 };
 
 router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
-    if (process.env.NODE_ENV === 'production' || !/^(GksReview_|GksTest_)/i.test(process.env.DB_NAME || '')) return res.status(403).json({success:false,message:'Simülasyon yalnızca ayrı test veritabanında çalışır.'});
+    const sandbox = !!req.user.sandbox; // writes only to the visitor's own copy
+    if (!sandbox && (require('../config/demo').enabled || process.env.NODE_ENV === 'production' || !/^(GksReview_|GksTest_)/i.test(process.env.DB_NAME || ''))) return res.status(403).json({success:false,message:'Simülasyon yalnızca ayrı test veritabanında çalışır.'});
     const { z } = require('zod');
     const { date, id, number, validDateRange } = require('../middlewares/validate');
     const parsed = z.object({
@@ -30,6 +31,9 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
       customIsimler:z.string().max(2000).default(''),customSoyisimler:z.string().max(2000).default(''),customDepartmanlar:z.string().max(2000).default(''),customKapilar:z.string().max(2000).default('')
     }).refine(v=>validDateRange(v.startDateStr,v.endDateStr,31)).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({success:false,message:'En fazla 31 günlük, yalnızca ekleme yapan bir simülasyon seçiniz.'});
+    if (sandbox && (parsed.data.personelSayisi > 50 || parsed.data.kapiSayisi > 10 || !validDateRange(parsed.data.startDateStr, parsed.data.endDateStr, 14))) {
+        return res.status(400).json({success:false,message:'Simülasyon alanında en fazla 50 personel, 10 kapı ve 14 gün üretilebilir.'});
+    }
     req.body=parsed.data;
     const transaction = new sql.Transaction();
     const query = (strings, ...values) => new sql.Request(transaction).query(strings, ...values);
@@ -171,6 +175,7 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
     } catch (err) {
         require('../utils/appLogger').error('Simülasyon başarısız: ' + err.message);
         try { await transaction.rollback(); } catch { /* Already rolled back by SQL. */ }
+        if (err.code === require('../services/sandbox').QUOTA_ERROR) return res.status(409).json({ success: false, code: 'SANDBOX_QUOTA', message: err.message });
         res.status(err.statusCode || 500).json({ success: false, message: err.statusCode ? err.message : 'Veri üretimi sırasında bir hata oluştu.' });
     }
 });

@@ -4,6 +4,9 @@ const errorHandler = (err, req, res, next) => {
     // Parser error messages may quote the request body, including passwords.
     if (err.type === 'entity.parse.failed') return res.status(400).json({ success: false, message: 'İstek gövdesi geçerli JSON olmalıdır.' });
     if (err.type === 'entity.too.large') return res.status(413).json({ success: false, message: 'İstek boyutu en fazla 256 KB olabilir.' });
+    if (err.code === require('../services/sandbox').QUOTA_ERROR) {
+        return res.status(409).json({ success: false, code: 'SANDBOX_QUOTA', message: err.message });
+    }
     console.error("🔥 Sistem Hatası Yakalandı:", err.stack);
     
     // Eğer hata SQL ile ilgili bir unique constraint (çakışma) hatasıysa (Örn: Aynı TC veya Sicil)

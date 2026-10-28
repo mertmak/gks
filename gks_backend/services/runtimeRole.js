@@ -17,6 +17,7 @@ const permissions = Object.freeze({
     SystemLogs: 'SELECT, INSERT',
     DoorLogs: 'SELECT, INSERT',
     Yoneticiler: 'SELECT, INSERT, UPDATE, DELETE',
+    GksSandboxes: 'SELECT, INSERT, DELETE',
 });
 
 // PostgreSQL roles belong to the whole server, not to one database.
@@ -26,7 +27,9 @@ function runtimeRoleName() {
     return name;
 }
 
-async function configureRuntimeRole(userName) {
+// `sandbox`: the public demo builds personal simulation schemas at runtime,
+// which needs CREATE on the database; otherwise that right is withdrawn.
+async function configureRuntimeRole(userName, { sandbox = false } = {}) {
     if (typeof userName !== 'string' || !userName.trim() || userName.length > 63) {
         throw new Error('RUNTIME_DB_USER mevcut bir veritabanı kullanıcısı olmalıdır (1–63 karakter).');
     }
@@ -42,6 +45,8 @@ async function configureRuntimeRole(userName) {
         for (const [table, grants] of Object.entries(permissions)) {
             await new sql.Request(tx).query(`GRANT ${grants} ON TABLE ${table} TO ${role}`);
         }
+        const database = escapeIdentifier((await new sql.Request(tx).query('SELECT current_database() AS name')).recordset[0].name);
+        await new sql.Request(tx).query(`${sandbox ? 'GRANT' : 'REVOKE'} CREATE ON DATABASE ${database} ${sandbox ? 'TO' : 'FROM'} ${role}`);
         const member = await new sql.Request(tx).input('name', sql.NVarChar, userName).input('role', sql.NVarChar, role)
             .query('SELECT 1 AS n FROM pg_auth_members M JOIN pg_roles R ON R.oid=M.roleid JOIN pg_roles U ON U.oid=M.member WHERE R.rolname=@role AND U.rolname=@name');
         if (!member.recordset.length) await new sql.Request(tx).query(`GRANT ${role} TO ${escapeIdentifier(userName)}`);

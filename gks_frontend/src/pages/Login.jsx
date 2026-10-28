@@ -2,7 +2,7 @@ import { useState } from 'react';
 import api from '../api/axios';
 import { usePendingAction } from '../hooks/usePendingAction';
 
-function Login({ setAuth, demo, notice = null }) {
+function Login({ setAuth, demo, sandbox = null, notice = null }) {
   const { pending, run } = usePendingAction();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -52,12 +52,24 @@ function Login({ setAuth, demo, notice = null }) {
       localStorage.setItem('token', data.token);setAuth(true);
     } catch (error) {setError(error.response?.data?.message || 'Demo şu anda açılamıyor.');}
   });
+  const enterSandbox = () => run(async () => {
+    setError('');
+    setWarningMsg('');
+    try {
+      const {data} = await api.post('/sandbox');
+      localStorage.setItem('token', data.token);setAuth(true);
+    } catch (error) {setError(error.response?.data?.message || 'Simülasyon alanı şu anda açılamıyor.');}
+  });
   if (demo) return (
     <main className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
       <section className="max-w-lg bg-white p-8 rounded-2xl shadow-lg space-y-5">
         <h1 className="text-3xl font-black text-slate-800">GKS Demo</h1>
         <p>Personel, vardiya ve puantaj uygulamasını sentetik verilerle inceleyin. Demo salt okunurdur; fiziksel cihaz bağlantısı içermez.</p>
         <button disabled={pending} onClick={enterDemo} className="w-full rounded-xl bg-slate-900 text-white p-3 font-bold">{pending ? 'Demo açılıyor…' : 'Demoyu İncele'}</button>
+        {sandbox && <div className="border-t border-slate-200 pt-5 space-y-3">
+          <p className="text-sm text-slate-600">Kendi kopyanızda personel, kapı, vardiya ve izin ekleyin, veri üretin; puantajı sonuçlarla görün. Kopya yalnız size açıktır ve {sandbox} dakika sonra silinir.</p>
+          <button disabled={pending} onClick={enterSandbox} className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 p-3 font-bold">{pending ? 'Hazırlanıyor…' : 'Kendi Simülasyon Alanını Başlat'}</button>
+        </div>}
         {error && <p role="alert" className="text-red-700">{error}</p>}
         {warningMsg && <p role="status" className="text-amber-800 text-sm font-bold text-center bg-amber-50 py-3 rounded-xl border border-amber-200">{warningMsg}</p>}
       </section>
