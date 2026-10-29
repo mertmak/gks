@@ -4,6 +4,7 @@
 
 /* Semantic colors; .dark below swaps the values, so pages need no dark: classes. */
 @theme {
+  --font-sans: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
   --color-page: #eef1f3;
   --color-surface: #ffffff;
   --color-surface-2: #f5f7f8;
@@ -62,6 +63,13 @@
 
 @layer base {
   *, ::before, ::after { border-color: var(--color-line-strong); }
+  /* Keeps a focused control clear of the sticky top bar. */
+  html { scroll-padding-top: 4.5rem; }
+  button:not(:disabled), [role="button"]:not([aria-disabled="true"]), select:not(:disabled), summary { cursor: pointer; }
   body { background: var(--color-page); color: var(--color-ink); font-variant-numeric: tabular-nums; }
   :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

@@ -32,9 +32,9 @@ function Modal({
 
         {/* Modal Başlığı */}
         {title && (
-          <h3 id={titleId} className="text-xl font-black text-ink mb-4 border-b border-line pb-3 pr-6">
+          <h2 id={titleId} className="text-xl font-black text-ink mb-4 border-b border-line pb-3 pr-6">
             {title}
-          </h3>
+          </h2>
         )}
 
         {/* Modal İçeriği */}

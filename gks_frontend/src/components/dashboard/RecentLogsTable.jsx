@@ -40,7 +40,7 @@ function RecentLogsTable({ logs }) {
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-black text-ink">{demoSettings().demo ? 'Sentetik Geçiş Örnekleri' : 'Canlı Geçiş İzleme'}</h3>
+            <h2 className="text-sm font-black text-ink">{demoSettings().demo ? 'Sentetik Geçiş Örnekleri' : 'Canlı Geçiş İzleme'}</h2>
             <p className="text-xs text-muted">{demoSettings().demo ? 'Sabit senaryo dönemindeki hareketler' : 'Son hareketler gerçek zamanlı'}</p>
           </div>
         </div>

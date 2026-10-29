@@ -183,7 +183,7 @@ function FloorPlan() {
             {unnamed && <p>Her bölgenin bir adı olmalıdır.</p>}
           </section>}
           {area && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-3" aria-label="Seçili bölge">
-            <h3 className="font-bold text-ink">Bölge</h3>
+            <h2 className="font-bold text-ink">Bölge</h2>
             <label className="block text-sm font-bold text-muted">Ad
               <input className={input} value={area.name} maxLength={100} disabled={!editable} onChange={event => updateArea({ ...area, name: event.target.value })} />
             </label>
@@ -198,7 +198,7 @@ function FloorPlan() {
           </section>}
 
           {door && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2 text-sm" aria-label="Seçili kapı">
-            <h3 className="font-bold text-ink">{door.name}</h3>
+            <h2 className="font-bold text-ink">{door.name}</h2>
             <p className="text-muted">{door.type} · {door.active ? 'Aktif' : 'Pasif'}</p>
             <p className="text-muted">{door.placed ? (isLinked(door) ? <>Bağlantı: <strong>{areaName(plan.areas, door.a)} ↔ {areaName(plan.areas, door.b)}</strong></> : <strong className="text-danger">Bölge sınırında değil</strong>) : 'Plana yerleştirilmedi.'}</p>
             <p className="text-muted">Yetkili aktif personel: <strong>{door.permitted}</strong></p>
@@ -207,7 +207,7 @@ function FloorPlan() {
           </section>}
 
           <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-3" aria-label="Yerleştirilmemiş kapılar">
-            <h3 className="font-bold text-ink">Yerleştirilmemiş kapılar ({unplaced.length})</h3>
+            <h2 className="font-bold text-ink">Yerleştirilmemiş kapılar ({unplaced.length})</h2>
             {!unplaced.length && <p className="text-sm text-muted">Tüm kapılar planda.</p>}
             <ul className="space-y-2 max-h-80 overflow-auto">
               {unplaced.map(item => <li key={item.id} className="flex items-center gap-2 text-sm">

@@ -93,10 +93,10 @@ function Simulation() {
         
         <fieldset disabled={loading || Boolean(confirmation)} className="space-y-6">
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-          <h3 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
+          <h2 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
             <span className="w-8 h-8 rounded-full bg-info-soft text-info flex items-center justify-center mr-3 text-sm">1</span>
             Veritabanı Müdahale Ayarları
-          </h3>
+          </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-surface-2 p-4 rounded-xl border border-line">
@@ -141,10 +141,10 @@ function Simulation() {
         {/* ADIM 2: VERİ KAYNAĞI ÖZELLEŞTİRME */}
         {(formData.userAction !== 'keep' || formData.doorAction !== 'keep') && (
           <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line animate-fade-in-up">
-            <h3 className="text-lg font-black text-ink mb-4 flex items-center border-b border-line pb-4">
+            <h2 className="text-lg font-black text-ink mb-4 flex items-center border-b border-line pb-4">
               <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3 text-sm">2</span>
               Veri Havuzu Seçimi
-            </h3>
+            </h2>
             
             <div className="mb-6 flex space-x-4 border-b border-line pb-4">
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -190,10 +190,10 @@ function Simulation() {
 
         {/* ZAMAN VE VARDİYA AYARLARI */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-          <h3 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
+          <h2 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
             <span className="w-8 h-8 rounded-full bg-warning-soft text-warning flex items-center justify-center mr-3 text-sm">{(formData.userAction !== 'keep' || formData.doorAction !== 'keep') ? '3' : '2'}</span>
             Zaman ve Vardiya Ayarları
-          </h3>
+          </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-3">

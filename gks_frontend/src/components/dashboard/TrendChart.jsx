@@ -42,7 +42,7 @@ function TrendChart({ data, timeFilter }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
               </svg>
             </div>
-            <h3 className="text-base font-black text-ink">Geçiş Trendi</h3>
+            <h2 className="text-base font-black text-ink">Geçiş Trendi</h2>
           </div>
           <p className="text-xs text-muted font-medium">{timeFilter === 'gunluk' && !demoSettings().demo ? 'Bugün · Saatlik' : FILTER_LABELS[timeFilter] ?? ''}</p>
         </div>

@@ -231,7 +231,7 @@ function PersonnelOperations() {
             <div className="w-24 h-24 bg-surface-3 text-muted rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-lg">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             </div>
-            <h3 className="text-2xl font-black text-ink">{selectedUser.Ad_Soyad}</h3>
+            <h2 className="text-2xl font-black text-ink">{selectedUser.Ad_Soyad}</h2>
             <p className="text-muted font-medium mb-4">{selectedUser.Departman || 'Departman Belirtilmedi'}</p>
             
             <div className="w-full space-y-2 text-sm text-left">
@@ -248,7 +248,7 @@ function PersonnelOperations() {
               <div className="w-12 h-12 bg-info-soft text-info rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-ink">Kimlik Bilgileri</h4>
+              <h3 className="text-lg font-bold text-ink">Kimlik Bilgileri</h3>
               <p className="text-sm text-muted mt-1">Personelin departman, görev, kart numarası veya TC bilgilerini güncelleyin.</p>
             </button>
 
@@ -256,7 +256,7 @@ function PersonnelOperations() {
               <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-ink">Kapı Geçiş Yetkileri</h4>
+              <h3 className="text-lg font-bold text-ink">Kapı Geçiş Yetkileri</h3>
               <p className="text-sm text-muted mt-1">Giriş yapabileceği kapıları ve alanları yönetin.</p>
             </button>
 
@@ -264,7 +264,7 @@ function PersonnelOperations() {
               <div className="w-12 h-12 bg-warning-soft text-warning rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-ink">Vardiya & Çalışma Saati</h4>
+              <h3 className="text-lg font-bold text-ink">Vardiya & Çalışma Saati</h3>
               <p className="text-sm text-muted mt-1">Personelin bağlı olduğu vardiyayı atayın veya değiştirin.</p>
             </button>
 
@@ -272,7 +272,7 @@ function PersonnelOperations() {
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${selectedUser.Durum ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-ink">{selectedUser.Durum ? 'İşten Çıkar / Pasife Al' : 'Tekrar İşe Al / Aktifleştir'}</h4>
+              <h3 className="text-lg font-bold text-ink">{selectedUser.Durum ? 'İşten Çıkar / Pasife Al' : 'Tekrar İşe Al / Aktifleştir'}</h3>
               {!selectedUser.Durum && <p className="text-sm text-muted">Yeni çalışma dönemi bugün başlar; eski dönem ve aradaki çalışılmayan günler korunur. Bugünkü çıkışı geri almak aynı dönemi yeniden açar.</p>}
               <p className="text-sm text-muted mt-1">Personelin sistemdeki varlığını ve geçiş haklarını durdurur veya açar.</p>
             </button>

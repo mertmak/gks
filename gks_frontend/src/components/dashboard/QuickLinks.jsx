@@ -63,7 +63,7 @@ function QuickLinks() {
           </svg>
         </div>
         <div>
-          <h3 className="text-sm font-black text-ink">Hızlı Kısayollar</h3>
+          <h2 className="text-sm font-black text-ink">Hızlı Kısayollar</h2>
           <p className="text-xs text-muted">Sık kullanılan işlemler</p>
         </div>
       </div>

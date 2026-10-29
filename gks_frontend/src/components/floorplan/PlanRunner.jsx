@@ -130,7 +130,7 @@ export default function PlanRunner({ plan, onUnsentChange }) {
       <aside className="space-y-4">
         {error && <p role="alert" className="rounded-xl bg-danger-soft border border-danger-line text-danger text-sm font-bold p-3">{error}</p>}
         <form onSubmit={start} className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-3" aria-label="Simülasyon ayarları">
-          <h3 className="font-bold text-ink">{current ? 'Yeni gün' : 'Gün ayarları'}</h3>
+          <h2 className="font-bold text-ink">{current ? 'Yeni gün' : 'Gün ayarları'}</h2>
           <label className="block text-sm font-bold text-muted">Tarih
             <input type="date" required className={input} value={form.tarih} onChange={event => setForm({ ...form, tarih: event.target.value })} />
           </label>
@@ -163,7 +163,7 @@ export default function PlanRunner({ plan, onUnsentChange }) {
         </section>}
 
         {current && (selectedPerson || selectedDoor) && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2 text-sm" aria-label="Elle işlem">
-          <h3 className="font-bold text-ink">Elle işlem</h3>
+          <h2 className="font-bold text-ink">Elle işlem</h2>
           {selectedPerson && <p>Kişi: <strong>{selectedPerson.name}</strong> · {selectedPerson.node === OUTSIDE ? 'Bina dışında' : areaName(plan.areas, selectedPerson.node)}</p>}
           {selectedDoor && <p>Kapı: <strong>{selectedDoor.name}</strong> ({selectedDoor.active ? 'aktif' : 'pasif'})</p>}
           {!selectedDoor && <p className="text-xs text-muted">Geçirmek için plandan bir kapı seçin.</p>}
@@ -176,7 +176,7 @@ export default function PlanRunner({ plan, onUnsentChange }) {
         </section>}
 
         {current && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2" aria-label="Canlı olay akışı">
-          <h3 className="font-bold text-ink text-sm">Canlı akış</h3>
+          <h2 className="font-bold text-ink text-sm">Canlı akış</h2>
           <ol className="space-y-1 max-h-72 overflow-auto text-xs">
             {current.feed.slice(0, 40).map(entry => <li key={entry.id} className="flex gap-2">
               <span className="tabular-nums text-muted">{clockLabel(entry.at)}</span>

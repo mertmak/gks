@@ -122,10 +122,10 @@ function BulkOperations() {
         <form onSubmit={handleSubmit} className="space-y-8">
           <fieldset disabled={loading || Boolean(confirmation)} className="space-y-8">
           <div className="bg-surface-2 p-6 rounded-xl border border-line">
-            <h3 className="text-lg font-black text-ink mb-4 flex items-center">
+            <h2 className="text-lg font-black text-ink mb-4 flex items-center">
               <span className="w-8 h-8 rounded-full bg-info-soft text-info flex items-center justify-center mr-3 text-sm">1</span>
               Hedef Kitleyi Seçin
-            </h3>
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-bold text-ink mb-2" htmlFor="bulkoperations-field-1">Filtreleme Türü</label>
@@ -160,10 +160,10 @@ function BulkOperations() {
           </div>
 
           <div className="bg-surface-2 p-6 rounded-xl border border-line relative z-10">
-            <h3 className="text-lg font-black text-ink mb-4 flex items-center">
+            <h2 className="text-lg font-black text-ink mb-4 flex items-center">
               <span className="w-8 h-8 rounded-full bg-warning-soft text-warning flex items-center justify-center mr-3 text-sm">2</span>
               Yapılacak İşlemi Seçin
-            </h3>
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               
               <div>

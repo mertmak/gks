@@ -165,7 +165,7 @@ function Leaves() {
 
       {/* İZİN EKLEME FORMU */}
       <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-        <h3 className="text-lg font-bold text-ink mb-4">Yeni İzin Girişi</h3>
+        <h2 className="text-lg font-bold text-ink mb-4">Yeni İzin Girişi</h2>
         <AdminForm onSubmit={handleSubmit} disabled={loading || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
 
           <div className="md:col-span-1 relative z-50">
