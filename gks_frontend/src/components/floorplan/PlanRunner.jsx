@@ -87,7 +87,7 @@ export default function PlanRunner({ plan, onUnsentChange }) {
   const unsent = pending > 0 && !failed;
   useEffect(() => { onUnsentChange?.(unsent); }, [unsent, onUnsentChange]);
   const mismatches = current?.feed.filter(entry => entry.server !== undefined && entry.server !== entry.ok).length || 0;
-  const input = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm';
+  const input = 'w-full border border-line-strong rounded-lg px-3 py-2 text-sm';
   const button = 'px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50';
 
   const overlay = current && <g>
@@ -107,16 +107,16 @@ export default function PlanRunner({ plan, onUnsentChange }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        {current && <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-slate-100">
-          <span className="text-2xl font-black tabular-nums text-slate-800" aria-live="off">{clockLabel(current.clock)}</span>
-          <span className="text-xs text-slate-500 mr-auto">{new Date(current.clock).toISOString().slice(0, 10)}</span>
-          <button type="button" disabled={done && !failed} onClick={() => { setFailed(false); setRunning(value => !value); }} className={`${button} bg-slate-900 text-white`}>{failed ? 'Yeniden dene' : running ? 'Duraklat' : 'Devam'}</button>
-          <div role="group" aria-label="Hız" className="flex rounded-lg border border-slate-300 overflow-hidden">
+      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden">
+        {current && <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-line">
+          <span className="text-2xl font-black tabular-nums text-ink" aria-live="off">{clockLabel(current.clock)}</span>
+          <span className="text-xs text-muted mr-auto">{new Date(current.clock).toISOString().slice(0, 10)}</span>
+          <button type="button" disabled={done && !failed} onClick={() => { setFailed(false); setRunning(value => !value); }} className={`${button} bg-primary text-white`}>{failed ? 'Yeniden dene' : running ? 'Duraklat' : 'Devam'}</button>
+          <div role="group" aria-label="Hız" className="flex rounded-lg border border-line-strong overflow-hidden">
             {SPEEDS.map(value => <button key={value} type="button" aria-pressed={speed === value} onClick={() => setSpeed(value)}
-              className={`px-3 py-2 text-sm font-bold ${speed === value ? 'bg-cyan-600 text-white' : 'bg-white text-slate-700'}`}>{value}×</button>)}
+              className={`px-3 py-2 text-sm font-bold ${speed === value ? 'bg-cyan-700 text-white' : 'bg-surface text-ink'}`}>{value}×</button>)}
           </div>
-          <button type="button" disabled={done} onClick={() => { step(current, 30 * MINUTE); redraw(); }} className={`${button} bg-slate-200 text-slate-800`}>+30 dk</button>
+          <button type="button" disabled={done} onClick={() => { step(current, 30 * MINUTE); redraw(); }} className={`${button} bg-surface-3 text-ink`}>+30 dk</button>
         </div>}
         <div className="overflow-auto max-h-[70vh]">
           <PlanCanvas areas={plan.areas} doors={plan.doors} selected={door ? { kind: 'door', key: door } : null} editable={false} placing={null}
@@ -124,69 +124,69 @@ export default function PlanRunner({ plan, onUnsentChange }) {
             {overlay}
           </PlanCanvas>
         </div>
-        <p className="px-4 py-2 border-t border-slate-100 text-xs text-slate-500">1× = saniyede 1 dakika. Kişiye tıklayıp ardından bir kapı seçerek elle geçiş deneyebilirsiniz. Yeşil halka onaylanan, kırmızı reddedilen okutmadır.</p>
+        <p className="px-4 py-2 border-t border-line text-xs text-muted">1× = saniyede 1 dakika. Kişiye tıklayıp ardından bir kapı seçerek elle geçiş deneyebilirsiniz. Yeşil halka onaylanan, kırmızı reddedilen okutmadır.</p>
       </div>
 
       <aside className="space-y-4">
-        {error && <p role="alert" className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold p-3">{error}</p>}
-        <form onSubmit={start} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-3" aria-label="Simülasyon ayarları">
-          <h3 className="font-bold text-slate-800">{current ? 'Yeni gün' : 'Gün ayarları'}</h3>
-          <label className="block text-sm font-bold text-slate-600">Tarih
+        {error && <p role="alert" className="rounded-xl bg-danger-soft border border-danger-line text-danger text-sm font-bold p-3">{error}</p>}
+        <form onSubmit={start} className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-3" aria-label="Simülasyon ayarları">
+          <h3 className="font-bold text-ink">{current ? 'Yeni gün' : 'Gün ayarları'}</h3>
+          <label className="block text-sm font-bold text-muted">Tarih
             <input type="date" required className={input} value={form.tarih} onChange={event => setForm({ ...form, tarih: event.target.value })} />
           </label>
           <div className="grid grid-cols-3 gap-2">
             {[['gec', 'Geç kalma'], ['devamsiz', 'Devamsızlık'], ['hatali', 'Hatalı okutma']].map(([key, label]) => (
-              <label key={key} className="block text-xs font-bold text-slate-600">{label} %
+              <label key={key} className="block text-xs font-bold text-muted">{label} %
                 <input type="number" min="0" max="50" required className={input} value={form[key]} onChange={event => setForm({ ...form, [key]: Math.min(50, Math.max(0, Number(event.target.value) || 0)) })} />
               </label>
             ))}
           </div>
           <button type="submit" disabled={preparing || !plan.areas.length || unsent} className={`${button} w-full bg-blue-600 text-white`}>{preparing ? 'Plan hazırlanıyor…' : current ? 'Bu günü başlat' : 'Simülasyonu başlat'}</button>
-          {unsent && <p className="text-xs text-amber-700">Bekleyen okutmalar gönderilince yeni gün başlatılabilir.</p>}
-          <p className="text-xs text-slate-500">Okutmalar seçilen güne gerçek geçiş kaydı olarak yazılır ve puantaja yansır. Aynı günü tekrar çalıştırmak kayıtları çoğaltır.</p>
+          {unsent && <p className="text-xs text-warning">Bekleyen okutmalar gönderilince yeni gün başlatılabilir.</p>}
+          <p className="text-xs text-muted">Okutmalar seçilen güne gerçek geçiş kaydı olarak yazılır ve puantaja yansır. Aynı günü tekrar çalıştırmak kayıtları çoğaltır.</p>
         </form>
 
-        {current && <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-2 text-sm" aria-label="Simülasyon durumu">
+        {current && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2 text-sm" aria-label="Simülasyon durumu">
           <dl className="grid grid-cols-3 gap-2 text-center">
-            <div><dt className="text-xs text-slate-500">İçeride</dt><dd className="text-xl font-black text-slate-800">{inside(current)}</dd></div>
-            <div><dt className="text-xs text-slate-500">Onaylanan</dt><dd className="text-xl font-black text-green-700">{current.counts.ok}</dd></div>
-            <div><dt className="text-xs text-slate-500">Reddedilen</dt><dd className="text-xl font-black text-red-700">{current.counts.denied}</dd></div>
+            <div><dt className="text-xs text-muted">İçeride</dt><dd className="text-xl font-black text-ink">{inside(current)}</dd></div>
+            <div><dt className="text-xs text-muted">Onaylanan</dt><dd className="text-xl font-black text-success">{current.counts.ok}</dd></div>
+            <div><dt className="text-xs text-muted">Reddedilen</dt><dd className="text-xl font-black text-danger">{current.counts.denied}</dd></div>
           </dl>
-          <p className="text-xs text-slate-500">{current.people.length} kişi planlı{current.absent.length ? ` · gelmeyen: ${current.absent.map(item => `${item.name} (${item.reason})`).join(', ')}` : ''}</p>
-          {pending > 0 && <p className="text-xs text-amber-700 font-bold">Gönderilmeyi bekleyen okutma: {pending}</p>}
-          {mismatches > 0 && <p className="text-xs text-red-700 font-bold">{mismatches} okutmada sunucu kararı tahminden farklı (veri bu sırada değişmiş olabilir).</p>}
-          {done && !pending && <div className="rounded-xl bg-green-50 border border-green-200 p-3 space-y-1">
-            <p className="font-bold text-green-800">Gün tamamlandı.</p>
-            <p className="flex flex-wrap gap-x-3"><Link className="text-blue-700 underline" to={`/puantaj?tarih=${new Date(current.day).toISOString().slice(0, 10)}`}>Bu günün puantajı</Link>
-              <Link className="text-blue-700 underline" to="/mesailer">Mesai onayları</Link><Link className="text-blue-700 underline" to="/gecis-hareketleri">Geçiş hareketleri</Link></p>
+          <p className="text-xs text-muted">{current.people.length} kişi planlı{current.absent.length ? ` · gelmeyen: ${current.absent.map(item => `${item.name} (${item.reason})`).join(', ')}` : ''}</p>
+          {pending > 0 && <p className="text-xs text-warning font-bold">Gönderilmeyi bekleyen okutma: {pending}</p>}
+          {mismatches > 0 && <p className="text-xs text-danger font-bold">{mismatches} okutmada sunucu kararı tahminden farklı (veri bu sırada değişmiş olabilir).</p>}
+          {done && !pending && <div className="rounded-xl bg-success-soft border border-success-line p-3 space-y-1">
+            <p className="font-bold text-success">Gün tamamlandı.</p>
+            <p className="flex flex-wrap gap-x-3"><Link className="text-info underline" to={`/puantaj?tarih=${new Date(current.day).toISOString().slice(0, 10)}`}>Bu günün puantajı</Link>
+              <Link className="text-info underline" to="/mesailer">Mesai onayları</Link><Link className="text-info underline" to="/gecis-hareketleri">Geçiş hareketleri</Link></p>
           </div>}
         </section>}
 
-        {current && (selectedPerson || selectedDoor) && <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-2 text-sm" aria-label="Elle işlem">
-          <h3 className="font-bold text-slate-800">Elle işlem</h3>
+        {current && (selectedPerson || selectedDoor) && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2 text-sm" aria-label="Elle işlem">
+          <h3 className="font-bold text-ink">Elle işlem</h3>
           {selectedPerson && <p>Kişi: <strong>{selectedPerson.name}</strong> · {selectedPerson.node === OUTSIDE ? 'Bina dışında' : areaName(plan.areas, selectedPerson.node)}</p>}
           {selectedDoor && <p>Kapı: <strong>{selectedDoor.name}</strong> ({selectedDoor.active ? 'aktif' : 'pasif'})</p>}
-          {!selectedDoor && <p className="text-xs text-slate-500">Geçirmek için plandan bir kapı seçin.</p>}
-          {!selectedPerson && <p className="text-xs text-slate-500">Bir kişiyi geçirmek için plandaki kişiye tıklayın.</p>}
+          {!selectedDoor && <p className="text-xs text-muted">Geçirmek için plandan bir kapı seçin.</p>}
+          {!selectedPerson && <p className="text-xs text-muted">Bir kişiyi geçirmek için plandaki kişiye tıklayın.</p>}
           <div className="flex flex-wrap gap-2">
-            {selectedPerson && selectedDoor && <button type="button" disabled={done} onClick={() => { setHint(manualPass(current, selectedPerson.id, selectedDoor.id) || ''); redraw(); }} className={`${button} bg-cyan-50 text-cyan-800`}>Bu kapıdan geçir</button>}
-            {selectedDoor && <button type="button" disabled={done} onClick={() => { unknownCard(current, selectedDoor.id); redraw(); }} className={`${button} bg-red-50 text-red-700`}>Tanımsız kart okut</button>}
+            {selectedPerson && selectedDoor && <button type="button" disabled={done} onClick={() => { setHint(manualPass(current, selectedPerson.id, selectedDoor.id) || ''); redraw(); }} className={`${button} bg-info-soft text-info`}>Bu kapıdan geçir</button>}
+            {selectedDoor && <button type="button" disabled={done} onClick={() => { unknownCard(current, selectedDoor.id); redraw(); }} className={`${button} bg-danger-soft text-danger`}>Tanımsız kart okut</button>}
           </div>
-          {hint && <p role="status" className="text-xs text-amber-700 font-bold">{hint}</p>}
+          {hint && <p role="status" className="text-xs text-warning font-bold">{hint}</p>}
         </section>}
 
-        {current && <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-2" aria-label="Canlı olay akışı">
-          <h3 className="font-bold text-slate-800 text-sm">Canlı akış</h3>
+        {current && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2" aria-label="Canlı olay akışı">
+          <h3 className="font-bold text-ink text-sm">Canlı akış</h3>
           <ol className="space-y-1 max-h-72 overflow-auto text-xs">
             {current.feed.slice(0, 40).map(entry => <li key={entry.id} className="flex gap-2">
-              <span className="tabular-nums text-slate-500">{clockLabel(entry.at)}</span>
-              <span className={`font-bold ${entry.ok ? 'text-green-700' : 'text-red-700'}`}>{entry.ok ? '✓' : '✕'}</span>
+              <span className="tabular-nums text-muted">{clockLabel(entry.at)}</span>
+              <span className={`font-bold ${entry.ok ? 'text-success' : 'text-danger'}`}>{entry.ok ? '✓' : '✕'}</span>
               <span className="flex-1 min-w-0 break-words">{entry.name} · {entry.doorName}{entry.ok ? '' : ` — ${entry.reason}`}
-                {entry.server === undefined ? <span className="text-slate-400"> · gönderiliyor</span> : entry.server !== entry.ok ? <span className="text-red-700 font-bold"> · sunucu: {entry.serverReason}</span> : null}</span>
+                {entry.server === undefined ? <span className="text-muted"> · gönderiliyor</span> : entry.server !== entry.ok ? <span className="text-danger font-bold"> · sunucu: {entry.serverReason}</span> : null}</span>
             </li>)}
-            {!current.feed.length && <li className="text-slate-500">Henüz okutma yok.</li>}
+            {!current.feed.length && <li className="text-muted">Henüz okutma yok.</li>}
           </ol>
-          {current.notes.length > 0 && <details className="text-xs text-slate-600"><summary className="cursor-pointer font-bold">Hareketler ({current.notes.length})</summary>
+          {current.notes.length > 0 && <details className="text-xs text-muted"><summary className="cursor-pointer font-bold">Hareketler ({current.notes.length})</summary>
             <ul className="mt-1 space-y-0.5 max-h-48 overflow-auto">{current.notes.map((text, i) => <li key={i}>{text}</li>)}</ul></details>}
         </section>}
       </aside>

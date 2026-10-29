@@ -68,66 +68,49 @@ function Dashboard() {
     };
   }, [timeFilter, revision]);
 
-  if (error) return <div role="alert" className="p-8 text-red-700">{error} <button type="button" className="underline" onClick={() => { setError(''); setLoading(true); setRevision(value => value + 1); }}>Tekrar dene</button></div>;
+  if (error) return <div role="alert" className="p-8 text-danger">{error} <button type="button" className="underline" onClick={() => { setError(''); setLoading(true); setRevision(value => value + 1); }}>Tekrar dene</button></div>;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
         <div className="flex flex-col items-center gap-4">
-          <span className="w-14 h-14 border-[3px] border-slate-200 border-t-blue-500 rounded-full animate-spin" />
-          <span className="font-bold text-slate-400 tracking-wide animate-pulse text-sm">Sistem Verileri Yükleniyor...</span>
+          <span className="w-14 h-14 border-[3px] border-line border-t-blue-500 rounded-full animate-spin" />
+          <span className="font-bold text-muted tracking-wide animate-pulse text-sm">Sistem Verileri Yükleniyor...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up pb-12 mt-6">
+    <div className="space-y-6 pb-12">
 
-      {/* HERO BAŞLIK */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-xl px-8 py-7">
-        {/* Dekoratif arka plan */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(59,130,246,0.15),transparent_60%)]" />
-        <div className="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-blue-500/5 border border-blue-400/10" />
-        <div className="absolute right-20 bottom-0 w-32 h-32 rounded-full bg-indigo-500/5" />
-
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
-            <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-1">Geçiş Kontrol Sistemi</p>
-            <h1 className="text-3xl font-black text-white tracking-tight">Kontrol Paneli</h1>
-            <p className="text-slate-400 text-sm mt-1">{demoSettings().demo ? 'Sentetik senaryo döneminin özetini ve geçiş trendlerini inceleyin.' : 'Anlık sistem durumunu ve geçiş trendlerini buradan takip edin.'}</p>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
-            <div className="text-right hidden md:block">
-              <p className="text-blue-300 text-xs font-semibold uppercase tracking-wider">
-                {currentTime.toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
-              <p className="text-3xl font-black text-white leading-none mt-1 tabular-nums">
-                {demoSettings().demo ? 'Demo referans günü' : currentTime.toLocaleTimeString('tr-TR')}
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm p-1 rounded-xl border border-white/10 inline-flex">
-              {TIME_FILTERS.map(({ key, label }) => (
-                <button
-                  key={key}
-                  onClick={() => { if (key !== timeFilter) { setLoading(true); setTimeFilter(key); } }}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                    timeFilter === key
-                      ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Ana Sayfa</h1>
+          <p className="text-muted text-sm mt-1">{demoSettings().demo ? 'Sentetik senaryo döneminin özetini ve geçiş trendlerini inceleyin.' : 'Anlık sistem durumunu ve geçiş trendlerini buradan takip edin.'}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <p className="text-sm text-muted tabular-nums">
+            {demoSettings().demo ? 'Demo referans günü' : currentTime.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ' + currentTime.toLocaleTimeString('tr-TR')}
+          </p>
+          <div className="bg-surface-3 p-1 rounded-lg inline-flex" role="group" aria-label="Dönem">
+            {TIME_FILTERS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={timeFilter === key}
+                onClick={() => { if (key !== timeFilter) { setLoading(true); setTimeFilter(key); } }}
+                className={`px-3 py-1.5 rounded-md text-sm font-semibold ${timeFilter === key ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* İSTATİSTİK KARTLARI */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <StatCard
           label="Aktif Personel"
           value={stats.AktifPersonel}
@@ -175,13 +158,13 @@ function Dashboard() {
       </div>
 
       {/* GRAFİKLER */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         <TrendChart data={trendData} timeFilter={timeFilter} />
         <DeptChart  data={deptData} />
       </div>
 
       {/* SON HAREKETLER + HIZLI ERİŞİM */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         <RecentLogsTable logs={recentLogs} />
         <QuickLinks />
       </div>

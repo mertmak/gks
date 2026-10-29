@@ -37,13 +37,13 @@ function Settings() {
   };
 
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-100 mt-10">
-      <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-6">Hesap Ayarları</h2>
+    <div className="max-w-xl mx-auto bg-surface p-8 rounded-2xl shadow-xl border border-line mt-10">
+      <h1 className="text-2xl font-bold text-ink tracking-tight mb-6">Hesap Ayarları</h1>
 
       <form onSubmit={handleSubmit} aria-busy={pending}>
         <fieldset disabled={pending} className="space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2" htmlFor="settings-field-1">Kullanıcı Adı</label>
+            <label className="block text-sm font-semibold text-ink mb-2" htmlFor="settings-field-1">Kullanıcı Adı</label>
             <input id="settings-field-1"
               type="text"
               name="username" readOnly autoComplete="username"
@@ -51,36 +51,36 @@ function Settings() {
               onChange={handleChange}
               required
               placeholder="Kullanıcı adınız"
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
+              className="w-full px-4 py-3 rounded-xl border border-line-strong focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all shadow-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2" htmlFor="settings-field-2">Mevcut Şifre</label>
+            <label className="block text-sm font-semibold text-ink mb-2" htmlFor="settings-field-2">Mevcut Şifre</label>
             <input id="settings-field-2"
               type="password"
               name="eskiSifre" autoComplete="current-password"
               value={formData.eskiSifre}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
+              className="w-full px-4 py-3 rounded-xl border border-line-strong focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all shadow-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2" htmlFor="settings-field-3">Yeni Şifre</label>
+            <label className="block text-sm font-semibold text-ink mb-2" htmlFor="settings-field-3">Yeni Şifre</label>
             <input id="settings-field-3"
               type="password"
               name="yeniSifre" autoComplete="new-password" minLength={10} maxLength={72} aria-describedby="password-help"
               value={formData.yeniSifre}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all shadow-sm"
+              className="w-full px-4 py-3 rounded-xl border border-line-strong focus:ring-2 focus:ring-accent focus:border-accent outline-none transition-all shadow-sm"
             />
           </div>
-          <p id="password-help" className="text-sm text-slate-500">Yeni şifre en az 10 karakter olmalıdır. Türkçe karakterler dahil UTF-8 uzunluğu en fazla 72 bayt olabilir. Değişiklikten sonra yeniden giriş yapmanız gerekir.</p>
+          <p id="password-help" className="text-sm text-muted">Yeni şifre en az 10 karakter olmalıdır. Türkçe karakterler dahil UTF-8 uzunluğu en fazla 72 bayt olabilir. Değişiklikten sonra yeniden giriş yapmanız gerekir.</p>
 
           <button
             type="submit"
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg mt-2"
+            className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg mt-2"
           >
             {pending ? 'Güncelleniyor…' : 'Şifreyi Güncelle'}
           </button>

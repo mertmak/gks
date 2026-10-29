@@ -22,11 +22,11 @@ export default function SandboxBanner({ expiresAt, referenceDate, onClose }) {
     } catch (err) { setError(err.response?.data?.message || 'Alan sıfırlanamadı.'); }
   });
   return (
-    <div className="bg-amber-100 text-amber-950 px-6 py-3 text-sm flex flex-wrap items-center gap-x-4 gap-y-2">
+    <div className="bg-warning-soft text-ink px-6 py-3 text-sm flex flex-wrap items-center gap-x-4 gap-y-2">
       <p className="flex-1 min-w-60"><strong>Kişisel simülasyon alanı</strong> · Değişiklikler yalnız sizin kopyanızda · Referans gün {referenceDate} · Kalan süre: {left} dk</p>
-      {error && <p role="alert" className="text-red-700 font-bold">{error}</p>}
+      {error && <p role="alert" className="text-danger font-bold">{error}</p>}
       <div className="flex gap-2">
-        <button type="button" disabled={pending} onClick={reset} className="rounded-lg border border-amber-700/40 px-3 py-1 font-bold hover:bg-amber-200">Demo verisine sıfırla</button>
+        <button type="button" disabled={pending} onClick={reset} className="rounded-lg border border-amber-700/40 px-3 py-1 font-bold hover:bg-warning-line">Demo verisine sıfırla</button>
         <button type="button" disabled={pending} onClick={onClose} className="rounded-lg bg-amber-900 text-white px-3 py-1 font-bold hover:bg-amber-800">Alanı kapat</button>
       </div>
     </div>

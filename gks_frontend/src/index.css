@@ -1,1 +1,67 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic colors; .dark below swaps the values, so pages need no dark: classes. */
+@theme {
+  --color-page: #eef1f3;
+  --color-surface: #ffffff;
+  --color-surface-2: #f5f7f8;
+  --color-surface-3: #e6ebef;
+  --color-line: #d5dbe0;
+  --color-line-strong: #8d98a4;
+  --color-ink: #17212b;
+  --color-muted: #56626e;
+  --color-primary: #17212b;
+  --color-primary-hover: #2c3a48;
+  --color-accent: #0b6b74;
+  --color-accent-soft: #dff1f2;
+  --color-rail: #121c25;
+  --color-info: #1f5fa8;
+  --color-info-soft: #e4eefa;
+  --color-info-line: #b3cdee;
+  --color-success: #15703d;
+  --color-success-soft: #e3f4e9;
+  --color-success-line: #a9dcb9;
+  --color-warning: #8a4b00;
+  --color-warning-soft: #fdf0d9;
+  --color-warning-line: #f0cf96;
+  --color-danger: #b42318;
+  --color-danger-soft: #fde8e6;
+  --color-danger-line: #f4b4ad;
+}
+
+.dark {
+  color-scheme: dark;
+  --color-page: #0e151c;
+  --color-surface: #151f28;
+  --color-surface-2: #1b2631;
+  --color-surface-3: #24313d;
+  --color-line: #2b3946;
+  --color-line-strong: #607080;
+  --color-ink: #e5eaef;
+  --color-muted: #a1aebb;
+  --color-primary: #1d6f78;
+  --color-primary-hover: #24838d;
+  --color-accent: #5cc3cb;
+  --color-accent-soft: #143238;
+  --color-rail: #0a1016;
+  --color-info: #8ab8f0;
+  --color-info-soft: #172a40;
+  --color-info-line: #2d4a6e;
+  --color-success: #74d39c;
+  --color-success-soft: #13301f;
+  --color-success-line: #275a3a;
+  --color-warning: #f2c06e;
+  --color-warning-soft: #33260f;
+  --color-warning-line: #66491b;
+  --color-danger: #f59a90;
+  --color-danger-soft: #3a1714;
+  --color-danger-line: #6e2b25;
+}
+
+@layer base {
+  *, ::before, ::after { border-color: var(--color-line-strong); }
+  body { background: var(--color-page); color: var(--color-ink); font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+}

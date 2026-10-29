@@ -7,8 +7,8 @@ function AlertMessage({ message, type }) {
   return (
     <div role={isSuccess ? 'status' : 'alert'} className={`p-4 rounded-xl text-sm font-bold border flex items-center shadow-sm animate-fade-in ${
       isSuccess 
-        ? 'bg-green-50 text-green-700 border-green-200' 
-        : 'bg-red-50 text-red-700 border-red-200'
+        ? 'bg-success-soft text-success border-success-line' 
+        : 'bg-danger-soft text-danger border-danger-line'
     }`}>
       {/* Duruma göre dinamik ikon */}
       {isSuccess ? (

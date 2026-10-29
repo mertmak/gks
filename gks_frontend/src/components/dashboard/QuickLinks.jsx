@@ -7,11 +7,11 @@ const LINKS = [
     adminOnly: true,
     label: 'Yeni Personel Ekle',
     desc: 'Sisteme kayıt oluştur',
-    iconBg: 'bg-blue-100',
-    iconText: 'text-blue-600',
-    hoverBorder: 'hover:border-blue-200',
-    hoverBg: 'hover:bg-blue-50',
-    arrowHover: 'group-hover:text-blue-500',
+    iconBg: 'bg-info-soft',
+    iconText: 'text-info',
+    hoverBorder: 'hover:border-info-line',
+    hoverBg: 'hover:bg-info-soft',
+    arrowHover: 'group-hover:text-info',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round"
@@ -23,11 +23,11 @@ const LINKS = [
     to: '/izinler',
     label: 'İzin / Rapor Kayıtları',
     desc: 'İzin kayıtlarını incele',
-    iconBg: 'bg-rose-100',
-    iconText: 'text-rose-600',
-    hoverBorder: 'hover:border-rose-200',
-    hoverBg: 'hover:bg-rose-50',
-    arrowHover: 'group-hover:text-rose-500',
+    iconBg: 'bg-danger-soft',
+    iconText: 'text-danger',
+    hoverBorder: 'hover:border-danger-line',
+    hoverBg: 'hover:bg-danger-soft',
+    arrowHover: 'group-hover:text-danger',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round"
@@ -39,11 +39,11 @@ const LINKS = [
     to: '/puantaj',
     label: 'Puantaj Raporları',
     desc: 'Günlük takip ve analiz',
-    iconBg: 'bg-emerald-100',
-    iconText: 'text-emerald-600',
-    hoverBorder: 'hover:border-emerald-200',
-    hoverBg: 'hover:bg-emerald-50',
-    arrowHover: 'group-hover:text-emerald-500',
+    iconBg: 'bg-success-soft',
+    iconText: 'text-success',
+    hoverBorder: 'hover:border-success-line',
+    hoverBg: 'hover:bg-success-soft',
+    arrowHover: 'group-hover:text-success',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round"
@@ -55,16 +55,16 @@ const LINKS = [
 
 function QuickLinks() {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-fit">
-      <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
+    <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden h-fit">
+      <div className="px-6 py-4 border-b border-line flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
           <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
         <div>
-          <h3 className="text-sm font-black text-slate-800">Hızlı Kısayollar</h3>
-          <p className="text-xs text-slate-400">Sık kullanılan işlemler</p>
+          <h3 className="text-sm font-black text-ink">Hızlı Kısayollar</h3>
+          <p className="text-xs text-muted">Sık kullanılan işlemler</p>
         </div>
       </div>
 
@@ -73,18 +73,18 @@ function QuickLinks() {
           <Link
             key={to}
             to={to}
-            className={`flex items-center justify-between p-4 rounded-xl border border-slate-100 ${hoverBorder} ${hoverBg} transition-all duration-200 group`}
+            className={`flex items-center justify-between p-4 rounded-xl border border-line ${hoverBorder} ${hoverBg} transition-all duration-200 group`}
           >
             <div className="flex items-center gap-3.5">
               <div className={`w-10 h-10 rounded-xl ${iconBg} ${iconText} flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 duration-200`}>
                 {icon}
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-800">{label}</p>
-                <p className="text-xs text-slate-400">{desc}</p>
+                <p className="text-sm font-bold text-ink">{label}</p>
+                <p className="text-xs text-muted">{desc}</p>
               </div>
             </div>
-            <svg className={`w-4 h-4 text-slate-300 ${arrowHover} transition-all duration-200 group-hover:translate-x-0.5`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 text-muted ${arrowHover} transition-all duration-200 group-hover:translate-x-0.5`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </Link>

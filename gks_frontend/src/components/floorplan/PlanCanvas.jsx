@@ -52,7 +52,7 @@ export default function PlanCanvas({ areas, doors, selected, editable, placing, 
 
   return (
     <svg ref={svg} viewBox={`0 0 ${width} ${height}`} role="img" tabIndex={0} aria-label="Kat planı. Seçili bölge ok tuşlarıyla taşınır, Shift ile boyutlandırılır."
-      className={`w-full min-w-[640px] bg-white select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 ${placing ? 'cursor-crosshair' : ''}`}
+      className={`w-full min-w-[640px] bg-white select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${placing ? 'cursor-crosshair' : ''}`}
       onPointerDown={clear} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onClick={click} onKeyDown={keyDown}>
       <defs>
         <pattern id="plan-grid" width={GRID} height={GRID} patternUnits="userSpaceOnUse">
