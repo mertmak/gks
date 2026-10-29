@@ -14,10 +14,12 @@ const templateAreas = [
 const templateSlots = {
     'Ana Giriş': [[null, 'lobi', 40, 280], [null, 'lobi', 40, 320]],
     'Ana Çıkış': [[null, 'lobi', 40, 360], [null, 'lobi', 40, 400]],
-    'İç Geçiş': [['lobi', 'ofis', 240, 280], ['ofis', 'toplanti', 620, 440], ['lobi', 'ofis', 240, 360]],
+    // The second inner door is the way back from the break area: attendance
+    // closes a break at the next read that is not a break-area door.
+    'İç Geçiş': [['lobi', 'ofis', 240, 280], ['ofis', 'mola', 720, 200], ['ofis', 'toplanti', 620, 440], ['lobi', 'ofis', 240, 360]],
     'Yemekhane Giriş': [['ofis', 'yemekhane', 300, 440], ['ofis', 'yemekhane', 360, 440]],
     'Yemekhane Çıkış': [['ofis', 'yemekhane', 440, 440], ['ofis', 'yemekhane', 500, 440]],
-    'Mola / Sigara Alanı': [['ofis', 'mola', 720, 120], ['ofis', 'mola', 720, 180]],
+    'Mola / Sigara Alanı': [['ofis', 'mola', 720, 80], ['ofis', 'mola', 720, 140]],
 };
 
 async function readPlan(tx) {
@@ -63,8 +65,12 @@ async function updatePlan(tx, plan, user) {
     await addDoorLog(user, 'KAT PLANI GÜNCELLENDİ', 'Kat Planı', `${plan.bolgeler.length} bölge, ${plan.kapilar.length} yerleşik kapı.`, tx);
 }
 
-// Places the existing doors by type (active ones first) and adds a door for
-// every type that has no active door, so the template is usable at once.
+// Active doors the template needs per type; types not listed need one.
+const templateMinimum = { 'İç Geçiş': 2 };
+
+// Places the existing doors by type (active ones first) and adds the missing
+// active doors, permitted for every active person, so the template is usable
+// by the door simulation at once.
 async function applyTemplate(tx, user) {
     const request = () => new sql.Request(tx);
     if ((await request().query('SELECT ID FROM Bolgeler LIMIT 1')).recordset.length) {
@@ -73,13 +79,17 @@ async function applyTemplate(tx, user) {
     const doors = (await request().query('SELECT ID, Kapi_Turu, Durum FROM Doors ORDER BY ID FOR UPDATE')).recordset;
     let created = 0;
     for (const type of Object.keys(templateSlots)) {
-        if (doors.some(door => door.Durum !== false && door.Kapi_Turu === type)) continue;
-        const name = `Plan ${type}`;
-        const row = (await request().input('ad', sql.NVarChar, name).input('tur', sql.NVarChar, type)
-            .query("INSERT INTO Doors(Kapi_Adi, Kapi_Turu, Departman, Konum, Durum) VALUES(@ad, @tur, '', 'Kat planı şablonu', true) RETURNING ID")).recordset[0];
-        doors.push({ ID: row.ID, Kapi_Turu: type, Durum: true });
-        await addDoorLog(user, 'YENİ KAPI', name, `Kapı türü: ${type}. Kat planı şablonuyla eklendi.`, tx);
-        created++;
+        const active = doors.filter(door => door.Durum !== false && door.Kapi_Turu === type).length;
+        for (let i = active; i < (templateMinimum[type] || 1); i++) {
+            const name = i ? `Plan ${type} ${i + 1}` : `Plan ${type}`;
+            const row = (await request().input('ad', sql.NVarChar, name).input('tur', sql.NVarChar, type)
+                .query("INSERT INTO Doors(Kapi_Adi, Kapi_Turu, Departman, Konum, Durum) VALUES(@ad, @tur, '', 'Kat planı şablonu', true) RETURNING ID")).recordset[0];
+            const permitted = await request().input('door', sql.Int, row.ID)
+                .query('INSERT INTO Permissions(User_ID, Door_ID) SELECT ID, @door FROM Users WHERE Durum=true');
+            doors.push({ ID: row.ID, Kapi_Turu: type, Durum: true });
+            await addDoorLog(user, 'YENİ KAPI', name, `Kapı türü: ${type}. Kat planı şablonuyla eklendi; ${permitted.rowsAffected[0]} aktif personele yetki verildi.`, tx);
+            created++;
+        }
     }
     doors.sort((x, y) => (y.Durum !== false) - (x.Durum !== false) || x.ID - y.ID);
     const used = Object.fromEntries(Object.keys(templateSlots).map(type => [type, 0]));

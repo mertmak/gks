@@ -28,8 +28,8 @@ const tables = {
 // SELECT aliases used by routes, services, scripts and tests.
 const aliases = [
     'AktifKapi', 'AktifPersonel', 'Basarili', 'BugunGecis', 'Cakisma_Var', 'Gelen', 'Izin_Durumu',
-    'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
-    'Onayli_Izin_Sayisi', 'Saat', 'ToplamPersonel', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
+    'Kapi_Durum', 'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
+    'Onayli_Izin_Sayisi', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
     'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'superuser', 'toplam', 'tur',
 ];
 

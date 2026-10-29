@@ -6,6 +6,8 @@ const usersQuery = z.object({ ...paging, departman: z.string().trim().max(100).o
 const logsQuery = z.object({ ...paging, baslangic: date.optional(), bitis: date.optional() }).refine(v => !v.baslangic || !v.bitis || validDateRange(v.baslangic, v.bitis), 'En fazla 366 günlük geçerli bir aralık seçiniz.');
 const dashboardQuery = z.object({ filter: z.enum(['gunluk', 'haftalik', 'aylik']).default('gunluk') });
 const reportQuery = z.object({ tarih: date.optional() });
+const percent = z.string().regex(/^\d{1,2}$/).transform(Number).pipe(z.number().int().max(50)).optional().transform(v => (v ?? 0) / 100);
+const simPlanQuery = z.object({ tarih: date, gec: percent, devamsiz: percent });
 const overtimeQuery = z.object({ baslangic: date, bitis: date }).refine(v => validDateRange(v.baslangic, v.bitis), 'En fazla 366 günlük geçerli bir aralık seçiniz.');
 const validateQuery = schema => (req, res, next) => {
     const result = schema.safeParse(req.query);
@@ -13,4 +15,4 @@ const validateQuery = schema => (req, res, next) => {
     req.validatedQuery = result.data;
     next();
 };
-module.exports = { validateQuery, usersQuery, logsQuery, dashboardQuery, reportQuery, overtimeQuery };
+module.exports = { validateQuery, usersQuery, logsQuery, dashboardQuery, reportQuery, overtimeQuery, simPlanQuery };

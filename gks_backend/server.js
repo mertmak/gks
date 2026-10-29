@@ -26,7 +26,7 @@ app.get('/api/features',verifyToken,(req,res)=>res.json({simulation:localSimulat
 app.use('/api',require('./routes/sandboxRoutes'));
 app.use('/api',require('./routes/authRoutes'));
 for(const name of ['dashboard','user','door','floorPlan','shift','report','leave','overtime']) app.use('/api',require(`./routes/${name}Routes`));
-if(localSimulation||sandbox.enabled) app.use('/api',require('./routes/seederRoutes'));
+if(localSimulation||sandbox.enabled) for(const name of ['seeder','doorSimulation']) app.use('/api',require(`./routes/${name}Routes`));
 if(process.env.NODE_ENV!=='production') {
     const swagger=require('swagger-ui-express');
     app.use('/api-docs',swagger.serve,swagger.setup(require('./utils/swagger')));

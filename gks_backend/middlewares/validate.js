@@ -44,6 +44,14 @@ const floorPlanSchema = z.object({ bolgeler: z.array(floorArea).max(30, 'En fazl
     if (new Set(plan.kapilar.map(door => door.id)).size !== plan.kapilar.length) ctx.addIssue({ code: 'custom', message: 'Aynı kapı birden fazla yerleştirilemez.' });
     if (plan.kapilar.some(door => [door.bolge_a, door.bolge_b].some(ref => ref && !refs.includes(ref)))) ctx.addIssue({ code: 'custom', message: 'Kapının bağlandığı bölge planda yok.' });
 });
+// Card reads from the door simulation: wall-clock times without a zone,
+// within the simulated day and its neighbours (night shifts).
+const wallClock = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Zaman YYYY-MM-DDTHH:MM:SS olmalıdır.');
+const simReadSchema = z.object({ tarih: date, okutmalar: z.array(z.object({ kart: text(50).min(1, 'Kart numarası zorunludur.'), kapi_id: id, zaman: wallClock })).min(1).max(50, 'Bir istekte en fazla 50 okutma gönderilebilir.') })
+    .refine(v => {
+        const day = Date.parse(v.tarih + 'T00:00:00Z');
+        return v.okutmalar.every(read => { const time = Date.parse(read.zaman + 'Z'); return time >= day - 86400000 && time < day + 2 * 86400000; });
+    }, 'Okutma zamanı simülasyon günü ve komşu günler içinde olmalıdır.');
 const schemas = {
     loginSchema: z.object({ username, password: z.string().min(1, 'Şifre zorunludur.').max(200) }),
     ilkKurulumSchema: z.object({ username, password }),
@@ -64,5 +72,6 @@ const schemas = {
     personelDoorsSchema: z.object({ doorIds }),
     personelShiftSchema: z.object({ vardiya_id: optionalId }),
     floorPlanSchema,
+    simReadSchema,
 };
 module.exports = { validate, schemas, date, validDateRange, id, number };
