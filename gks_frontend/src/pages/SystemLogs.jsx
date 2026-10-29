@@ -79,7 +79,7 @@ function SystemLogs() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-slate-800">Sistem ve İşlem Geçmişi</h2>
+      <h2 className="text-2xl font-bold text-slate-800">Sistem İşlemleri</h2>
       {/* FİLTRE MENÜSÜ */}
       <form onSubmit={handleFetchData} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         <div>
@@ -123,7 +123,7 @@ function SystemLogs() {
           </div>
           
           <CustomDataGrid
-            exportFileName={`Sistem_Loglari_${businessDate()}`}
+            exportFileName={`Sistem_Islemleri_${businessDate()}`}
             rowData={logs}
             serverPagination={pagination}
             onPageChange={goToPage}

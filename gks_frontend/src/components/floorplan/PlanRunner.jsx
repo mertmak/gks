@@ -158,7 +158,7 @@ export default function PlanRunner({ plan, onUnsentChange }) {
           {done && !pending && <div className="rounded-xl bg-green-50 border border-green-200 p-3 space-y-1">
             <p className="font-bold text-green-800">Gün tamamlandı.</p>
             <p className="flex flex-wrap gap-x-3"><Link className="text-blue-700 underline" to={`/puantaj?tarih=${new Date(current.day).toISOString().slice(0, 10)}`}>Bu günün puantajı</Link>
-              <Link className="text-blue-700 underline" to="/mesailer">Mesai onayları</Link><Link className="text-blue-700 underline" to="/loglar/gecis">Geçiş logları</Link></p>
+              <Link className="text-blue-700 underline" to="/mesailer">Mesai onayları</Link><Link className="text-blue-700 underline" to="/gecis-hareketleri">Geçiş hareketleri</Link></p>
           </div>}
         </section>}
 

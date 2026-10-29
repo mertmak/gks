@@ -124,7 +124,7 @@ function FloorPlan() {
   return (
     <div className="space-y-6 mt-8">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Kat Planı</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Tesis Tasarımı</h2>
         <p className="text-slate-500 text-sm mt-1">Bölgeleri çizin ve kapıları bölge sınırlarına yerleştirin. Bir kapı iki bölgeyi ya da bir bölgeyi bina dışıyla bağlar; geçiş simülasyonu bu planı kullanır.</p>
       </div>
 
@@ -202,7 +202,7 @@ function FloorPlan() {
             <p className="text-slate-600">{door.type} · {door.active ? 'Aktif' : 'Pasif'}</p>
             <p className="text-slate-600">{door.placed ? (isLinked(door) ? <>Bağlantı: <strong>{areaName(plan.areas, door.a)} ↔ {areaName(plan.areas, door.b)}</strong></> : <strong className="text-red-700">Bölge sınırında değil</strong>) : 'Plana yerleştirilmedi.'}</p>
             <p className="text-slate-600">Yetkili aktif personel: <strong>{door.permitted}</strong></p>
-            {session?.role === 'admin' && <p className="text-xs text-slate-500">Yetkileri <Link className="text-blue-600 underline" to="/personel/toplu">Toplu İşlem Merkezi</Link> veya <Link className="text-blue-600 underline" to="/personel/bireysel">Bireysel İşlem Merkezi</Link> üzerinden düzenleyin.</p>}
+            {session?.role === 'admin' && <p className="text-xs text-slate-500">Yetkileri <Link className="text-blue-600 underline" to="/personel/toplu">Toplu İşlemler</Link> veya <Link className="text-blue-600 underline" to="/personel/duzenleme">Personel Düzenleme</Link> üzerinden düzenleyin.</p>}
             {editable && door.placed && <button type="button" onClick={() => { changeDoor(door.id, { placed: false, x: null, y: null, a: null, b: null }); }} className="px-3 py-1 rounded-lg bg-red-50 text-red-700 font-bold">Plandan kaldır</button>}
           </section>}
 

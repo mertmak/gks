@@ -26,6 +26,15 @@ const Overtimes = lazy(() => import('./pages/Overtimes'));
 import SandboxBanner from './components/SandboxBanner';
 
 // Fixed texts only; logout events never carry server-provided content.
+const OLD_PATHS = {
+  '/personel/bireysel': '/personel/duzenleme',
+  '/kapilar/yonetim': '/gecis-noktalari',
+  '/kapilar/kat-plani': '/tesis-tasarimi',
+  '/loglar/gecis': '/gecis-hareketleri',
+  '/loglar/kapi': '/denetim/kapi',
+  '/loglar/ik': '/denetim/sistem',
+};
+
 const LOGOUT_NOTICES = {
   'password-changed': { text: 'Şifreniz değiştirildi. Yeni şifrenizle yeniden giriş yapın.', tone: 'success' },
   'session-expired': { text: 'Oturumunuzun süresi doldu. Devam etmek için yeniden giriş yapın.', tone: 'warning' },
@@ -124,6 +133,7 @@ function App() {
     return () => { clearTimeout(timer); disconnectSocket(); window.removeEventListener('gks:logout', logout); window.removeEventListener('storage', onStorage); };
   }, [isAuthenticated, expiresAt]);
   const adminOnly = element => userRole === 'admin' ? element : <Navigate to="/" replace />;
+  const simulationEnabled = userRole === 'admin' && (sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true');
   if (!config) return <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
     <section className="max-w-md bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
       <h1 className="text-xl font-bold text-slate-800">GKS</h1>
@@ -155,35 +165,35 @@ function App() {
           {/* PERSONEL İŞLEMLERİ */}
           <DropdownMenu title="Personel" activePaths={['/personel']}>
             <DropdownItem to="/personel/liste" label="Personel Listesi" />
-            {userRole === 'admin' && <DropdownItem to="/personel/bireysel" label="Bireysel İşlem Merkezi" />}
-            {userRole === 'admin' && <DropdownItem to="/personel/toplu" label="Toplu İşlem Merkezi" />}
+            {userRole === 'admin' && <DropdownItem to="/personel/duzenleme" label="Personel Düzenleme" />}
+            {userRole === 'admin' && <DropdownItem to="/personel/toplu" label="Toplu İşlemler" />}
           </DropdownMenu>
 
           {/* KAPI İŞLEMLERİ */}
-          <DropdownMenu title="Kapılar" activePaths={['/kapilar']}>
-            <DropdownItem to="/kapilar/yonetim" label="Kapı Tanımlama ve Yönetim" />
-            <DropdownItem to="/kapilar/kat-plani" label="Kat Planı" />
+          <DropdownMenu title="Kapılar" activePaths={['/gecis-noktalari', '/tesis-tasarimi']}>
+            <DropdownItem to="/gecis-noktalari" label="Geçiş Noktaları" />
+            <DropdownItem to="/tesis-tasarimi" label="Tesis Tasarımı" />
           </DropdownMenu>
 
           {/* VARDİYA & İZİN İŞLEMLERİ */}
           <DropdownMenu title="Vardiya & İzin" activePaths={['/vardiya', '/izinler', '/mesailer']}>
             <DropdownItem to="/vardiya" label="Vardiya Yönetimi" />
             <DropdownItem to="/izinler" label="İzin ve Rapor Girişi" />
-            <DropdownItem to="/mesailer" label="Mesai Onay İşlemleri" /> {/* YENİ EKLENDİ */}
+            <DropdownItem to="/mesailer" label="Mesai Onay İşlemleri" />
           </DropdownMenu>
 
           {/* PUANTAJ (Tek Sayfa) */}
           <Link to="/puantaj" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/puantaj') ? 'bg-slate-800 text-cyan-400' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}>Puantaj</Link>
 
-          {/* LOGLAR */}
-          <DropdownMenu title="Loglar" activePaths={['/loglar']}>
-            <DropdownItem to="/loglar/gecis" label={config.demo ? 'Sentetik Geçiş Logları' : 'Geçiş Logları (Canlı)'} />
-            <DropdownItem to="/loglar/kapi" label="Kapı İşlem Logları" />
-            <DropdownItem to="/loglar/ik" label="Sistem & İK Logları" />
+          <Link to="/gecis-hareketleri" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/gecis-hareketleri') ? 'bg-slate-800 text-cyan-400' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}>Geçiş Hareketleri</Link>
+
+          <DropdownMenu title="Denetim Kayıtları" activePaths={['/denetim']}>
+            <DropdownItem to="/denetim/kapi" label="Kapı Değişiklikleri" />
+            <DropdownItem to="/denetim/sistem" label="Sistem İşlemleri" />
           </DropdownMenu>
 
           {/* SİMÜLASYON (Admin) */}
-          {userRole === 'admin' && (sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true') && (
+          {simulationEnabled && (
             <Link to="/simulasyon" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/simulasyon') ? 'bg-slate-800 text-amber-500' : 'text-amber-500/70 hover:text-amber-400 hover:bg-slate-800'}`}>Simülasyon</Link>
           )}
 
@@ -203,12 +213,12 @@ function App() {
           
           {/* Personel Rotası */}
           <Route path="/personel/liste" element={<Users />} />
-          <Route path="/personel/bireysel" element={adminOnly(<PersonnelOperations />)} />
+          <Route path="/personel/duzenleme" element={adminOnly(<PersonnelOperations />)} />
           <Route path="/personel/toplu" element={adminOnly(<BulkOperations />)} />
 
           {/* Kapı Rotası */}
-          <Route path="/kapilar/yonetim" element={<Doors />} />
-          <Route path="/kapilar/kat-plani" element={<FloorPlan />} />
+          <Route path="/gecis-noktalari" element={<Doors />} />
+          <Route path="/tesis-tasarimi" element={<FloorPlan />} />
 
           {/* Vardiya ve İzin Rotaları */}
           <Route path="/vardiya" element={<Shifts />} />
@@ -218,18 +228,20 @@ function App() {
           {/* Puantaj Rotası */}
           <Route path="/puantaj" element={<Reports />} />
 
-          {/* Log Rotaları */}
-          <Route path="/loglar/gecis" element={<Logs />} />
-          <Route path="/loglar/kapi" element={<DoorLogs />} />
-          <Route path="/loglar/ik" element={<SystemLogs />} />
+          {/* Geçiş ve Denetim Rotaları */}
+          <Route path="/gecis-hareketleri" element={<Logs />} />
+          <Route path="/denetim/kapi" element={<DoorLogs />} />
+          <Route path="/denetim/sistem" element={<SystemLogs />} />
 
           {/* Admin Rotaları */}
-          <Route path="/simulasyon" element={adminOnly(<Simulation />)} />
+          <Route path="/simulasyon" element={simulationEnabled ? <Simulation /> : <Navigate to="/" replace />} />
           <Route path="/hesap-ekle" element={sandbox ? <Navigate to="/" replace /> : adminOnly(<HesapEkle />)} />
           
           {/* Ortak Rotalar */}
           <Route path="/settings" element={config.demo ? <Navigate to="/" replace /> : <Settings />} />
-          <Route path="*" element={<Navigate to="/" />} />
+          {/* Eski adresler (yer imleri bozulmasın) */}
+          {Object.entries(OLD_PATHS).map(([from, to]) => <Route key={from} path={from} element={<Navigate to={to} replace />} />)}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes></Suspense>
       </div>
 

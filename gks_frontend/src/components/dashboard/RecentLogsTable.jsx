@@ -125,10 +125,10 @@ function RecentLogsTable({ logs }) {
       {/* Altbilgi */}
       <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/50">
         <Link
-          to="/loglar/gecis"
+          to="/gecis-hareketleri"
           className="flex items-center justify-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
         >
-          Tüm Geçiş Loglarını Görüntüle
+          Tüm Geçiş Hareketlerini Görüntüle
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>

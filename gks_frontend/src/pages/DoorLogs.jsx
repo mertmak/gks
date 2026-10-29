@@ -87,7 +87,7 @@ function DoorLogs() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-slate-800">Kapı İşlem Geçmişi</h2>
+      <h2 className="text-2xl font-bold text-slate-800">Kapı Değişiklikleri</h2>
       {/* FİLTRE MENÜSÜ */}
       <form onSubmit={handleFetchData} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         <div>
@@ -117,7 +117,7 @@ function DoorLogs() {
 
         <div className="flex items-end">
           <button type="submit" disabled={loading} className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-lg transition-colors">
-            {loading ? 'Yükleniyor...' : 'Kapı Loglarını Getir'}
+            {loading ? 'Yükleniyor...' : 'Kayıtları Getir'}
           </button>
         </div>
       </form>
@@ -131,7 +131,7 @@ function DoorLogs() {
           </div>
           
           <CustomDataGrid
-            exportFileName={`Kapi_Islem_Loglari_${businessDate()}`}
+            exportFileName={`Kapi_Degisiklikleri_${businessDate()}`}
              rowData={logs}
             serverPagination={pagination}
             onPageChange={goToPage}

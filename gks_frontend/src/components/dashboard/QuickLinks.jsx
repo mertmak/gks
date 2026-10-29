@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const LINKS = [
   {
-    to: '/personel/bireysel',
+    to: '/personel/duzenleme',
     adminOnly: true,
     label: 'Yeni Personel Ekle',
     desc: 'Sisteme kayıt oluştur',

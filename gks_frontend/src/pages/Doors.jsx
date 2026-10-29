@@ -187,7 +187,7 @@ function Doors() {
     <div className="space-y-8 relative mt-8">
 
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Kapı Tanımlama ve Yönetim</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Geçiş Noktaları</h2>
         <p className="text-slate-500 text-sm mt-1">Sistemdeki geçiş noktalarını (kapıları) buradan ekleyebilir, düzenleyebilir veya durumlarını değiştirebilirsiniz.</p>
       </div>
 
@@ -303,7 +303,7 @@ function Doors() {
           <CustomDataGrid
             rowData={filteredDoors}
             columnDefs={colDefs}
-            exportFileName="GKS_Kapilar"
+            exportFileName="GKS_Gecis_Noktalari"
             getRowId={(params) => params.data.ID}
           />
         </div>
