@@ -1,8 +1,8 @@
 import api from './api/axios';
 import { configureDemo } from './utils/demo';
-import { useState, useEffect, useId, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { readSession } from './utils/session';
-import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { connectSocket, disconnectSocket } from './api/socket';
 
 // Sayfa Bileşenleri İçe Aktarımı
@@ -24,6 +24,8 @@ const HesapEkle = lazy(() => import('./pages/HesapEkle'));
 const Login = lazy(() => import('./pages/Login'));
 const Overtimes = lazy(() => import('./pages/Overtimes'));
 import SandboxBanner from './components/SandboxBanner';
+import AppShell from './components/layout/AppShell';
+import { buildNav } from './utils/nav';
 
 // Fixed texts only; logout events never carry server-provided content.
 const OLD_PATHS = {
@@ -41,52 +43,6 @@ const LOGOUT_NOTICES = {
   'sandbox-expired': { text: 'Simülasyon alanınızın süresi doldu ve kopya silindi. Yeni bir alan başlatabilirsiniz.', tone: 'warning' },
 };
 
-  // Açılır Menü (Dropdown) Kapsayıcı Bileşeni
-  const DropdownMenu = ({ title, children, activePaths = [], align = 'left' }) => {
-    const location = useLocation();
-    const isMenuActive = activePaths.some(p => location.pathname.startsWith(p));
-    const [open, setOpen] = useState(false);
-    const button = useRef(null);
-    const id = useId();
-    
-    return (
-      <div className="relative" onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
-      }} onKeyDown={event => {
-        if (event.key === 'Escape') { setOpen(false); button.current?.focus(); }
-      }}>
-        <button ref={button} type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen(value => !value)} className={`flex items-center gap-1 px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${
-          isMenuActive 
-            ? 'bg-slate-800 text-cyan-400 shadow-inner' 
-            : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'
-        }`}>
-          {title}
-          <svg className={`w-4 h-4 ml-1 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-        </button>
-        {open && <div id={id} className={`fixed left-4 right-4 lg:absolute lg:w-56 mt-2 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden ${align === 'right' ? 'lg:left-auto lg:right-0' : 'lg:left-0 lg:right-auto'}`} onClick={event => { if (event.target.closest('a')) setOpen(false); }}>
-          <div className="py-2 flex flex-col">
-            {children}
-          </div>
-        </div>}
-      </div>
-    );
-  };
-
-  // Dropdown İçi Link Bileşeni
-  const DropdownItem = ({ to, label }) => {
-    const location = useLocation();
-    return (
-    <Link 
-      to={to} 
-      className={`px-4 py-3 text-sm font-bold transition-colors ${
-        location.pathname === to ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50 hover:text-blue-500'
-      }`}
-    >
-      {label}
-    </Link>
-  );
-  };
-
 function App() {
   const [config, setConfig] = useState(null);
   const [configError, setConfigError] = useState('');
@@ -100,12 +56,10 @@ function App() {
   }, [configAttempt]);
   const [isAuthenticated, setIsAuthenticated] = useState(() => !!readSession());
   const [loginNotice, setLoginNotice] = useState(null);
-  const location = useLocation();
   const session = readSession();
   const userRole = session?.role;
   const username = session?.kullanici_adi || 'Kullanıcı';
   const sandbox = !!session?.sandbox;
-  const isActive = path => location.pathname === path;
   const closeSandbox = async () => {
     try { await api.delete('/sandbox'); } catch { /* The copy also expires on its own. */ }
     handleLogout();
@@ -134,80 +88,30 @@ function App() {
   }, [isAuthenticated, expiresAt]);
   const adminOnly = element => userRole === 'admin' ? element : <Navigate to="/" replace />;
   const simulationEnabled = userRole === 'admin' && (sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true');
-  if (!config) return <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-    <section className="max-w-md bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-      <h1 className="text-xl font-bold text-slate-800">GKS</h1>
+  if (!config) return <main className="min-h-screen bg-page flex items-center justify-center p-6">
+    <section className="max-w-md bg-surface rounded-xl border border-line p-6 space-y-4">
+      <h1 className="text-xl font-bold text-ink">GKS</h1>
       <p role={configError ? 'alert' : 'status'}>{configError || 'Uygulama hazırlanıyor…'}</p>
-      {configError && <button type="button" className="rounded-lg bg-slate-900 text-white px-4 py-2" onClick={() => {
+      {configError && <button type="button" className="rounded-lg bg-primary hover:bg-primary-hover text-white px-4 py-2" onClick={() => {
         setConfigError(''); setConfigAttempt(value => value + 1);
       }}>Tekrar dene</button>}
     </section>
   </main>;
   if (!isAuthenticated) return <Suspense fallback={<p className="p-8">Yükleniyor…</p>}><Login setAuth={setIsAuthenticated} demo={config.demo} sandbox={config.sandbox ? config.sandboxMinutes : null} notice={loginNotice} /></Suspense>;
+  const menuItem = 'px-4 py-2.5 text-sm text-left text-ink hover:bg-surface-2';
+  const account = {
+    label: username + ' · ' + (userRole === 'admin' ? 'Yönetici' : 'Kullanıcı'),
+    items: <>
+      {userRole === 'admin' && !sandbox && <Link className={menuItem} to="/hesap-ekle">Yönetici Hesapları</Link>}
+      {!config.demo && <Link className={menuItem} to="/settings">Hesap Ayarları</Link>}
+      <button type="button" onClick={sandbox ? closeSandbox : handleLogout} className={menuItem + ' font-semibold text-danger'}>{sandbox ? 'Alanı Kapat ve Çık' : 'Güvenli Çıkış'}</button>
+    </>,
+  };
+  const banner = sandbox
+    ? <SandboxBanner expiresAt={expiresAt} referenceDate={config.referenceDate} onClose={closeSandbox} />
+    : config.demo && <p className="bg-warning-soft text-ink px-4 lg:px-8 py-2 text-sm">Salt okunur demo · Verilerin tamamı sentetiktir · Referans gün: {config.referenceDate}. Değişiklikler local kurulumda kullanılabilir.</p>;
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {sandbox && <SandboxBanner expiresAt={expiresAt} referenceDate={config.referenceDate} onClose={closeSandbox} />}
-      {config.demo && !sandbox && <p className="bg-amber-100 text-amber-950 px-6 py-3 text-sm">Salt okunur demo · Verilerin tamamı sentetiktir · Referans gün: {config.referenceDate}. Değişiklikler local kurulumda kullanılabilir.</p>}
-      
-      {/* ÜST MENÜ (NAVBAR) */}
-      <nav className="bg-slate-900 px-6 py-4 shadow-lg flex flex-col lg:flex-row justify-between items-center gap-4 z-50 relative">
-        <div className="flex items-center">
-          <Link to ="/" className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-tighter">
-            GKS PANEL
-          </Link>
-        </div>
-        
-        {/* MERKEZİ MENÜ (Sayfa Düzeni) */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          
-          <Link to="/" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/') ? 'bg-slate-800 text-cyan-400' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}>Ana Sayfa</Link>
-
-          {/* PERSONEL İŞLEMLERİ */}
-          <DropdownMenu title="Personel" activePaths={['/personel']}>
-            <DropdownItem to="/personel/liste" label="Personel Listesi" />
-            {userRole === 'admin' && <DropdownItem to="/personel/duzenleme" label="Personel Düzenleme" />}
-            {userRole === 'admin' && <DropdownItem to="/personel/toplu" label="Toplu İşlemler" />}
-          </DropdownMenu>
-
-          {/* KAPI İŞLEMLERİ */}
-          <DropdownMenu title="Kapılar" activePaths={['/gecis-noktalari', '/tesis-tasarimi']}>
-            <DropdownItem to="/gecis-noktalari" label="Geçiş Noktaları" />
-            <DropdownItem to="/tesis-tasarimi" label="Tesis Tasarımı" />
-          </DropdownMenu>
-
-          {/* VARDİYA & İZİN İŞLEMLERİ */}
-          <DropdownMenu title="Vardiya & İzin" activePaths={['/vardiya', '/izinler', '/mesailer']}>
-            <DropdownItem to="/vardiya" label="Vardiya Yönetimi" />
-            <DropdownItem to="/izinler" label="İzin ve Rapor Girişi" />
-            <DropdownItem to="/mesailer" label="Mesai Onay İşlemleri" />
-          </DropdownMenu>
-
-          {/* PUANTAJ (Tek Sayfa) */}
-          <Link to="/puantaj" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/puantaj') ? 'bg-slate-800 text-cyan-400' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}>Puantaj</Link>
-
-          <Link to="/gecis-hareketleri" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/gecis-hareketleri') ? 'bg-slate-800 text-cyan-400' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}>Geçiş Hareketleri</Link>
-
-          <DropdownMenu title="Denetim Kayıtları" activePaths={['/denetim']}>
-            <DropdownItem to="/denetim/kapi" label="Kapı Değişiklikleri" />
-            <DropdownItem to="/denetim/sistem" label="Sistem İşlemleri" />
-          </DropdownMenu>
-
-          {/* SİMÜLASYON (Admin) */}
-          {simulationEnabled && (
-            <Link to="/simulasyon" className={`px-4 py-2 rounded-xl font-bold text-sm transition-all duration-200 ${isActive('/simulasyon') ? 'bg-slate-800 text-amber-500' : 'text-amber-500/70 hover:text-amber-400 hover:bg-slate-800'}`}>Simülasyon</Link>
-          )}
-
-        </div>
-
-        <DropdownMenu title={username + ' · ' + (userRole === 'admin' ? 'Yönetici' : 'Kullanıcı')} activePaths={['/settings', '/hesap-ekle']} align="right">
-          {userRole === 'admin' && !sandbox && <DropdownItem to="/hesap-ekle" label="Yönetici Hesapları" />}
-          {!config.demo && <DropdownItem to="/settings" label="Hesap Ayarları" />}
-          <button type="button" onClick={sandbox ? closeSandbox : handleLogout} className="px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 text-left">{sandbox ? 'Alanı Kapat ve Çık' : 'Güvenli Çıkış'}</button>
-        </DropdownMenu>
-      </nav>
-
-      {/* SAYFALARIN GÖSTERİLECEĞİ ALAN */}
-      <div className="px-6 pb-10">
+    <AppShell nav={buildNav({ admin: userRole === 'admin', simulation: simulationEnabled })} banner={banner} account={account}>
         <Suspense fallback={<p role="status" className="p-8">Sayfa yükleniyor…</p>}><Routes>
           <Route path="/" element={<Dashboard />} />
           
@@ -243,9 +147,7 @@ function App() {
           {Object.entries(OLD_PATHS).map(([from, to]) => <Route key={from} path={from} element={<Navigate to={to} replace />} />)}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes></Suspense>
-      </div>
-
-    </div>
+    </AppShell>
   );
 }
 

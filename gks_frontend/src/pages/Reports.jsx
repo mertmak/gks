@@ -108,16 +108,16 @@ function Reports() {
 
   const colDefs = useMemo(() => [
     { field: 'Sicil_No', headerName: 'Sicil No', width: 110, pinned: 'left' },
-    { field: 'Ad_Soyad', headerName: 'Ad Soyad', flex: 1, minWidth: 160, pinned: 'left', cellClass: 'font-bold text-slate-800' },
+    { field: 'Ad_Soyad', headerName: 'Ad Soyad', flex: 1, minWidth: 160, pinned: 'left', cellClass: 'font-bold text-ink' },
     {
       headerName: 'Tarih',
       valueGetter: () => { return selectedDate.split('-').reverse().join('.'); },
-      width: 110, cellClass: 'text-slate-500 font-medium'
+      width: 110, cellClass: 'text-muted font-medium'
     },
     { field: 'Departman', headerName: 'Departman', width: 130 },
     {
       field: 'Vardiya_Adi', headerName: 'Vardiya', width: 150,
-      cellRenderer: (params) => params.value ? <span className="font-bold text-slate-800">{params.value}</span> : <span className="text-slate-400 italic">Atanmamış</span>
+      cellRenderer: (params) => params.value ? <span className="font-bold text-ink">{params.value}</span> : <span className="text-muted italic">Atanmamış</span>
     },
     {
       headerName: 'Vardiya Saatleri',
@@ -127,7 +127,7 @@ function Reports() {
         const bit = extractTime(params.data.Mesai_Bitis);
         return `${bas} - ${bit}`;
       },
-      width: 140, cellClass: 'font-mono text-slate-600 font-bold'
+      width: 140, cellClass: 'font-mono text-muted font-bold'
     },
     {
       headerName: 'Gerçekleşen',
@@ -136,22 +136,22 @@ function Reports() {
         const cikis = extractTime(params.data.Son_Cikis);
         return `${giris} / ${cikis}`;
       },
-      width: 140, cellClass: 'font-mono text-slate-700 font-bold'
+      width: 140, cellClass: 'font-mono text-ink font-bold'
     },
     {
       field: 'Gec_Kalma_Dk', headerName: 'Geç', width: 90,
       cellRenderer: (params) => {
         const dk = params.value;
-        if (dk > 0) return <span className="text-red-600 font-black">+{dk}dk</span>;
-        return <span className="text-slate-300">-</span>;
+        if (dk > 0) return <span className="text-danger font-black">+{dk}dk</span>;
+        return <span className="text-muted">-</span>;
       }
     },
     {
       field: 'Erken_Cikma_Dk', headerName: 'Erken', width: 90,
       cellRenderer: (params) => {
         const dk = params.value;
-        if (dk > 0) return <span className="text-orange-500 font-black">{dk}dk</span>;
-        return <span className="text-slate-300">-</span>;
+        if (dk > 0) return <span className="text-warning font-black">{dk}dk</span>;
+        return <span className="text-muted">-</span>;
       }
     },
     {
@@ -161,49 +161,49 @@ function Reports() {
         if (dk > 0) {
           const saat = Math.floor(dk / 60); const dakika = dk % 60;
           const text = saat > 0 ? `${saat}s ${dakika}d` : `${dk}dk`;
-          return <span className="text-blue-600 font-black">+{text}</span>;
+          return <span className="text-info font-black">+{text}</span>;
         }
-        return <span className="text-slate-300">-</span>;
+        return <span className="text-muted">-</span>;
       }
     },
     {
       field: 'Toplam_Yemek_Dk', headerName: 'Yemek', width: 100,
       cellRenderer: (params) => {
         const dk = params.value;
-        if (dk > 0) return <span className="font-bold text-slate-700">{dk} dk</span>;
-        return <span className="text-slate-300">-</span>;
+        if (dk > 0) return <span className="font-bold text-ink">{dk} dk</span>;
+        return <span className="text-muted">-</span>;
       }
     },
     {
       field: 'Toplam_Mola_Dk', headerName: 'Mola', width: 100,
       cellRenderer: (params) => {
         const dk = params.value;
-        if (dk > 0) return <span className="font-bold text-slate-700">{dk} dk</span>;
-        return <span className="text-slate-300">-</span>;
+        if (dk > 0) return <span className="font-bold text-ink">{dk} dk</span>;
+        return <span className="text-muted">-</span>;
       }
     },
     {
       field: 'Mola_Asimi_Dk', headerName: 'Aşım', width: 90,
       cellRenderer: (params) => {
         const dk = params.value;
-        if (dk > 0) return <span className="text-red-600 font-black">+{dk}dk</span>;
-        return <span className="text-slate-300">-</span>;
+        if (dk > 0) return <span className="text-danger font-black">+{dk}dk</span>;
+        return <span className="text-muted">-</span>;
       }
     },
     {
       field: 'Durum', headerName: 'Durum Özeti', width: 200,
       cellRenderer: (params) => {
         const text = params.value;
-        let colorClass = 'bg-slate-100 text-slate-700';
+        let colorClass = 'bg-surface-3 text-ink';
 
-        if (text === 'Normal') colorClass = 'bg-green-100 text-green-700 border border-green-200';
-        else if (text === 'İzin Çakışması') colorClass = 'bg-red-100 text-red-700 border border-red-200';
-        else if (text.includes('Geç Kaldı') || text.includes('Devamsız') || text.includes('Mola Aşımı')) colorClass = 'bg-red-100 text-red-700 border border-red-200';
-        else if (text.includes('Erken Çıktı')) colorClass = 'bg-orange-100 text-orange-700 border border-orange-200';
-        else if (text.includes('Çıkış Yok') || text.includes('Çıkış Okutulmadı')) colorClass = 'bg-yellow-100 text-yellow-700 border border-yellow-200';
-        else if (text === 'Hafta Tatili') colorClass = 'bg-slate-100 text-slate-500 border border-slate-200';
+        if (text === 'Normal') colorClass = 'bg-success-soft text-success border border-success-line';
+        else if (text === 'İzin Çakışması') colorClass = 'bg-danger-soft text-danger border border-danger-line';
+        else if (text.includes('Geç Kaldı') || text.includes('Devamsız') || text.includes('Mola Aşımı')) colorClass = 'bg-danger-soft text-danger border border-danger-line';
+        else if (text.includes('Erken Çıktı')) colorClass = 'bg-warning-soft text-warning border border-warning-line';
+        else if (text.includes('Çıkış Yok') || text.includes('Çıkış Okutulmadı')) colorClass = 'bg-warning-soft text-warning border border-warning-line';
+        else if (text === 'Hafta Tatili') colorClass = 'bg-surface-3 text-muted border border-line';
         else if (text === 'Tatil Mesaisi') colorClass = 'bg-teal-100 text-teal-700 border border-teal-200';
-        else if (text === 'Yıllık İzin' || text === 'Mazeret İzni' || text === 'Ücretsiz İzin') colorClass = 'bg-blue-100 text-blue-700 border border-blue-200';
+        else if (text === 'Yıllık İzin' || text === 'Mazeret İzni' || text === 'Ücretsiz İzin') colorClass = 'bg-info-soft text-info border border-info-line';
         else if (text === 'Raporlu') colorClass = 'bg-purple-100 text-purple-700 border border-purple-200';
 
         return <span className={`px-2 py-1 rounded-full text-[11px] font-bold ${colorClass}`}>{text}</span>;
@@ -212,10 +212,10 @@ function Reports() {
     {
       headerName: 'İşlem', width: 100, sortable: false, filter: false, pinned: 'right',
       cellRenderer: (params) => {
-        if (params.data.Izin_Cakismasi) return <span className="text-xs text-red-700">İzinleri düzeltin</span>;
+        if (params.data.Izin_Cakismasi) return <span className="text-xs text-danger">İzinleri düzeltin</span>;
         if(params.data.Hesaplanan_Dk > 0 || params.data.Mesai_Durumu === 'Onaylandı') {
            return (
-             <button onClick={() => handleOpenApproval(params.data)} className="px-3 py-1 bg-slate-900 text-white text-[11px] font-bold rounded hover:bg-slate-800 transition-colors mt-1">
+             <button onClick={() => handleOpenApproval(params.data)} className="px-3 py-1 bg-primary text-white text-[11px] font-bold rounded hover:bg-primary-hover transition-colors mt-1">
                İncele
              </button>
            );
@@ -228,19 +228,19 @@ function Reports() {
   return (
     <div className="space-y-6 relative mt-8">
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-surface p-6 rounded-2xl shadow-sm border border-line">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Puantaj</h2>
-          <p className="text-slate-500 text-sm mt-1">Personellerin giriş-çıkış hareketlerini, yemek sürelerini ve mola uyumlarını inceleyin.</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Puantaj</h1>
+          <p className="text-muted text-sm mt-1">Personellerin giriş-çıkış hareketlerini, yemek sürelerini ve mola uyumlarını inceleyin.</p>
         </div>
 
         <div className="flex items-end space-x-3">
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="reports-field-1">Rapor Tarihi</label>
-            <input id="reports-field-1" type="date" value={selectedDate} onChange={(e) => changeReportDate(e.target.value)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-1">Rapor Tarihi</label>
+            <input id="reports-field-1" type="date" value={selectedDate} onChange={(e) => changeReportDate(e.target.value)} className="px-4 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
           </div>
 
-          <button onClick={fetchReport} disabled={loading} className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-lg transition-colors">
+          <button onClick={fetchReport} disabled={loading} className="px-6 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm rounded-lg transition-colors">
             {loading ? 'Hesaplanıyor...' : 'Yenile'}
           </button>
 
@@ -248,31 +248,31 @@ function Reports() {
         </div>
       </div>
 
-      {reportData.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-amber-50 text-amber-900 rounded-lg">Aynı gün için birden fazla onaylı izin var. Bu satırlarda hesaplama ve yeni mesai kararı bekletilir. Önce İzinler ekranındaki çakışan kayıtları düzeltin; önceki mesai kararları korunur.</p>}
-      {reportError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg">{reportError}</p>}
-      {loading && <p role="status" className="text-sm text-slate-500">Rapor yükleniyor…</p>}
+      {reportData.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-warning-soft text-ink rounded-lg">Aynı gün için birden fazla onaylı izin var. Bu satırlarda hesaplama ve yeni mesai kararı bekletilir. Önce İzinler ekranındaki çakışan kayıtları düzeltin; önceki mesai kararları korunur.</p>}
+      {reportError && <p role="alert" className="p-3 bg-danger-soft text-danger rounded-lg">{reportError}</p>}
+      {loading && <p role="status" className="text-sm text-muted">Rapor yükleniyor…</p>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-500 mb-1">Toplam Personel</div>
-          <div className="text-2xl font-black text-slate-800">{reportData.length}</div>
+        <div className="bg-surface p-4 rounded-xl border border-line shadow-sm">
+          <div className="text-xs font-bold text-muted mb-1">Toplam Personel</div>
+          <div className="text-2xl font-black text-ink">{reportData.length}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-green-200 shadow-sm">
-          <div className="text-xs font-bold text-green-600 mb-1">Kurallara Uyanlar</div>
-          <div className="text-2xl font-black text-green-700">{reportData.filter(r => r.Durum === 'Normal').length}</div>
+        <div className="bg-surface p-4 rounded-xl border border-success-line shadow-sm">
+          <div className="text-xs font-bold text-success mb-1">Kurallara Uyanlar</div>
+          <div className="text-2xl font-black text-success">{reportData.filter(r => r.Durum === 'Normal').length}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-red-200 shadow-sm">
-          <div className="text-xs font-bold text-red-600 mb-1">Geç Kalan / Mola Aşan</div>
-          <div className="text-2xl font-black text-red-700">{reportData.filter(r => r.Durum.includes('Geç Kaldı') || r.Durum.includes('Mola Aşımı')).length}</div>
+        <div className="bg-surface p-4 rounded-xl border border-danger-line shadow-sm">
+          <div className="text-xs font-bold text-danger mb-1">Geç Kalan / Mola Aşan</div>
+          <div className="text-2xl font-black text-danger">{reportData.filter(r => r.Durum.includes('Geç Kaldı') || r.Durum.includes('Mola Aşımı')).length}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="text-xs font-bold text-slate-500 mb-1">Devamsız</div>
-          <div className="text-2xl font-black text-slate-700">{reportData.filter(r => r.Durum === 'Devamsız').length}</div>
+        <div className="bg-surface p-4 rounded-xl border border-line shadow-sm">
+          <div className="text-xs font-bold text-muted mb-1">Devamsız</div>
+          <div className="text-2xl font-black text-ink">{reportData.filter(r => r.Durum === 'Devamsız').length}</div>
         </div>
       </div>
 
       <AlertMessage message={message.text} type={message.type} />
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col p-4 h-[60vh]">
+      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[60vh]">
         <CustomDataGrid
           ref={gridRef}
           exportFileName={`PDKS_Raporu_${selectedDate}`}
@@ -287,20 +287,20 @@ function Reports() {
       <Modal isOpen={showApprovalModal} onClose={() => { if (!pending) setShowApprovalModal(false); }} title="Mesai İnceleme" maxWidth="max-w-sm">
         {selectedRow && (
           <>
-            <p className="text-sm text-slate-500 mb-4 font-bold">{selectedRow.Ad_Soyad}</p>
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4 flex justify-between items-center">
-              <span className="text-sm font-bold text-blue-900">Sistemin Ölçtüğü:</span>
-              <span className="text-lg font-black text-blue-700">{selectedRow.Hesaplanan_Dk} Dakika</span>
+            <p className="text-sm text-muted mb-4 font-bold">{selectedRow.Ad_Soyad}</p>
+            <div className="bg-info-soft p-3 rounded-lg border border-info-line mb-4 flex justify-between items-center">
+              <span className="text-sm font-bold text-info">Sistemin Ölçtüğü:</span>
+              <span className="text-lg font-black text-info">{selectedRow.Hesaplanan_Dk} Dakika</span>
             </div>
 
             <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
             <AdminForm disabled={pending} onSubmit={handleApprovalSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="reports-field-2">Kararınız</label>
+                <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-2">Kararınız</label>
                 <select id="reports-field-2"
                   value={approvalData.durum}
                   onChange={(e) => setApprovalData({...approvalData, durum: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg outline-none font-bold text-ink focus:ring-2 focus:ring-accent"
                 >
                   <option value="Onaylandı">Mesaiyi Onayla</option>
                   <option value="Reddedildi">Mesaiyi Reddet (Ödenmeyecek)</option>
@@ -309,34 +309,34 @@ function Reports() {
 
               {approvalData.durum === 'Onaylandı' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="reports-field-3">Onaylanan Süre (Dakika)</label>
+                  <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-3">Onaylanan Süre (Dakika)</label>
                   <input id="reports-field-3"
                     type="number"
                     value={approvalData.onaylanan_dk}
                     onChange={(e) => setApprovalData({...approvalData, onaylanan_dk: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent"
                     required
                     min="0"
                     step="1"
                     max={Math.min(2880, selectedRow.Hesaplanan_Dk + 120)}
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">Sıfır dakika onaylanabilir. Üst sınır hesaplanan sürenin 120 dakika fazlasıdır.</p>
+                  <p className="text-[10px] text-muted mt-1">Sıfır dakika onaylanabilir. Üst sınır hesaplanan sürenin 120 dakika fazlasıdır.</p>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="reports-field-4">Yönetici Notu (Opsiyonel)</label>
+                <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-4">Yönetici Notu (Opsiyonel)</label>
                 <input id="reports-field-4" maxLength={255}
                   type="text"
                   value={approvalData.aciklama}
                   onChange={(e) => setApprovalData({...approvalData, aciklama: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent"
                   placeholder="Örn: Proje yetiştirildi..."
                 />
               </div>
 
               <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowApprovalModal(false)} className="px-4 py-2 bg-slate-100 font-bold rounded-lg hover:bg-slate-200 text-sm">İptal</button>
+                <button type="button" onClick={() => setShowApprovalModal(false)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-surface-3 text-sm">İptal</button>
                 <button type="submit" className={`px-4 py-2 text-white font-bold rounded-lg text-sm ${approvalData.durum === 'Onaylandı' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
                   {pending ? 'Kaydediliyor…' : 'Kaydet'}
                 </button>

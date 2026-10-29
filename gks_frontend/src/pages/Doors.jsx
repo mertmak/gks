@@ -137,7 +137,7 @@ function Doors() {
       minWidth: 150,
       cellRenderer: (params) => {
         const val = params.value || 'İç Geçiş';
-        const color = val.includes('Giriş') ? 'text-blue-600' : val.includes('Çıkış') ? 'text-orange-600' : 'text-slate-600';
+        const color = val.includes('Giriş') ? 'text-info' : val.includes('Çıkış') ? 'text-warning' : 'text-muted';
         return <span className={`font-bold ${color}`}>{val}</span>;
       }
     },
@@ -151,8 +151,8 @@ function Doors() {
       cellRenderer: (params) => {
         const isActive = params.value === undefined || params.value === null ? true : params.value;
         return isActive
-          ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-bold">Aktif</span>
-          : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-bold">Pasif</span>;
+          ? <span className="px-2 py-1 bg-success-soft text-success text-xs rounded-full font-bold">Aktif</span>
+          : <span className="px-2 py-1 bg-danger-soft text-danger text-xs rounded-full font-bold">Pasif</span>;
       }
     },
     {
@@ -167,13 +167,13 @@ function Doors() {
           <div className="space-x-2 mt-1">
             <button
               disabled={pending || Boolean(confirmation)} onClick={() => handleEditClick(params.data)}
-              className="px-3 py-1 bg-blue-50 text-blue-600 font-bold rounded text-xs hover:bg-blue-100 transition-colors"
+              className="px-3 py-1 bg-info-soft text-info font-bold rounded text-xs hover:bg-info-soft transition-colors"
             >
               Düzenle
             </button>
             <button
               disabled={pending || Boolean(confirmation)} onClick={() => handleToggleStatus(params.data)}
-              className={`px-3 py-1 font-bold rounded text-xs transition-colors ${isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+              className={`px-3 py-1 font-bold rounded text-xs transition-colors ${isActive ? 'bg-danger-soft text-danger hover:bg-danger-soft' : 'bg-success-soft text-success hover:bg-success-soft'}`}
             >
               {isActive ? 'Pasife Al' : 'Aktifleştir'}
             </button>
@@ -187,23 +187,23 @@ function Doors() {
     <div className="space-y-8 relative mt-8">
 
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Geçiş Noktaları</h2>
-        <p className="text-slate-500 text-sm mt-1">Sistemdeki geçiş noktalarını (kapıları) buradan ekleyebilir, düzenleyebilir veya durumlarını değiştirebilirsiniz.</p>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">Geçiş Noktaları</h1>
+        <p className="text-muted text-sm mt-1">Sistemdeki geçiş noktalarını (kapıları) buradan ekleyebilir, düzenleyebilir veya durumlarını değiştirebilirsiniz.</p>
       </div>
 
       {/* EKLEME / DÜZENLEME FORMU */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <h2 className="text-xl font-bold text-slate-800 mb-4">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
+        <h2 className="text-xl font-bold text-ink mb-4">
           {isEditing ? 'Kapı Bilgilerini Düzenle' : 'Yeni Kapı Ekle'}
         </h2>
 
       {loading && <p role="status">Liste yükleniyor…</p>}
-      {listError && <p role="alert" className="text-red-700">{listError} <button type="button" onClick={fetchDoors} className="underline">Tekrar dene</button></p>}
+      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchDoors} className="underline">Tekrar dene</button></p>}
       <AlertMessage message={message.text} type={message.type} />
 
         <AdminForm onSubmit={handleSubmit} disabled={pending || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="doors-field-1">Kapı Adı *</label>
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-1">Kapı Adı *</label>
             <input id="doors-field-1"
               type="text"
               name="kapi_adi" maxLength={100}
@@ -211,17 +211,17 @@ function Doors() {
               onChange={handleChange}
               placeholder="Örn: Ana Giriş Turnikesi"
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="doors-field-2">Kapı Türü (İşlevi) *</label>
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-2">Kapı Türü (İşlevi) *</label>
             <select id="doors-field-2"
               name="kapi_turu"
               value={formData.kapi_turu}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
             >
               <option value="İç Geçiş">İç Geçiş (Standart Kapı)</option>
               <option value="Ana Giriş">Ana Giriş (Mesai Başlar)</option>
@@ -233,7 +233,7 @@ function Doors() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="doors-field-3">Bağlı Olduğu Departman *</label>
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-3">Bağlı Olduğu Departman *</label>
             <input id="doors-field-3"
               type="text"
               name="departman" maxLength={100}
@@ -241,11 +241,11 @@ function Doors() {
               onChange={handleChange}
               placeholder="Örn: Bilgi İşlem"
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="doors-field-4">Fiziksel Konum *</label>
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-4">Fiziksel Konum *</label>
             <input id="doors-field-4"
               type="text"
               name="konum" maxLength={100}
@@ -253,7 +253,7 @@ function Doors() {
               onChange={handleChange}
               placeholder="Örn: A Blok Zemin Kat"
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
             />
           </div>
 
@@ -262,14 +262,14 @@ function Doors() {
               <button
                 type="button"
                 onClick={cancelEdit}
-                className="px-6 py-2 bg-slate-200 font-bold text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                className="px-6 py-2 bg-surface-3 font-bold text-ink rounded-lg hover:bg-line transition-colors"
               >
                 İptal Et
               </button>
             )}
             <button
               type="submit"
-              className={`px-6 py-2 font-bold rounded-lg text-white transition-colors ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-900 hover:bg-slate-800'}`}
+              className={`px-6 py-2 font-bold rounded-lg text-white transition-colors ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-primary hover:bg-primary-hover'}`}
             >
               {pending ? 'Kaydediliyor…' : isEditing ? 'Bilgileri Güncelle' : 'Sisteme Kaydet'}
             </button>
@@ -278,7 +278,7 @@ function Doors() {
       </div>
 
       {/* ARAMA VE TABLO BÖLÜMÜ */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col p-4 h-[60vh]">
+      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[60vh]">
 
         {/* YENİ ORTAK ARAMA KUTUSU */}
         <div className="mb-4 relative w-full md:w-1/3 z-50">
@@ -294,7 +294,7 @@ function Doors() {
           />
         </div>
 
-        <div className="p-2 text-sm font-bold text-slate-700 bg-slate-50 border-t border-x border-slate-200 rounded-t-lg">
+        <div className="p-2 text-sm font-bold text-ink bg-surface-2 border-t border-x border-line rounded-t-lg">
           Kayıtlı Kapılar ({filteredDoors.length} Kayıt)
         </div>
 

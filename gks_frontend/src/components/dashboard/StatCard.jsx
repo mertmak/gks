@@ -1,56 +1,23 @@
-const THEMES = {
-  blue: {
-    bg:       'bg-gradient-to-br from-blue-500 to-blue-600',
-    iconBg:   'bg-white/20',
-    text:     'text-white',
-    sub:      'text-blue-100',
-    badge:    'bg-white/20 text-white',
-  },
-  emerald: {
-    bg:       'bg-gradient-to-br from-emerald-500 to-emerald-600',
-    iconBg:   'bg-white/20',
-    text:     'text-white',
-    sub:      'text-emerald-100',
-    badge:    'bg-white/20 text-white',
-  },
-  red: {
-    bg:       'bg-gradient-to-br from-red-500 to-rose-600',
-    iconBg:   'bg-white/20',
-    text:     'text-white',
-    sub:      'text-red-100',
-    badge:    'bg-white/20 text-white',
-  },
-  amber: {
-    bg:       'bg-gradient-to-br from-amber-400 to-orange-500',
-    iconBg:   'bg-white/20',
-    text:     'text-white',
-    sub:      'text-amber-100',
-    badge:    'bg-white/20 text-white',
-  },
+const TONES = {
+  blue: { bar: 'bg-info', icon: 'bg-info-soft text-info' },
+  emerald: { bar: 'bg-success', icon: 'bg-success-soft text-success' },
+  red: { bar: 'bg-danger', icon: 'bg-danger-soft text-danger' },
+  amber: { bar: 'bg-warning', icon: 'bg-warning-soft text-warning' },
 };
 
 function StatCard({ label, value, subtext, color = 'blue', icon }) {
-  const t = THEMES[color] ?? THEMES.blue;
+  const t = TONES[color] ?? TONES.blue;
 
   return (
-    <div className={`${t.bg} rounded-2xl p-6 shadow-lg relative overflow-hidden`}>
-      {/* Arka plan dekoratif daire */}
-      <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-white/10" />
-      <div className="absolute -right-2 -bottom-6 w-20 h-20 rounded-full bg-white/10" />
-
-      <div className="relative z-10 flex items-start justify-between">
+    <div className="relative bg-surface border border-line rounded-xl p-5 pl-6 overflow-hidden">
+      <span className={`absolute inset-y-0 left-0 w-1 ${t.bar}`} aria-hidden="true" />
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className={`text-sm font-semibold uppercase tracking-wider ${t.sub}`}>{label}</p>
-          <p className={`text-4xl font-black mt-1 ${t.text}`}>{value}</p>
-          {subtext && (
-            <p className={`text-xs font-medium mt-2 ${t.sub}`}>{subtext}</p>
-          )}
+          <p className="text-sm font-semibold text-muted">{label}</p>
+          <p className="text-4xl font-bold text-ink mt-1 tabular-nums">{value}</p>
+          {subtext && <p className="text-xs text-muted mt-2">{subtext}</p>}
         </div>
-        {icon && (
-          <div className={`${t.iconBg} w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0`}>
-            <span className="text-white w-6 h-6">{icon}</span>
-          </div>
-        )}
+        {icon && <div className={`${t.icon} w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0`}>{icon}</div>}
       </div>
     </div>
   );

@@ -164,7 +164,7 @@ function Shifts() {
   // --- AG GRID SÜTUN AYARLARI ---
   const colDefs = [
     { field: 'ID', headerName: 'ID', width: 80 },
-    { field: 'Vardiya_Adi', headerName: 'Vardiya Adı', flex: 1, minWidth: 180, cellClass: 'font-bold text-slate-800' },
+    { field: 'Vardiya_Adi', headerName: 'Vardiya Adı', flex: 1, minWidth: 180, cellClass: 'font-bold text-ink' },
     {
       headerName: 'Çalışma Günleri',
       valueGetter: (params) => {
@@ -208,8 +208,8 @@ function Shifts() {
       cellRenderer: (params) => {
         const isActive = params.value === undefined || params.value === null ? true : params.value;
         return isActive
-          ? <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-bold">Aktif</span>
-          : <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-bold">Pasif</span>;
+          ? <span className="px-2 py-1 bg-success-soft text-success text-xs rounded-full font-bold">Aktif</span>
+          : <span className="px-2 py-1 bg-danger-soft text-danger text-xs rounded-full font-bold">Pasif</span>;
       }
     },
     {
@@ -221,8 +221,8 @@ function Shifts() {
         const isActive = params.data.Durum === undefined || params.data.Durum === null ? true : params.data.Durum;
         return (
           <div className="space-x-2 mt-1">
-            <button disabled={pending || Boolean(confirmation)} onClick={() => handleEditClick(params.data)} className="px-3 py-1 bg-blue-50 text-blue-600 font-bold rounded text-xs hover:bg-blue-100 transition-colors">Düzenle</button>
-            <button disabled={pending || Boolean(confirmation)} onClick={() => handleToggleStatus(params.data)} className={`px-3 py-1 font-bold rounded text-xs transition-colors ${isActive ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+            <button disabled={pending || Boolean(confirmation)} onClick={() => handleEditClick(params.data)} className="px-3 py-1 bg-info-soft text-info font-bold rounded text-xs hover:bg-info-soft transition-colors">Düzenle</button>
+            <button disabled={pending || Boolean(confirmation)} onClick={() => handleToggleStatus(params.data)} className={`px-3 py-1 font-bold rounded text-xs transition-colors ${isActive ? 'bg-danger-soft text-danger hover:bg-danger-soft' : 'bg-success-soft text-success hover:bg-success-soft'}`}>
               {isActive ? 'Pasife Al' : 'Aktifleştir'}
             </button>
           </div>
@@ -235,39 +235,39 @@ function Shifts() {
     <div className="space-y-8 relative mt-8">
 
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Vardiya Yönetimi</h2>
-        <p className="text-slate-500 text-sm mt-1">Sistemdeki çalışma vardiyalarını, günleri ve mola sürelerini yönetebilirsiniz.</p>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">Vardiya Yönetimi</h1>
+        <p className="text-muted text-sm mt-1">Sistemdeki çalışma vardiyalarını, günleri ve mola sürelerini yönetebilirsiniz.</p>
       </div>
 
       {/* EKLEME / DÜZENLEME FORMU */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-        <h2 className="text-xl font-bold text-slate-800 mb-4">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
+        <h2 className="text-xl font-bold text-ink mb-4">
           {isEditing ? 'Vardiyayı Düzenle' : 'Yeni Vardiya Ekle'}
         </h2>
 
         {loading && <p role="status">Liste yükleniyor…</p>}
-      <p className="text-sm text-slate-600">Vardiya düzenlemeleri yeni atamalarda kullanılır. Mevcut personelin yeni ayarlarla çalışması için vardiyayı yeniden atayın; geçmiş günlerin ayarları korunur.</p>
-      {listError && <p role="alert" className="text-red-700">{listError} <button type="button" onClick={fetchShifts} className="underline">Tekrar dene</button></p>}
+      <p className="text-sm text-muted">Vardiya düzenlemeleri yeni atamalarda kullanılır. Mevcut personelin yeni ayarlarla çalışması için vardiyayı yeniden atayın; geçmiş günlerin ayarları korunur.</p>
+      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchShifts} className="underline">Tekrar dene</button></p>}
       <AlertMessage message={message.text} type={message.type} />
 
         <AdminForm onSubmit={handleSubmit} disabled={pending || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
 
           <div className="md:col-span-4">
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-1">Vardiya Adı *</label>
-            <input id="shifts-field-1" type="text" name="vardiya_adi" maxLength={100} value={formData.vardiya_adi} onChange={handleChange} placeholder="Örn: Hafta İçi Gündüz Vardiyası" required className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" />
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-1">Vardiya Adı *</label>
+            <input id="shifts-field-1" type="text" name="vardiya_adi" maxLength={100} value={formData.vardiya_adi} onChange={handleChange} placeholder="Örn: Hafta İçi Gündüz Vardiyası" required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" />
           </div>
 
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-2">Mesai Başlangıç *</label><input id="shifts-field-2" type="time" name="mesai_baslangic" value={formData.mesai_baslangic} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-3">Mesai Bitiş *</label><input id="shifts-field-3" type="time" name="mesai_bitis" value={formData.mesai_bitis} onChange={handleChange} required className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-4">Yemek Başlangıç</label><input id="shifts-field-4" type="time" name="yemek_baslangic" value={formData.yemek_baslangic} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-5">Yemek Bitiş</label><input id="shifts-field-5" type="time" name="yemek_bitis" value={formData.yemek_bitis} onChange={handleChange} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" /></div>
+          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-2">Mesai Başlangıç *</label><input id="shifts-field-2" type="time" name="mesai_baslangic" value={formData.mesai_baslangic} onChange={handleChange} required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
+          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-3">Mesai Bitiş *</label><input id="shifts-field-3" type="time" name="mesai_bitis" value={formData.mesai_bitis} onChange={handleChange} required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
+          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-4">Yemek Başlangıç</label><input id="shifts-field-4" type="time" name="yemek_baslangic" value={formData.yemek_baslangic} onChange={handleChange} className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
+          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-5">Yemek Bitiş</label><input id="shifts-field-5" type="time" name="yemek_bitis" value={formData.yemek_bitis} onChange={handleChange} className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
 
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-6">Tolerans (Dakika)</label><input id="shifts-field-6" type="number" name="tolerans_dk" max="120" value={formData.tolerans_dk} onChange={handleChange} min="0" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="shifts-field-7">Günlük Mola Hakkı (Dakika)</label><input id="shifts-field-7" type="number" name="mola_hakki_dk" max="480" value={formData.mola_hakki_dk} onChange={handleChange} min="0" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" /></div>
+          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-6">Tolerans (Dakika)</label><input id="shifts-field-6" type="number" name="tolerans_dk" max="120" value={formData.tolerans_dk} onChange={handleChange} min="0" className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
+          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-7">Günlük Mola Hakkı (Dakika)</label><input id="shifts-field-7" type="number" name="mola_hakki_dk" max="480" value={formData.mola_hakki_dk} onChange={handleChange} min="0" className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
 
           {/* ÇALIŞMA GÜNLERİ SEÇİMİ */}
           <div className="md:col-span-4 mt-2">
-            <label className="block text-xs font-bold text-slate-500 mb-2">Çalışma Günleri Seçimi *</label>
+            <label className="block text-xs font-bold text-muted mb-2">Çalışma Günleri Seçimi *</label>
             <div className="flex flex-wrap gap-2">
               {GUNLER.map(gun => (
                 <button
@@ -282,8 +282,8 @@ function Shifts() {
                   }}
                   className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
                     formData.calisma_gunleri.includes(gun.id)
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-blue-600 text-white border-accent shadow-md'
+                      : 'bg-surface-2 text-muted border-line hover:bg-surface-3'
                   }`}
                 >
                   {gun.ad}
@@ -294,9 +294,9 @@ function Shifts() {
 
           <div className="md:col-span-4 flex justify-end space-x-3 mt-4">
             {isEditing && (
-              <button type="button" onClick={cancelEdit} className="px-6 py-2 bg-slate-200 font-bold text-slate-700 rounded-lg hover:bg-slate-300 transition-colors w-full sm:w-auto">İptal Et</button>
+              <button type="button" onClick={cancelEdit} className="px-6 py-2 bg-surface-3 font-bold text-ink rounded-lg hover:bg-line transition-colors w-full sm:w-auto">İptal Et</button>
             )}
-            <button type="submit" className={`px-6 py-2 font-bold rounded-lg text-white transition-colors w-full sm:w-auto ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-slate-900 hover:bg-slate-800'}`}>
+            <button type="submit" className={`px-6 py-2 font-bold rounded-lg text-white transition-colors w-full sm:w-auto ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-primary hover:bg-primary-hover'}`}>
               {pending ? 'Kaydediliyor…' : isEditing ? 'Vardiyayı Güncelle' : 'Sisteme Kaydet'}
             </button>
           </div>
@@ -304,7 +304,7 @@ function Shifts() {
       </div>
 
       {/* ARAMA VE TABLO BÖLÜMÜ */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col p-4 h-[55vh]">
+      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[55vh]">
         <div className="mb-4 relative w-full md:w-1/3 z-50">
           <AutocompleteSearch
             label="Vardiya Ara"
@@ -319,7 +319,7 @@ function Shifts() {
           />
         </div>
 
-        <div className="p-2 text-sm font-bold text-slate-700 bg-slate-50 border-t border-x border-slate-200 rounded-t-lg">
+        <div className="p-2 text-sm font-bold text-ink bg-surface-2 border-t border-x border-line rounded-t-lg">
           Kayıtlı Vardiyalar ({filteredShifts.length} Kayıt)
         </div>
 

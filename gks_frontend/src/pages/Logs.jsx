@@ -29,9 +29,9 @@ function Logs() {
       flex: 1, minWidth: 200,
       cellRenderer: (params) => {
         return params.value ? (
-          <span className="font-medium text-slate-800">{params.value}</span>
+          <span className="font-medium text-ink">{params.value}</span>
         ) : (
-          <span className="text-red-500 italic font-bold">Bilinmeyen Kişi</span>
+          <span className="text-danger italic font-bold">Bilinmeyen Kişi</span>
         );
       }
     },
@@ -44,8 +44,8 @@ function Logs() {
       width: 130,
       cellRenderer: (params) => {
         return params.value 
-          ? <span className="text-green-600 font-bold">Başarılı</span> 
-          : <span className="text-red-600 font-bold">Reddedildi</span>;
+          ? <span className="text-success font-bold">Başarılı</span> 
+          : <span className="text-danger font-bold">Reddedildi</span>;
       }
     },
     { 
@@ -88,18 +88,18 @@ function Logs() {
   return (
     <div className="mt-8 flex flex-col h-[85vh] space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Geçiş Hareketleri</h2>
-        <p className="text-slate-500 text-sm mt-1">Lütfen görüntülemek istediğiniz aralığı seçin.</p>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">Geçiş Hareketleri</h1>
+        <p className="text-muted text-sm mt-1">Lütfen görüntülemek istediğiniz aralığı seçin.</p>
       </div>
 
-      <form onSubmit={handleFetchData} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
+      <form onSubmit={handleFetchData} className="bg-surface p-6 rounded-2xl border border-line shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="Logs-start">Başlangıç Tarihi</label>
-          <input id="Logs-start" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="block text-xs font-bold text-muted mb-1" htmlFor="Logs-start">Başlangıç Tarihi</label>
+          <input id="Logs-start" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="Logs-end">Bitiş Tarihi</label>
-          <input id="Logs-end" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="block text-xs font-bold text-muted mb-1" htmlFor="Logs-end">Bitiş Tarihi</label>
+          <input id="Logs-end" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
         </div>
         
         {/* YENİ ORTAK ARAMA KUTUSU EKLENDİ */}
@@ -119,17 +119,17 @@ function Logs() {
         </div>
 
         <div className="flex items-end">
-          <button type="submit" disabled={loading} className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-lg transition-colors">
+          <button type="submit" disabled={loading} className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm rounded-lg transition-colors">
             {loading ? 'Aranıyor...' : 'Kayıtları Getir'}
           </button>
         </div>
       </form>
 
       {/* YENİ ORTAK TABLO BİLEŞENİ EKLENDİ */}
-      {listError && <p role="alert" className="text-red-600 p-2">{listError}</p>}
+      {listError && <p role="alert" className="text-danger p-2">{listError}</p>}
       {hasSearched && (
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col p-2">
-          <div className="p-2 text-sm font-bold text-slate-700">Arama Sonuçları ({logs.length} Kayıt)</div>
+        <div className="flex-1 bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-2">
+          <div className="p-2 text-sm font-bold text-ink">Arama Sonuçları ({logs.length} Kayıt)</div>
           <CustomDataGrid
             exportFileName={`Gecis_Hareketleri_${businessDate()}`}
             rowData={logs}

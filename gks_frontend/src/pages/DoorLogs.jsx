@@ -32,7 +32,7 @@ function DoorLogs() {
       headerName: 'İşlemi Yapan', 
       width: 150, 
       cellRenderer: (params) => (
-        <span className="font-bold text-blue-600">{params.value || 'Sistem'}</span>
+        <span className="font-bold text-info">{params.value || 'Sistem'}</span>
       )
     },
     { 
@@ -40,7 +40,7 @@ function DoorLogs() {
       headerName: 'İşlem Tipi', 
       width: 150, 
       cellRenderer: (params) => (
-        <span className={`px-2 py-1 rounded text-xs font-bold ${params.value === 'KAPI SİLİNDİ' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+        <span className={`px-2 py-1 rounded text-xs font-bold ${params.value === 'KAPI SİLİNDİ' ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}>
           {params.value}
         </span>
       )
@@ -87,16 +87,16 @@ function DoorLogs() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-slate-800">Kapı Değişiklikleri</h2>
+      <h1 className="text-2xl font-bold text-ink">Kapı Değişiklikleri</h1>
       {/* FİLTRE MENÜSÜ */}
-      <form onSubmit={handleFetchData} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
+      <form onSubmit={handleFetchData} className="bg-surface p-6 rounded-2xl border border-line shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
         <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="DoorLogs-start">Başlangıç Tarihi</label>
-          <input id="DoorLogs-start" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="block text-xs font-bold text-muted mb-1" htmlFor="DoorLogs-start">Başlangıç Tarihi</label>
+          <input id="DoorLogs-start" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="DoorLogs-end">Bitiş Tarihi</label>
-          <input id="DoorLogs-end" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+          <label className="block text-xs font-bold text-muted mb-1" htmlFor="DoorLogs-end">Bitiş Tarihi</label>
+          <input id="DoorLogs-end" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
         </div>
         
         {/* YENİ ORTAK ARAMA BİLEŞENİ */}
@@ -116,17 +116,17 @@ function DoorLogs() {
         </div>
 
         <div className="flex items-end">
-          <button type="submit" disabled={loading} className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-lg transition-colors">
+          <button type="submit" disabled={loading} className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm rounded-lg transition-colors">
             {loading ? 'Yükleniyor...' : 'Kayıtları Getir'}
           </button>
         </div>
       </form>
 
       {/* YENİ ORTAK AG GRID BİLEŞENİ */}
-      {listError && <p role="alert" className="text-red-600 p-2">{listError}</p>}
+      {listError && <p role="alert" className="text-danger p-2">{listError}</p>}
       {hasSearched && (
-        <div className="flex-1 overflow-hidden border border-slate-300 rounded-2xl bg-white shadow-sm flex flex-col p-2 h-[60vh]">
-          <div className="p-2 text-sm font-bold text-slate-700">
+        <div className="flex-1 overflow-hidden border border-line-strong rounded-2xl bg-surface shadow-sm flex flex-col p-2 h-[60vh]">
+          <div className="p-2 text-sm font-bold text-ink">
             Arama Sonuçları ({logs.length} Kayıt)
           </div>
           

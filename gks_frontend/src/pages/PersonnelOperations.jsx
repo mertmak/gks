@@ -193,8 +193,8 @@ function PersonnelOperations() {
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Personel Düzenleme</h2>
-          <p className="text-slate-500 text-sm mt-1">Personeli arayın veya sisteme yeni personel kaydı gerçekleştirin.</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Personel Düzenleme</h1>
+          <p className="text-muted text-sm mt-1">Personeli arayın veya sisteme yeni personel kaydı gerçekleştirin.</p>
         </div>
         <button 
           onClick={() => {
@@ -204,7 +204,7 @@ function PersonnelOperations() {
             setFormData({ ad_soyad: '', rfid: '', tc: '', sicil: '', sirket: '', departman: '', gorev: '', ise_giris: '' });
             openModal('add');
           }}
-          className="px-5 py-2.5 bg-slate-900 text-white font-bold rounded-xl shadow-md hover:bg-slate-800 transition-colors flex items-center space-x-2 whitespace-nowrap"
+          className="px-5 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-primary-hover transition-colors flex items-center space-x-2 whitespace-nowrap"
         >
            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
            <span>Yeni Personel Ekle</span>
@@ -213,7 +213,7 @@ function PersonnelOperations() {
 
       <AlertMessage message={message.text} type={message.type} />
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative z-20">
+      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line relative z-20">
         <AutocompleteSearch 
            label="İşlem Yapılacak Personeli Ara (Ad Soyad veya Sicil)"
            placeholder="Örn: Demo Personel..."
@@ -222,59 +222,59 @@ function PersonnelOperations() {
            suggestions={suggestions}
            onSelect={(item) => handleSelectUser(item.originalData)}
         />
-        {loading && <div className="text-sm font-bold text-blue-600 mt-2 animate-pulse">Personel verileri yükleniyor...</div>}
+        {loading && <div className="text-sm font-bold text-info mt-2 animate-pulse">Personel verileri yükleniyor...</div>}
       </div>
 
       {selectedUser && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
-          <div className="md:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center text-center">
-            <div className="w-24 h-24 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-lg">
+          <div className="md:col-span-1 bg-surface p-6 rounded-2xl shadow-sm border border-line flex flex-col items-center text-center">
+            <div className="w-24 h-24 bg-surface-3 text-muted rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-lg">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             </div>
-            <h3 className="text-2xl font-black text-slate-800">{selectedUser.Ad_Soyad}</h3>
-            <p className="text-slate-500 font-medium mb-4">{selectedUser.Departman || 'Departman Belirtilmedi'}</p>
+            <h2 className="text-2xl font-black text-ink">{selectedUser.Ad_Soyad}</h2>
+            <p className="text-muted font-medium mb-4">{selectedUser.Departman || 'Departman Belirtilmedi'}</p>
             
             <div className="w-full space-y-2 text-sm text-left">
-              <div className="flex justify-between p-2 bg-slate-50 rounded"><span className="text-slate-500 font-bold">Sicil No</span><span className="font-mono font-bold">{selectedUser.Sicil_No}</span></div>
-              <div className="flex justify-between p-2 bg-slate-50 rounded"><span className="text-slate-500 font-bold">T.C. Kimlik</span><span className="font-mono font-bold">{selectedUser.TC_Kimlik}</span></div>
-              <div className="flex justify-between p-2 bg-slate-50 rounded"><span className="text-slate-500 font-bold">Durum</span>
-                {selectedUser.Durum ? <span className="text-green-600 font-bold">AKTİF ÇALIŞAN</span> : <span className="text-red-600 font-bold">İŞTEN ÇIKARILMIŞ</span>}
+              <div className="flex justify-between p-2 bg-surface-2 rounded"><span className="text-muted font-bold">Sicil No</span><span className="font-mono font-bold">{selectedUser.Sicil_No}</span></div>
+              <div className="flex justify-between p-2 bg-surface-2 rounded"><span className="text-muted font-bold">T.C. Kimlik</span><span className="font-mono font-bold">{selectedUser.TC_Kimlik}</span></div>
+              <div className="flex justify-between p-2 bg-surface-2 rounded"><span className="text-muted font-bold">Durum</span>
+                {selectedUser.Durum ? <span className="text-success font-bold">AKTİF ÇALIŞAN</span> : <span className="text-danger font-bold">İŞTEN ÇIKARILMIŞ</span>}
               </div>
             </div>
           </div>
 
           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button type="button" onClick={() => { setFormData(userForm(selectedUser)); openModal('edit'); }} className="text-left bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-400 hover:shadow-md cursor-pointer transition-all group">
-              <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <button type="button" onClick={() => { setFormData(userForm(selectedUser)); openModal('edit'); }} className="text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:border-info-line hover:shadow-md cursor-pointer transition-all group">
+              <div className="w-12 h-12 bg-info-soft text-info rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-slate-800">Kimlik Bilgileri</h4>
-              <p className="text-sm text-slate-500 mt-1">Personelin departman, görev, kart numarası veya TC bilgilerini güncelleyin.</p>
+              <h3 className="text-lg font-bold text-ink">Kimlik Bilgileri</h3>
+              <p className="text-sm text-muted mt-1">Personelin departman, görev, kart numarası veya TC bilgilerini güncelleyin.</p>
             </button>
 
-            <button type="button" onClick={() => openModal('auth')} className="text-left bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-purple-400 hover:shadow-md cursor-pointer transition-all group">
+            <button type="button" onClick={() => openModal('auth')} className="text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:border-purple-400 hover:shadow-md cursor-pointer transition-all group">
               <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-slate-800">Kapı Geçiş Yetkileri</h4>
-              <p className="text-sm text-slate-500 mt-1">Giriş yapabileceği kapıları ve alanları yönetin.</p>
+              <h3 className="text-lg font-bold text-ink">Kapı Geçiş Yetkileri</h3>
+              <p className="text-sm text-muted mt-1">Giriş yapabileceği kapıları ve alanları yönetin.</p>
             </button>
 
-            <button type="button" onClick={() => openModal('shift')} className="text-left bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-amber-400 hover:shadow-md cursor-pointer transition-all group">
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <button type="button" onClick={() => openModal('shift')} className="text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:border-warning-line hover:shadow-md cursor-pointer transition-all group">
+              <div className="w-12 h-12 bg-warning-soft text-warning rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-slate-800">Vardiya & Çalışma Saati</h4>
-              <p className="text-sm text-slate-500 mt-1">Personelin bağlı olduğu vardiyayı atayın veya değiştirin.</p>
+              <h3 className="text-lg font-bold text-ink">Vardiya & Çalışma Saati</h3>
+              <p className="text-sm text-muted mt-1">Personelin bağlı olduğu vardiyayı atayın veya değiştirin.</p>
             </button>
 
-            <button type="button" onClick={() => openModal('status')} className={`text-left bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition-all group ${selectedUser.Durum ? 'hover:border-red-400' : 'hover:border-green-400'}`}>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${selectedUser.Durum ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+            <button type="button" onClick={() => openModal('status')} className={`text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:shadow-md cursor-pointer transition-all group ${selectedUser.Durum ? 'hover:border-danger-line' : 'hover:border-success-line'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${selectedUser.Durum ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path></svg>
               </div>
-              <h4 className="text-lg font-bold text-slate-800">{selectedUser.Durum ? 'İşten Çıkar / Pasife Al' : 'Tekrar İşe Al / Aktifleştir'}</h4>
-              {!selectedUser.Durum && <p className="text-sm text-slate-500">Yeni çalışma dönemi bugün başlar; eski dönem ve aradaki çalışılmayan günler korunur. Bugünkü çıkışı geri almak aynı dönemi yeniden açar.</p>}
-              <p className="text-sm text-slate-500 mt-1">Personelin sistemdeki varlığını ve geçiş haklarını durdurur veya açar.</p>
+              <h3 className="text-lg font-bold text-ink">{selectedUser.Durum ? 'İşten Çıkar / Pasife Al' : 'Tekrar İşe Al / Aktifleştir'}</h3>
+              {!selectedUser.Durum && <p className="text-sm text-muted">Yeni çalışma dönemi bugün başlar; eski dönem ve aradaki çalışılmayan günler korunur. Bugünkü çıkışı geri almak aynı dönemi yeniden açar.</p>}
+              <p className="text-sm text-muted mt-1">Personelin sistemdeki varlığını ve geçiş haklarını durdurur veya açar.</p>
             </button>
           </div>
         </div>
@@ -290,8 +290,8 @@ function PersonnelOperations() {
             onNumericChange={handleNumericChange}
           />
           <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-6 py-2 bg-slate-200 font-bold rounded-lg hover:bg-slate-300">İptal</button>
-            <button type="submit" disabled={saving} className="px-6 py-2 font-bold rounded-lg bg-slate-900 text-white hover:bg-slate-800">Personeli Kaydet</button>
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-6 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
+            <button type="submit" disabled={saving} className="px-6 py-2 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover">Personeli Kaydet</button>
           </div>
         </form>
       </Modal>
@@ -305,7 +305,7 @@ function PersonnelOperations() {
             onNumericChange={handleNumericChange}
           />
           <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-6 py-2 bg-slate-200 font-bold rounded-lg hover:bg-slate-300">İptal</button>
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-6 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
             <button type="submit" disabled={saving} className="px-6 py-2 font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700">Değişiklikleri Kaydet</button>
           </div>
         </form>
@@ -316,20 +316,20 @@ function PersonnelOperations() {
           <AlertMessage message={message.text} type={message.type} />
           {doors.loading && <p role="status">Kapılar yükleniyor...</p>}
           {doors.error && <div role="alert">{doors.error} <button type="button" className="underline" onClick={doors.refresh}>Tekrar dene</button></div>}
-          <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-2 mb-4 bg-slate-50">
+          <div className="max-h-64 overflow-y-auto border border-line rounded-lg p-2 mb-4 bg-surface-2">
             {allDoors.map(door => (
-              <label key={door.ID} className="flex items-center p-3 hover:bg-white cursor-pointer border-b border-slate-200 last:border-0 rounded transition-colors">
-                <input type="checkbox" className="w-5 h-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500" 
+              <label key={door.ID} className="flex items-center p-3 hover:bg-surface cursor-pointer border-b border-line last:border-0 rounded transition-colors">
+                <input type="checkbox" className="w-5 h-5 text-purple-600 rounded border-line-strong focus:ring-purple-500" 
                   checked={authData.includes(door.ID)} 
                   onChange={() => {
                     setAuthData(prev => prev.includes(door.ID) ? prev.filter(id => id !== door.ID) : [...prev, door.ID]);
                 }}/>
-                <span className="ml-3 text-sm font-bold text-slate-700">{door.Kapi_Adi}</span>
+                <span className="ml-3 text-sm font-bold text-ink">{door.Kapi_Adi}</span>
               </label>
             ))}
           </div>
           <div className="flex justify-end space-x-3">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-slate-200 font-bold rounded-lg hover:bg-slate-300">İptal</button>
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
             <button type="submit" disabled={saving || doors.loading || Boolean(doors.error)} className="disabled:opacity-50 px-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700">Yetkileri Kaydet</button>
           </div>
         </form>
@@ -347,7 +347,7 @@ function PersonnelOperations() {
             {allShifts.map(shift => <option key={shift.ID} value={shift.ID}>{shift.Vardiya_Adi}</option>)}
           </select>
           <div className="flex justify-end space-x-3">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-slate-200 font-bold rounded-lg hover:bg-slate-300">İptal</button>
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
             <button type="submit" disabled={saving || shifts.loading || Boolean(shifts.error)} className="disabled:opacity-50 px-4 py-2 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600">Vardiyayı Kaydet</button>
           </div>
         </form>
@@ -358,14 +358,14 @@ function PersonnelOperations() {
           <AlertMessage message={message.text} type={message.type} />
           {selectedUser?.Durum ? (
             <>
-              <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="personneloperations-field-1">Çıkış Tarihi *</label><input id="personneloperations-field-1" type="date" value={exitData.cikis_tarihi} onChange={(e) => setExitData({...exitData, cikis_tarihi: e.target.value})} required className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" /></div>
-              <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="personneloperations-field-2">Çıkış Nedeni</label><textarea id="personneloperations-field-2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} rows="3" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea></div>
+              <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="personneloperations-field-1">Çıkış Tarihi *</label><input id="personneloperations-field-1" type="date" value={exitData.cikis_tarihi} onChange={(e) => setExitData({...exitData, cikis_tarihi: e.target.value})} required className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" /></div>
+              <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="personneloperations-field-2">Çıkış Nedeni</label><textarea id="personneloperations-field-2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} rows="3" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea></div>
             </>
           ) : (
-            <p className="text-sm font-medium text-slate-600 mb-4">Bu personeli tekrar sisteme dahil etmek istediğinize emin misiniz? (Geçmiş kayıtları korunacaktır).</p>
+            <p className="text-sm font-medium text-muted mb-4">Bu personeli tekrar sisteme dahil etmek istediğinize emin misiniz? (Geçmiş kayıtları korunacaktır).</p>
           )}
           <div className="flex justify-end space-x-3 mt-6">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-slate-100 font-bold rounded-lg hover:bg-slate-200">İptal</button>
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-surface-3">İptal</button>
             <button type="submit" disabled={saving} className={`px-4 py-2 text-white font-bold rounded-lg ${selectedUser?.Durum ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
               {selectedUser?.Durum ? 'İlişiği Kes' : 'İşe Al'}
             </button>

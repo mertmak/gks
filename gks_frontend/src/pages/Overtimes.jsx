@@ -174,24 +174,24 @@ function Overtimes() {
   };
 
   const colDefs = useMemo(() => [
-    { field: 'TarihStr', headerName: 'Tarih', width: 110, pinned: 'left', cellRenderer: (params) => <span className="text-slate-500 font-bold">{params.value.split('-').reverse().join('.')}</span> },
+    { field: 'TarihStr', headerName: 'Tarih', width: 110, pinned: 'left', cellRenderer: (params) => <span className="text-muted font-bold">{params.value.split('-').reverse().join('.')}</span> },
     { field: 'Sicil_No', headerName: 'Sicil No', width: 100 },
-    { field: 'Ad_Soyad', headerName: 'Ad Soyad', flex: 1, minWidth: 160, cellClass: 'font-bold text-slate-800' },
+    { field: 'Ad_Soyad', headerName: 'Ad Soyad', flex: 1, minWidth: 160, cellClass: 'font-bold text-ink' },
     { field: 'Departman', headerName: 'Departman / Şirket', flex: 1, minWidth: 150, valueGetter: params => `${params.data.Departman} ${params.data.Sirket ? `(${params.data.Sirket})` : ''}` },
     {
       field: 'Hesaplanan_Dk', headerName: 'Hesaplanan', width: 140,
       cellRenderer: (params) => {
         const dk = params.value; const saat = Math.floor(dk / 60); const dakika = dk % 60;
-        return <span className="text-blue-600 font-bold">+{saat > 0 ? `${saat}s ${dakika}d` : `${dk}dk`}</span>;
+        return <span className="text-info font-bold">+{saat > 0 ? `${saat}s ${dakika}d` : `${dk}dk`}</span>;
       }
     },
     {
       field: 'Mesai_Durumu', headerName: 'Onay Durumu', width: 140,
       cellRenderer: (params) => {
         const durum = params.value; const onaylanan = params.data.Onaylanan_Dk;
-        if (durum === 'Onaylandı') return <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-bold">Onay: {onaylanan}dk</span>;
-        if (durum === 'Reddedildi') return <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full font-bold">Reddedildi</span>;
-        return <span className="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-full font-bold">Bekliyor</span>;
+        if (durum === 'Onaylandı') return <span className="px-2 py-1 bg-success-soft text-success text-xs rounded-full font-bold">Onay: {onaylanan}dk</span>;
+        if (durum === 'Reddedildi') return <span className="px-2 py-1 bg-danger-soft text-danger text-xs rounded-full font-bold">Reddedildi</span>;
+        return <span className="px-2 py-1 bg-warning-soft text-warning text-xs rounded-full font-bold">Bekliyor</span>;
       }
     },
     { field: 'Durum', headerName: 'Puantaj Durumu', width: 175 },
@@ -202,7 +202,7 @@ function Overtimes() {
     {
       headerName: 'İşlem', width: 95, sortable: false, filter: false, pinned: 'right',
       cellRenderer: (params) => (
-        <button disabled={params.data.Izin_Cakismasi} title={params.data.Izin_Cakismasi ? 'Önce çakışan izinleri düzeltin.' : undefined} onClick={() => handleOpenApproval(params.data)} className="px-3 py-1.5 bg-slate-900 text-white text-[11px] font-bold rounded hover:bg-slate-800 transition-colors">
+        <button disabled={params.data.Izin_Cakismasi} title={params.data.Izin_Cakismasi ? 'Önce çakışan izinleri düzeltin.' : undefined} onClick={() => handleOpenApproval(params.data)} className="px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded hover:bg-primary-hover transition-colors">
           İncele
         </button>
       )
@@ -212,38 +212,38 @@ function Overtimes() {
   return (
     <div className="space-y-6 relative mt-8">
 
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4 bg-surface p-6 rounded-2xl shadow-sm border border-line">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Mesai Onay İşlemleri</h2>
-          <p className="text-slate-500 text-sm mt-1">Personellerin fazla mesailerini inceleyin ve karara bağlayın.</p>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">Mesai Onay İşlemleri</h1>
+          <p className="text-muted text-sm mt-1">Personellerin fazla mesailerini inceleyin ve karara bağlayın.</p>
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="overtimes-field-1">Başlangıç Tarihi</label>
-            <input id="overtimes-field-1" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-1">Başlangıç Tarihi</label>
+            <input id="overtimes-field-1" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="overtimes-field-2">Bitiş Tarihi</label>
-            <input id="overtimes-field-2" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-2">Bitiş Tarihi</label>
+            <input id="overtimes-field-2" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
           </div>
-          <button onClick={searchOvertimes} disabled={loading} className="px-5 py-2 bg-slate-900 text-white font-bold text-sm rounded-lg hover:bg-slate-800">
+          <button onClick={searchOvertimes} disabled={loading} className="px-5 py-2 bg-primary text-white font-bold text-sm rounded-lg hover:bg-primary-hover">
             {loading ? 'Yükleniyor...' : 'Kayıtları Getir'}
           </button>
         </div>
       </div>
 
-      {overtimes.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-amber-50 text-amber-900 rounded-lg">İzin çakışması bulunan günlerde yeni mesai kararı verilemez. Önce İzinler ekranındaki kayıtları düzeltin. Bu satırları içeren toplu işlemin tamamı reddedilir.</p>}
-      {listError && <p role="alert" className="text-red-700">{listError} <button type="button" onClick={fetchOvertimes} className="underline">Tekrar dene</button></p>}
+      {overtimes.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-warning-soft text-ink rounded-lg">İzin çakışması bulunan günlerde yeni mesai kararı verilemez. Önce İzinler ekranındaki kayıtları düzeltin. Bu satırları içeren toplu işlemin tamamı reddedilir.</p>}
+      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchOvertimes} className="underline">Tekrar dene</button></p>}
       {!loading && !listError && overtimes.length === 0 && <p role="status">Seçili tarih aralığında mesai kaydı bulunmuyor.</p>}
       <AlertMessage message={message.text} type={message.type} />
-      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner">
-        <h3 className="text-sm font-black text-slate-700 mb-3 uppercase tracking-wider">Hedefe Yönelik Toplu İşlem</h3>
+      <div className="bg-surface-2 p-5 rounded-2xl border border-line shadow-inner">
+        <h2 className="text-sm font-black text-ink mb-3 uppercase tracking-wider">Hedefe Yönelik Toplu İşlem</h2>
         <AdminForm disabled={pending || loading || Boolean(listError) || Boolean(bulkConfirmation)} onSubmit={handleAdvancedBulkSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="overtimes-field-3">Hedef Türü</label>
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-3">Hedef Türü</label>
             <select id="overtimes-field-3"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent bg-surface"
               value={bulkData.hedef_turu}
               onChange={(e) => {
                 setBulkData({...bulkData, hedef_turu: e.target.value, hedef_deger: ''});
@@ -274,16 +274,16 @@ function Overtimes() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="overtimes-field-4">Kararınız</label>
-            <select id="overtimes-field-4" value={bulkData.durum} onChange={(e) => setBulkData({...bulkData, durum: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-4">Kararınız</label>
+            <select id="overtimes-field-4" value={bulkData.durum} onChange={(e) => setBulkData({...bulkData, durum: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg font-bold text-ink outline-none focus:ring-2 focus:ring-accent bg-surface">
               <option value="Onaylandı">Tümünü Onayla</option>
               <option value="Reddedildi">Tümünü Reddet</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="overtimes-field-5">Açıklama (Opsiyonel)</label>
-            <input id="overtimes-field-5" maxLength={255} type="text" placeholder="Yönetici Notu" value={bulkData.aciklama} onChange={(e) => setBulkData({...bulkData, aciklama: e.target.value})} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-5">Açıklama (Opsiyonel)</label>
+            <input id="overtimes-field-5" maxLength={255} type="text" placeholder="Yönetici Notu" value={bulkData.aciklama} onChange={(e) => setBulkData({...bulkData, aciklama: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
           </div>
 
           <div>
@@ -294,14 +294,14 @@ function Overtimes() {
         </AdminForm>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-surface p-4 rounded-xl border border-line shadow-sm">
         <div className="w-full md:w-1/2">
            <input
               type="text"
               placeholder="Tabloda personel, departman veya durum ara..."
               value={quickFilterText}
               onChange={(e) => setQuickFilterText(e.target.value)}
-              className="w-full px-4 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50"
+              className="w-full px-4 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent bg-surface-2"
            />
         </div>
         {isAdmin && selectedRows.some(row => overtimes.includes(row)) && (
@@ -311,7 +311,7 @@ function Overtimes() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col p-4 h-[55vh]">
+      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[55vh]">
         <CustomDataGrid
           ref={gridRef}
           rowData={overtimes}
@@ -342,34 +342,34 @@ function Overtimes() {
       <Modal isOpen={showApprovalModal} onClose={() => { if (!pending) setShowApprovalModal(false); }} title="Mesai İnceleme" maxWidth="max-w-sm">
         {selectedRow && (
           <>
-            <p className="text-sm text-slate-500 mb-4 font-bold">{selectedRow.Ad_Soyad} - {selectedRow.TarihStr.split('-').reverse().join('.')}</p>
+            <p className="text-sm text-muted mb-4 font-bold">{selectedRow.Ad_Soyad} - {selectedRow.TarihStr.split('-').reverse().join('.')}</p>
 
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 mb-4 flex justify-between items-center">
-              <span className="text-sm font-bold text-blue-900">Hesaplanan:</span>
-              <span className="text-lg font-black text-blue-700">{selectedRow.Hesaplanan_Dk} Dk</span>
+            <div className="bg-info-soft p-3 rounded-lg border border-info-line mb-4 flex justify-between items-center">
+              <span className="text-sm font-bold text-info">Hesaplanan:</span>
+              <span className="text-lg font-black text-info">{selectedRow.Hesaplanan_Dk} Dk</span>
             </div>
 
             <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
             <AdminForm disabled={pending} onSubmit={handleApprovalSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="overtimes-field-6">Kararınız</label>
-                <select id="overtimes-field-6" value={approvalData.durum} onChange={(e) => setApprovalData({...approvalData, durum: e.target.value})} className="w-full px-3 py-2 border rounded-lg font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-6">Kararınız</label>
+                <select id="overtimes-field-6" value={approvalData.durum} onChange={(e) => setApprovalData({...approvalData, durum: e.target.value})} className="w-full px-3 py-2 border rounded-lg font-bold text-ink outline-none focus:ring-2 focus:ring-accent">
                   <option value="Onaylandı">Mesaiyi Onayla</option>
                   <option value="Reddedildi">Mesaiyi Reddet</option>
                 </select>
               </div>
               {approvalData.durum === 'Onaylandı' && (
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="overtimes-field-7">Onaylanan Süre (Dakika)</label>
-                  <input id="overtimes-field-7" type="number" value={approvalData.onaylanan_dk} onChange={(e) => setApprovalData({...approvalData, onaylanan_dk: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required min="0" step="1" max={Math.min(2880, selectedRow.Hesaplanan_Dk + 120)} />
+                  <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-7">Onaylanan Süre (Dakika)</label>
+                  <input id="overtimes-field-7" type="number" value={approvalData.onaylanan_dk} onChange={(e) => setApprovalData({...approvalData, onaylanan_dk: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent" required min="0" step="1" max={Math.min(2880, selectedRow.Hesaplanan_Dk + 120)} />
                 </div>
               )}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1" htmlFor="overtimes-field-8">Açıklama (Opsiyonel)</label>
-                <input id="overtimes-field-8" maxLength={255} type="text" value={approvalData.aciklama} onChange={(e) => setApprovalData({...approvalData, aciklama: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-8">Açıklama (Opsiyonel)</label>
+                <input id="overtimes-field-8" maxLength={255} type="text" value={approvalData.aciklama} onChange={(e) => setApprovalData({...approvalData, aciklama: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent" />
               </div>
               <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowApprovalModal(false)} className="px-4 py-2 bg-slate-100 font-bold rounded-lg hover:bg-slate-200 text-sm">İptal</button>
+                <button type="button" onClick={() => setShowApprovalModal(false)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-surface-3 text-sm">İptal</button>
                 <button type="submit" className={`px-4 py-2 text-white font-bold rounded-lg text-sm ${approvalData.durum === 'Onaylandı' ? 'bg-green-600' : 'bg-red-600'}`}>{pending ? 'Kaydediliyor…' : 'Kaydet'}</button>
               </div>
             </AdminForm>

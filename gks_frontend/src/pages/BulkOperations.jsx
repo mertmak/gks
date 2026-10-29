@@ -108,29 +108,29 @@ function BulkOperations() {
   return (
     <div className="space-y-6 mt-8 relative animate-fade-in-up">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Toplu İşlemler</h2>
-        <p className="text-slate-500 text-sm mt-1">Belirli bir gruba veya sistemdeki tüm personellere ait vardiya, yetki ve durum bilgilerini tek tıklamayla yönetin.</p>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">Toplu İşlemler</h1>
+        <p className="text-muted text-sm mt-1">Belirli bir gruba veya sistemdeki tüm personellere ait vardiya, yetki ve durum bilgilerini tek tıklamayla yönetin.</p>
       </div>
 
       <AlertMessage message={message.text} type={message.type} />
-      {dataLoading && <p role="status" className="text-sm text-slate-600">İşlem için gerekli listeler yükleniyor...</p>}
-      {dataError && <div role="alert" className="text-sm text-red-700">
+      {dataLoading && <p role="status" className="text-sm text-muted">İşlem için gerekli listeler yükleniyor...</p>}
+      {dataError && <div role="alert" className="text-sm text-danger">
         {dataError} <button type="button" className="underline font-bold" onClick={() => { users.refresh(); doors.refresh(); shifts.refresh(); }}>Tekrar dene</button>
       </div>}
 
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+      <div className="bg-surface p-8 rounded-2xl shadow-sm border border-line">
         <form onSubmit={handleSubmit} className="space-y-8">
           <fieldset disabled={loading || Boolean(confirmation)} className="space-y-8">
-          <div className="bg-slate-50 p-6 rounded-xl border border-slate-100">
-            <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center">
-              <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-3 text-sm">1</span>
+          <div className="bg-surface-2 p-6 rounded-xl border border-line">
+            <h2 className="text-lg font-black text-ink mb-4 flex items-center">
+              <span className="w-8 h-8 rounded-full bg-info-soft text-info flex items-center justify-center mr-3 text-sm">1</span>
               Hedef Kitleyi Seçin
-            </h3>
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2" htmlFor="bulkoperations-field-1">Filtreleme Türü</label>
+                <label className="block text-sm font-bold text-ink mb-2" htmlFor="bulkoperations-field-1">Filtreleme Türü</label>
                 <select id="bulkoperations-field-1"
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full px-4 py-3 border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-accent bg-surface"
                   value={hedefTuru} 
                   onChange={(e) => { setHedefTuru(e.target.value); setHedefDeger(''); }}
                 >
@@ -159,16 +159,16 @@ function BulkOperations() {
             </div>
           </div>
 
-          <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 relative z-10">
-            <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center">
-              <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mr-3 text-sm">2</span>
+          <div className="bg-surface-2 p-6 rounded-xl border border-line relative z-10">
+            <h2 className="text-lg font-black text-ink mb-4 flex items-center">
+              <span className="w-8 h-8 rounded-full bg-warning-soft text-warning flex items-center justify-center mr-3 text-sm">2</span>
               Yapılacak İşlemi Seçin
-            </h3>
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
               
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2" htmlFor="bulkoperations-field-2">İşlem Türü</label>
-                <select id="bulkoperations-field-2" className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-white" value={islemTuru} onChange={(e) => setIslemTuru(e.target.value)}>
+                <label className="block text-sm font-bold text-ink mb-2" htmlFor="bulkoperations-field-2">İşlem Türü</label>
+                <select id="bulkoperations-field-2" className="w-full px-4 py-3 border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-surface" value={islemTuru} onChange={(e) => setIslemTuru(e.target.value)}>
                   <option value="vardiya">Toplu Vardiya Atama / Değiştirme</option>
                   <option value="yetki">Toplu Kapı Yetkisi Verme</option>
                   <option value="durum">Toplu Durum (İşten Çıkış / İşe Alım)</option>
@@ -177,8 +177,8 @@ function BulkOperations() {
 
               {islemTuru === 'vardiya' && (
                 <div className="animate-fade-in-up">
-                  <label className="block text-sm font-bold text-slate-700 mb-2" htmlFor="bulkoperations-field-3">Atanacak Vardiya</label>
-                  <select id="bulkoperations-field-3" className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-white" value={vardiyaId} onChange={(e) => setVardiyaId(e.target.value)}>
+                  <label className="block text-sm font-bold text-ink mb-2" htmlFor="bulkoperations-field-3">Atanacak Vardiya</label>
+                  <select id="bulkoperations-field-3" className="w-full px-4 py-3 border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-amber-500 bg-surface" value={vardiyaId} onChange={(e) => setVardiyaId(e.target.value)}>
                     <option value="">-- Tüm Vardiyaları İptal Et (Sıfırla) --</option>
                     {allShifts.map(shift => <option key={shift.ID} value={shift.ID}>{shift.Vardiya_Adi}</option>)}
                   </select>
@@ -187,15 +187,15 @@ function BulkOperations() {
 
               {islemTuru === 'yetki' && (
                 <div className="animate-fade-in-up col-span-1 md:col-span-2 mt-2">
-                  <label className="block text-sm font-bold text-slate-700 mb-3">İzin Verilecek Kapıları Seçin (Hiç seçilmezse mevcut tüm yetkiler silinir)</label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-4 border border-slate-200 rounded-xl max-h-60 overflow-y-auto">
+                  <label className="block text-sm font-bold text-ink mb-3">İzin Verilecek Kapıları Seçin (Hiç seçilmezse mevcut tüm yetkiler silinir)</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-surface p-4 border border-line rounded-xl max-h-60 overflow-y-auto">
                     {allDoors.map(door => (
-                      <label key={door.ID} className="flex items-center p-2 hover:bg-slate-50 cursor-pointer rounded transition-colors border border-transparent hover:border-slate-200">
-                        <input type="checkbox" className="w-5 h-5 text-purple-600 rounded border-gray-300 focus:ring-purple-500" checked={selectedDoors.includes(door.ID)} onChange={() => handleDoorSelection(door.ID)} />
-                        <span className="ml-3 text-sm font-bold text-slate-700">{door.Kapi_Adi}</span>
+                      <label key={door.ID} className="flex items-center p-2 hover:bg-surface-2 cursor-pointer rounded transition-colors border border-transparent hover:border-line">
+                        <input type="checkbox" className="w-5 h-5 text-purple-600 rounded border-line-strong focus:ring-purple-500" checked={selectedDoors.includes(door.ID)} onChange={() => handleDoorSelection(door.ID)} />
+                        <span className="ml-3 text-sm font-bold text-ink">{door.Kapi_Adi}</span>
                       </label>
                     ))}
-                    {allDoors.length === 0 && <div className="text-sm text-slate-500 col-span-full">Aktif kapı bulunamadı.</div>}
+                    {allDoors.length === 0 && <div className="text-sm text-muted col-span-full">Aktif kapı bulunamadı.</div>}
                   </div>
                 </div>
               )}
@@ -203,16 +203,16 @@ function BulkOperations() {
               {islemTuru === 'durum' && (
                 <div className="animate-fade-in-up space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2" htmlFor="bulkoperations-field-4">Hedef Durum</label>
-                    <select id="bulkoperations-field-4" className="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-red-500 bg-white text-red-600 font-bold" value={durumHedefi} onChange={(e) => setDurumHedefi(Number(e.target.value))}>
+                    <label className="block text-sm font-bold text-ink mb-2" htmlFor="bulkoperations-field-4">Hedef Durum</label>
+                    <select id="bulkoperations-field-4" className="w-full px-4 py-3 border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-red-500 bg-surface text-danger font-bold" value={durumHedefi} onChange={(e) => setDurumHedefi(Number(e.target.value))}>
                       <option value={0}>Toplu İşten Çıkarma / Pasife Alma</option>
-                      <option value={1} className="text-green-600">Toplu İşe Alım / Aktifleştirme</option>
+                      <option value={1} className="text-success">Toplu İşe Alım / Aktifleştirme</option>
                     </select>
                   </div>
                   {durumHedefi === 0 && (
-                    <div className="grid grid-cols-1 gap-4 bg-red-50 p-4 rounded-xl border border-red-100">
-                      <div><label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="bulkoperations-field-5">Toplu Çıkış Tarihi *</label><input id="bulkoperations-field-5" type="date" value={exitData.cikis_tarihi} onChange={(e) => setExitData({...exitData, cikis_tarihi: e.target.value})} required className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" /></div>
-                      <div><label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="bulkoperations-field-6">Toplu Çıkış Nedeni (Opsiyonel)</label><textarea id="bulkoperations-field-6" rows="2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} placeholder="Örn: Proje Bitişi" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea></div>
+                    <div className="grid grid-cols-1 gap-4 bg-danger-soft p-4 rounded-xl border border-danger-line">
+                      <div><label className="block text-xs font-bold text-ink mb-1" htmlFor="bulkoperations-field-5">Toplu Çıkış Tarihi *</label><input id="bulkoperations-field-5" type="date" value={exitData.cikis_tarihi} onChange={(e) => setExitData({...exitData, cikis_tarihi: e.target.value})} required className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" /></div>
+                      <div><label className="block text-xs font-bold text-ink mb-1" htmlFor="bulkoperations-field-6">Toplu Çıkış Nedeni (Opsiyonel)</label><textarea id="bulkoperations-field-6" rows="2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} placeholder="Örn: Proje Bitişi" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea></div>
                     </div>
                   )}
                 </div>
@@ -221,8 +221,8 @@ function BulkOperations() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-slate-200">
-            <button type="submit" disabled={loading || dataLoading || Boolean(dataError)} className={`px-8 py-4 text-white font-bold text-lg rounded-xl transition-colors shadow-lg disabled:opacity-50 ${islemTuru === 'durum' && durumHedefi === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-900 hover:bg-slate-800'}`}>
+          <div className="flex justify-end pt-4 border-t border-line">
+            <button type="submit" disabled={loading || dataLoading || Boolean(dataError)} className={`px-8 py-4 text-white font-bold text-lg rounded-xl transition-colors shadow-lg disabled:opacity-50 ${islemTuru === 'durum' && durumHedefi === 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary-hover'}`}>
               {loading ? 'İşleniyor...' : 'Toplu İşlemi Başlat'}
             </button>
           </div>
@@ -231,12 +231,12 @@ function BulkOperations() {
         </form>
       </div>
       <Modal isOpen={Boolean(confirmation)} onClose={() => { if (!loading) setConfirmation(null); }} title="Toplu İşlemi Onayla">
-        <p className="text-sm text-slate-700 mb-3">{confirmation?.message}</p>
-        <p className="text-sm font-bold text-slate-700 mb-4">{confirmation?.detail}</p>
+        <p className="text-sm text-ink mb-3">{confirmation?.message}</p>
+        <p className="text-sm font-bold text-ink mb-4">{confirmation?.detail}</p>
         <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
         {(dataLoading || dataError) && <p role="status" className="text-sm mb-3">{dataError || 'Listeler güncelleniyor...'}</p>}
         <div className="flex justify-end gap-3">
-          <button type="button" disabled={loading} onClick={() => setConfirmation(null)} className="px-4 py-2 rounded-lg bg-slate-200">Vazgeç</button>
+          <button type="button" disabled={loading} onClick={() => setConfirmation(null)} className="px-4 py-2 rounded-lg bg-surface-3">Vazgeç</button>
           <button type="button" disabled={loading || dataLoading || Boolean(dataError)} onClick={confirmOperation} className="px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50">{loading ? 'İşleniyor...' : 'Onayla ve Uygula'}</button>
         </div>
       </Modal>

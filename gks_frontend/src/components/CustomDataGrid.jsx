@@ -1,6 +1,7 @@
 import { prepareGridExcel } from '../utils/excel';
 import { businessDate } from '../utils/dates';
 import { readSession } from '../utils/session';
+import { useTheme } from '../utils/theme';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import {
@@ -39,6 +40,7 @@ const CustomDataGrid = forwardRef(({
   exportFileName = `GKS_Tablo_${businessDate()}`,
 }, ref) => {
 
+  const { dark } = useTheme();
   const apiRef = useRef(null);
   const downloadRef = useRef(null);
   const mounted = useRef(true);
@@ -78,24 +80,24 @@ const CustomDataGrid = forwardRef(({
     filter: true, 
     sortable: true, 
     resizable: true, 
-    cellStyle: { borderRight: '1px solid #cbd5e1' }, 
-    headerClass: 'border-r border-slate-300' 
+    cellStyle: { borderRight: '1px solid var(--color-line)' }, 
+    headerClass: 'border-r border-line' 
   }), []);
 
   return (
-    <div className="ag-theme-quartz flex-1 w-full h-full flex flex-col min-h-0">
+    <div className={`${dark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} flex-1 w-full h-full flex flex-col min-h-0`}>
       <div className="flex flex-wrap items-center justify-end gap-3 p-2 border-b text-sm">
-        <span className="text-xs text-slate-500">{serverPagination ? 'İndirme: mevcut sayfanın filtrelenen satırları' : 'İndirme: tüm sayfalardaki filtrelenen satırlar'}</span>
+        <span className="text-xs text-muted">{serverPagination ? 'İndirme: mevcut sayfanın filtrelenen satırları' : 'İndirme: tüm sayfalardaki filtrelenen satırlar'}</span>
         <button type="button" onClick={handleExport} disabled={!gridReady || exporting || !rowData?.length} className="px-3 py-2 bg-green-700 text-white rounded-lg disabled:opacity-50">
           {exporting ? 'Excel hazırlanıyor…' : 'Excel İndir (.xlsx)'}
         </button>
-        {download && <span role="status" className="text-xs text-slate-600">
+        {download && <span role="status" className="text-xs text-muted">
           Dosya hazır. İndirme başlamadıysa: {' '}
-          <a ref={downloadRef} href={download.url} download={download.fileName} className="break-all underline text-green-800">{download.fileName}</a>
+          <a ref={downloadRef} href={download.url} download={download.fileName} className="break-all underline text-success">{download.fileName}</a>
         </span>}
-        {exportError && <span role="alert" className="text-red-700">{exportError}</span>}
+        {exportError && <span role="alert" className="text-danger">{exportError}</span>}
       </div>
-      <>{serverPagination && <p className="text-xs text-slate-500 px-3 py-2">Kolon filtreleri ve sıralama yalnız mevcut sayfadaki kayıtları kapsar. Tüm kayıtlarda arama için üstteki arama formunu kullanın.</p>}</>
+      <>{serverPagination && <p className="text-xs text-muted px-3 py-2">Kolon filtreleri ve sıralama yalnız mevcut sayfadaki kayıtları kapsar. Tüm kayıtlarda arama için üstteki arama formunu kullanın.</p>}</>
       <div className="flex-1 min-h-0"><AgGridReact
         ref={ref}
         onGridReady={({ api }) => { apiRef.current = api; setGridReady(true); }}
