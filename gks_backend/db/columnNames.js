@@ -4,7 +4,8 @@
 // unknown key fails instead of silently reaching the client in lower case.
 // GksMigrations is read only by scripts/migrate.js through the raw client.
 const tables = {
-    Doors: ['ID', 'Kapi_Adi', 'Departman', 'Konum', 'Durum', 'Kapi_Turu'],
+    Doors: ['ID', 'Kapi_Adi', 'Departman', 'Konum', 'Durum', 'Kapi_Turu', 'Plan_X', 'Plan_Y', 'Bolge_A_ID', 'Bolge_B_ID'],
+    Bolgeler: ['ID', 'Bolge_Adi', 'Bolge_Turu', 'X', 'Y', 'Genislik', 'Yukseklik'],
     DoorLogs: ['ID', 'Islem_Tipi', 'Kapi_Adi', 'Detay', 'Tarih', 'Islemi_Yapan'],
     Izinler: ['ID', 'User_ID', 'Izin_Turu', 'Baslangic_Tarihi', 'Bitis_Tarihi', 'Aciklama', 'Durum', 'Olusturulma_Tarihi'],
     Logs: ['ID', 'RFID_Kart_No', 'Door_ID', 'Zaman', 'Basarili_Mi', 'User_ID'],
@@ -28,7 +29,7 @@ const tables = {
 const aliases = [
     'AktifKapi', 'AktifPersonel', 'Basarili', 'BugunGecis', 'Cakisma_Var', 'Gelen', 'Izin_Durumu',
     'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
-    'Onayli_Izin_Sayisi', 'Saat', 'ToplamPersonel', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
+    'Onayli_Izin_Sayisi', 'Saat', 'ToplamPersonel', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
     'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'superuser', 'toplam', 'tur',
 ];
 

@@ -167,7 +167,7 @@ cd /opt/gks/app && git pull --ff-only
 gks --profile install build
 ```
 
-Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın ve dosyayı tekrar silin. Sonra:
+Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın; migration yeni tablo ekliyorsa (ör. `003_kat_plani.sql` → `Bolgeler`) uygulama rolünün yetkileri için `db:runtime-role` komutunu da yeniden çalıştırın ve dosyayı tekrar silin. Sonra:
 
 ```sh
 gks up -d --wait

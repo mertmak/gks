@@ -7,6 +7,7 @@ const { inTransaction } = require('../utils/transaction');
 const permissions = Object.freeze({
     Users: 'SELECT, INSERT, UPDATE',
     Doors: 'SELECT, INSERT, UPDATE',
+    Bolgeler: 'SELECT, INSERT, UPDATE, DELETE',
     Vardiyalar: 'SELECT, INSERT, UPDATE',
     Personel_Vardiya: 'SELECT, INSERT, UPDATE, DELETE',
     Personel_Calisma_Gecmisi: 'SELECT, INSERT',

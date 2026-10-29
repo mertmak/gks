@@ -29,6 +29,8 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         .query('SELECT COUNT(*) AS n FROM pg_namespace WHERE nspname=@name')).recordset[0].n === 1;
     const schemaOf = token => jwt.decode(token).sandbox;
 
+    await sql.query("INSERT INTO Bolgeler(Bolge_Adi,Bolge_Turu,X,Y,Genislik,Yukseklik) VALUES('Demo Lobi','Lobi',40,40,200,200)");
+    await sql.query('UPDATE Doors SET Plan_X=40, Plan_Y=100, Bolge_B_ID=(SELECT min(ID) FROM Bolgeler) WHERE ID=(SELECT min(ID) FROM Doors)');
     assert.equal((await call('GET', '/public-config')).data.sandbox, true);
     const first = await call('POST', '/sandbox');
     assert.equal(first.status, 200, JSON.stringify(first.data));
@@ -40,8 +42,10 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
 
     await t.test('a copy starts from the demo data, keeps log owners and reports the same attendance', async () => {
         for (const table of sandbox.copied) assert.equal(await count(table, schemaOf(a)), await count(table), table);
-        const owners = 'SELECT ID, User_ID FROM Logs ORDER BY ID';
-        assert.deepEqual((await runInSchema(schemaOf(a), () => sql.query(owners))).recordset, (await sql.query(owners)).recordset);
+        for (const query of ['SELECT ID, User_ID FROM Logs ORDER BY ID', 'SELECT ID, Plan_X, Plan_Y, Bolge_A_ID, Bolge_B_ID FROM Doors ORDER BY ID']) {
+            assert.deepEqual((await runInSchema(schemaOf(a), () => sql.query(query))).recordset, (await sql.query(query)).recordset);
+        }
+        assert.equal(await count('Bolgeler', schemaOf(a)), 1);
         const viewer = (await call('POST', '/demo-login')).data.token;
         const expected = (await call('GET', '/reports/daily-attendance?tarih=2026-09-07', viewer)).data;
         assert.deepEqual((await call('GET', '/reports/daily-attendance?tarih=2026-09-07', a)).data, expected);
@@ -85,6 +89,18 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         assert.equal(await count('Logs'), before);
         assert.equal((await call('POST', '/seeder/run', a, { ...body, personelSayisi: 60 })).status, 400);
         assert.equal((await call('POST', '/seeder/run', a, { ...body, endDateStr: '2026-09-30' })).status, 400);
+    });
+
+    await t.test('the floor plan is edited per copy', async () => {
+        const area = { ref: 'x', bolge_adi: 'Simülasyon Ofisi', bolge_turu: 'Ofis', x: 240, y: 40, genislik: 400, yukseklik: 300 };
+        const saved = await call('PUT', '/kat-plani', a, { bolgeler: [area, { ...area, ref: 'y', x: 640 }], kapilar: [] });
+        assert.equal(saved.status, 200, JSON.stringify(saved.data));
+        assert.equal(await count('Bolgeler', schemaOf(a)), 2);
+        assert.equal(await count('Bolgeler', schemaOf(b)), 1);
+        assert.equal(await count('Bolgeler'), 1);
+        const viewer = (await call('POST', '/demo-login')).data.token;
+        assert.equal((await call('PUT', '/kat-plani', viewer, { bolgeler: [], kapilar: [] })).status, 403);
+        assert.equal((await call('GET', '/kat-plani', viewer)).data.bolgeler.length, 1);
     });
 
     await t.test('socket events reach only the copy that changed', async () => {
