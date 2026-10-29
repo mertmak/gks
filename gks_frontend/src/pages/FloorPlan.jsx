@@ -31,6 +31,7 @@ function FloorPlan() {
   // Running writes card reads: only in a personal copy or a local test setup.
   const simulation = session?.role === 'admin' && (!!session.sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true');
   const [mode, setMode] = useState('design');
+  const [unsent, setUnsent] = useState(false);
   const running = simulation && mode === 'run';
   const editable = session?.role === 'admin' && wide && !running;
   const [plan, setPlan] = useState(EMPTY);
@@ -71,11 +72,11 @@ function FloorPlan() {
   }, [load]);
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !unsent) return;
     const warn = event => { event.preventDefault(); };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [dirty]);
+  }, [dirty, unsent]);
 
   const changeAreas = change => setPlan(current => {
     const areas = change(current.areas);
@@ -129,7 +130,7 @@ function FloorPlan() {
 
       {simulation && <div role="tablist" aria-label="Kat planı modu" className="flex gap-2">
         {[['design', 'Tasarla'], ['run', 'Çalıştır']].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={mode === value}
-          disabled={value === 'run' && (dirty || !!placing)} title={value === 'run' && dirty ? 'Önce planı kaydedin.' : undefined}
+          disabled={value === 'run' ? dirty || !!placing : unsent} title={value === 'run' && dirty ? 'Önce planı kaydedin.' : value === 'design' && unsent ? 'Önce bekleyen okutmalar gönderilsin.' : undefined}
           onClick={() => { setMode(value); setSelected(null); setMessage({ text: '', type: '' }); }}
           className={`px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50 ${mode === value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}>{label}</button>)}
         {dirty && <span className="self-center text-xs text-slate-500">Çalıştırmak için önce planı kaydedin.</span>}
@@ -156,7 +157,7 @@ function FloorPlan() {
         <button type="button" onClick={() => setPlacing(null)} className="rounded-lg border border-cyan-700/40 px-3 py-1 font-bold">Vazgeç</button>
       </div>}
 
-      {running && !state.loading && !state.error && <PlanRunner plan={saved} />}
+      {running && !state.loading && !state.error && <PlanRunner plan={saved} onUnsentChange={setUnsent} />}
       {state.loading && <p role="status">Kat planı yükleniyor…</p>}
       {state.error && <div role="alert" className="text-red-700 font-bold flex gap-3 items-center">{state.error}
         <button type="button" onClick={() => { setState({ loading: true, error: '' }); load(); }} className="rounded-lg bg-slate-900 text-white px-3 py-1 text-sm">Tekrar dene</button></div>}

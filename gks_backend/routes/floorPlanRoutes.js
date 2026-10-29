@@ -24,7 +24,8 @@ router.put('/kat-plani', verifyToken, verifyAdmin, validate(schemas.floorPlanSch
 
 router.post('/kat-plani/sablon', verifyToken, verifyAdmin, async (req, res, next) => {
     try {
-        const result = await inTransaction(tx => floorPlan.applyTemplate(tx, req.user.kullanici_adi));
+        const grant = require('../config/simulation').allowed(req);
+        const result = await inTransaction(tx => floorPlan.applyTemplate(tx, req.user.kullanici_adi, { grant }));
         emitChanged();
         socket.getIO().emit('system_updated');
         res.json({ success: true, message: `Ofis şablonu uygulandı: ${result.placed} kapı yerleştirildi, ${result.created} kapı eklendi.`, ...result });

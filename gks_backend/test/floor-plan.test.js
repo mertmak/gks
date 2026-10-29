@@ -113,4 +113,20 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
         await new sql.Request().input('door', sql.Int, door).query('INSERT INTO Permissions(User_ID,Door_ID) SELECT ID,@door FROM Users');
         assert.equal((await plan()).kapilar[0].Yetkili_Sayisi, 2);
     });
+
+    await t.test('outside a simulation the template adds doors without permissions', async () => {
+        assert.equal((await call('PUT', '/kat-plani', { bolgeler: [], kapilar: [] })).status, 200);
+        await sql.query('UPDATE Doors SET Durum=false');
+        const lastDoor = (await sql.query('SELECT MAX(ID) AS n FROM Doors')).recordset[0].n;
+        const dbName = process.env.DB_NAME;
+        process.env.DB_NAME = 'gksdemo_plan'; // the pool stays on the test database
+        try {
+            const result = await call('POST', '/kat-plani/sablon');
+            assert.equal(result.status, 200, JSON.stringify(result.data));
+            assert.equal(result.data.created, 7);
+        } finally { process.env.DB_NAME = dbName; }
+        const added = (await plan()).kapilar.filter(door => door.ID > lastDoor);
+        assert.equal(added.length, 7);
+        assert.ok(added.every(door => door.Yetkili_Sayisi === 0));
+    });
 });
