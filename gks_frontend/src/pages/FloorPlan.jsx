@@ -80,7 +80,7 @@ function FloorPlan() {
 
   const changeAreas = change => setPlan(current => {
     const areas = change(current.areas);
-    return { areas, doors: relink(areas, current.doors) };
+    return { ...current, areas, doors: relink(areas, current.doors) };
   });
   const changeDoor = (id, change) => setPlan(current => ({ ...current, doors: current.doors.map(door => door.id === id ? { ...door, ...change } : door) }));
   const updateArea = next => setPlan(current => replaceArea(current, next));

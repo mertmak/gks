@@ -22,13 +22,13 @@ router.put('/kat-plani', verifyToken, verifyAdmin, validate(schemas.floorPlanSch
     } catch (error) { next(error); }
 });
 
-router.post('/kat-plani/sablon', verifyToken, verifyAdmin, async (req, res, next) => {
+router.post('/kat-plani/sablon', verifyToken, verifyAdmin, validate(schemas.templateSchema), async (req, res, next) => {
     try {
         const grant = require('../config/simulation').allowed(req);
-        const result = await inTransaction(tx => floorPlan.applyTemplate(tx, req.user.kullanici_adi, { grant }));
+        const result = await inTransaction(tx => floorPlan.applyTemplate(tx, req.user.kullanici_adi, { grant, template: req.body.sablon }));
         emitChanged();
         socket.getIO().emit('system_updated');
-        res.json({ success: true, message: `Ofis şablonu uygulandı: ${result.placed} kapı yerleştirildi, ${result.created} kapı eklendi.`, ...result });
+        res.json({ success: true, message: `${floorPlan.templates[req.body.sablon].name} şablonu uygulandı: ${result.placed} kapı yerleştirildi, ${result.created} kapı eklendi.`, ...result });
     } catch (error) { next(error); }
 });
 

@@ -38,7 +38,7 @@ PostgreSQL rolleri veritabanına değil bütün sunucuya aittir. Aynı sunucuda 
 | Tablolar | Verilen işlemler |
 |---|---|
 | `Users`, `Doors`, `Vardiyalar`, `Mesai_Onaylari` | Okuma, ekleme, güncelleme |
-| `Personel_Vardiya`, `Yoneticiler`, `Bolgeler` | Okuma, ekleme, güncelleme, silme |
+| `Personel_Vardiya`, `Yoneticiler`, `Katlar`, `Bolgeler` | Okuma, ekleme, güncelleme, silme |
 | `Permissions`, `Izinler` | Okuma, ekleme, silme |
 | `Personel_Calisma_Gecmisi`, `Logs`, `SystemLogs`, `DoorLogs` | Okuma, ekleme |
 | `GksSandboxes` | Okuma, ekleme, silme |

@@ -29,7 +29,8 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         .query('SELECT COUNT(*) AS n FROM pg_namespace WHERE nspname=@name')).recordset[0].n === 1;
     const schemaOf = token => jwt.decode(token).sandbox;
 
-    await sql.query("INSERT INTO Bolgeler(Bolge_Adi,Bolge_Turu,X,Y,Genislik,Yukseklik) VALUES('Demo Lobi','Lobi',40,40,200,200)");
+    await sql.query("INSERT INTO Katlar(Kat_Adi,Sira) VALUES('Zemin Kat',0)");
+    await sql.query(`INSERT INTO Bolgeler(Kat_ID,Bolge_Adi,Bolge_Turu,Noktalar) SELECT ID,'Demo Lobi','Lobi','[[40,40],[240,40],[240,240],[40,240]]' FROM Katlar`);
     await sql.query('UPDATE Doors SET Plan_X=40, Plan_Y=100, Bolge_B_ID=(SELECT min(ID) FROM Bolgeler) WHERE ID=(SELECT min(ID) FROM Doors)');
     assert.equal((await call('GET', '/public-config')).data.sandbox, true);
     const first = await call('POST', '/sandbox');
@@ -46,6 +47,7 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
             assert.deepEqual((await runInSchema(schemaOf(a), () => sql.query(query))).recordset, (await sql.query(query)).recordset);
         }
         assert.equal(await count('Bolgeler', schemaOf(a)), 1);
+        assert.equal(await count('Katlar', schemaOf(a)), 1);
         const viewer = (await call('POST', '/demo-login')).data.token;
         const expected = (await call('GET', '/reports/daily-attendance?tarih=2026-09-07', viewer)).data;
         assert.deepEqual((await call('GET', '/reports/daily-attendance?tarih=2026-09-07', a)).data, expected);
@@ -92,14 +94,16 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
     });
 
     await t.test('the floor plan is edited per copy', async () => {
-        const area = { ref: 'x', bolge_adi: 'Simülasyon Ofisi', bolge_turu: 'Ofis', x: 240, y: 40, genislik: 400, yukseklik: 300 };
-        const saved = await call('PUT', '/kat-plani', a, { bolgeler: [area, { ...area, ref: 'y', x: 640 }], kapilar: [] });
+        const katlar = [{ ref: 'k', kat_adi: 'Zemin', sira: 0 }, { ref: 'u', kat_adi: 'Üst', sira: 1 }];
+        const area = { ref: 'x', kat: 'k', bolge_adi: 'Simülasyon Ofisi', bolge_turu: 'Ofis', noktalar: [[240, 40], [640, 40], [640, 340], [240, 340]] };
+        const saved = await call('PUT', '/kat-plani', a, { katlar, bolgeler: [area, { ...area, ref: 'y', kat: 'u' }], kapilar: [] });
         assert.equal(saved.status, 200, JSON.stringify(saved.data));
         assert.equal(await count('Bolgeler', schemaOf(a)), 2);
         assert.equal(await count('Bolgeler', schemaOf(b)), 1);
         assert.equal(await count('Bolgeler'), 1);
+        assert.deepEqual([await count('Katlar', schemaOf(a)), await count('Katlar', schemaOf(b)), await count('Katlar')], [2, 1, 1]);
         const viewer = (await call('POST', '/demo-login')).data.token;
-        assert.equal((await call('PUT', '/kat-plani', viewer, { bolgeler: [], kapilar: [] })).status, 403);
+        assert.equal((await call('PUT', '/kat-plani', viewer, { katlar: [], bolgeler: [], kapilar: [] })).status, 403);
         assert.equal((await call('GET', '/kat-plani', viewer)).data.bolgeler.length, 1);
     });
 

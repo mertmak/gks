@@ -146,7 +146,7 @@ function read(sim, person, leg) {
   const misread = sim.misread && sim.random() < sim.misread;
   const card = misread ? MISREAD_CARD : person.card;
   const reason = !door.active ? 'Kapı pasif' : misread ? 'Tanımsız kart' : !person.permitted.has(door.id) ? 'Kapı yetkisi yok' : null;
-  const entry = record(sim, { card, door, at: leg.at, person, ok: !reason, reason: reason || 'Geçiş onaylandı' });
+  const entry = record(sim, { card, door, from, at: leg.at, person, ok: !reason, reason: reason || 'Geçiş onaylandı' });
   if (!reason) return;
   // Denied: a misread card is tried again; otherwise the person turns back.
   if (misread) {
@@ -160,8 +160,10 @@ function read(sim, person, leg) {
   person.legs = [{ x: back.x, y: back.y, at: leg.at + 0.5 * MINUTE, node: from }];
 }
 
-function record(sim, { card, door, at, person, ok, reason }) {
-  const entry = { id: sim.nextRead++, card, doorId: door.id, doorName: door.name, at, personId: person?.id ?? null, name: person?.name ?? 'Tanımsız kart', ok, reason };
+// Reads at a door on the plan carry the side they come from (A = door.a).
+function record(sim, { card, door, from = sides(door)[0], at, person, ok, reason }) {
+  const direction = door.a || door.b ? (from === sides(door)[0] ? 'A→B' : 'B→A') : undefined;
+  const entry = { id: sim.nextRead++, card, doorId: door.id, doorName: door.name, direction, at, personId: person?.id ?? null, name: person?.name ?? 'Tanımsız kart', ok, reason };
   sim.outbox.push(entry);
   sim.feed.unshift(entry);
   sim.feed.length = Math.min(sim.feed.length, 200);
@@ -240,7 +242,7 @@ export function unknownCard(sim, doorId) {
 // Takes up to `max` queued reads in the server's request format.
 export function takeReads(sim, max = 50) {
   const batch = sim.outbox.splice(0, max);
-  return { batch, body: { tarih: wallClock(sim.day).slice(0, 10), okutmalar: batch.map(entry => ({ kart: entry.card, kapi_id: entry.doorId, zaman: wallClock(Math.floor(entry.at / 1000) * 1000) })) } };
+  return { batch, body: { tarih: wallClock(sim.day).slice(0, 10), okutmalar: batch.map(entry => ({ kart: entry.card, kapi_id: entry.doorId, zaman: wallClock(Math.floor(entry.at / 1000) * 1000), yon: entry.direction })) } };
 }
 
 export function settleReads(sim, batch, results) {

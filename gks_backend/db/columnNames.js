@@ -4,11 +4,12 @@
 // unknown key fails instead of silently reaching the client in lower case.
 // GksMigrations is read only by scripts/migrate.js through the raw client.
 const tables = {
-    Doors: ['ID', 'Kapi_Adi', 'Departman', 'Konum', 'Durum', 'Kapi_Turu', 'Plan_X', 'Plan_Y', 'Bolge_A_ID', 'Bolge_B_ID'],
-    Bolgeler: ['ID', 'Bolge_Adi', 'Bolge_Turu', 'X', 'Y', 'Genislik', 'Yukseklik'],
+    Doors: ['ID', 'Kapi_Adi', 'Departman', 'Konum', 'Durum', 'Kapi_Turu', 'Plan_X', 'Plan_Y', 'Bolge_A_ID', 'Bolge_B_ID', 'Yon_Kisiti'],
+    Katlar: ['ID', 'Kat_Adi', 'Sira'],
+    Bolgeler: ['ID', 'Kat_ID', 'Bolge_Adi', 'Bolge_Turu', 'Noktalar', 'Dikey_Grup'],
     DoorLogs: ['ID', 'Islem_Tipi', 'Kapi_Adi', 'Detay', 'Tarih', 'Islemi_Yapan'],
     Izinler: ['ID', 'User_ID', 'Izin_Turu', 'Baslangic_Tarihi', 'Bitis_Tarihi', 'Aciklama', 'Durum', 'Olusturulma_Tarihi'],
-    Logs: ['ID', 'RFID_Kart_No', 'Door_ID', 'Zaman', 'Basarili_Mi', 'User_ID'],
+    Logs: ['ID', 'RFID_Kart_No', 'Door_ID', 'Zaman', 'Basarili_Mi', 'User_ID', 'Gecis_Anlami'],
     Mesai_Onaylari: ['ID', 'User_ID', 'Tarih', 'Hesaplanan_Dk', 'Onaylanan_Dk', 'Durum', 'Aciklama', 'Islemi_Yapan', 'Islem_Zamani'],
     Permissions: ['ID', 'User_ID', 'Door_ID'],
     Personel_Vardiya: ['ID', 'User_ID', 'Vardiya_ID', 'Baslangic_Tarihi', 'Bitis_Tarihi',
@@ -29,7 +30,7 @@ const tables = {
 const aliases = [
     'AktifKapi', 'AktifPersonel', 'Basarili', 'BugunGecis', 'Cakisma_Var', 'Gelen', 'Izin_Durumu',
     'Kapi_Durum', 'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
-    'Onayli_Izin_Sayisi', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
+    'Bolge_A_Turu', 'Bolge_B_Turu', 'Onayli_Izin_Sayisi', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
     'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'superuser', 'toplam', 'tur',
 ];
 

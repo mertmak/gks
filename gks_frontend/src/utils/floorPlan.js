@@ -3,43 +3,67 @@
 export const PLAN_SIZE = 2000;
 export const GRID = 20;
 export const MIN_AREA = 40;
-export const MAX_AREAS = 30;
+export const MAX_AREAS = 60;
 // A door dropped this close to an area border snaps onto it.
 export const SNAP_DISTANCE = 40;
-export const AREA_TYPES = ['Lobi', 'Ofis', 'Yemekhane', 'Mola', 'Diğer'];
+export const AREA_TYPES = ['Lobi', 'Ofis', 'Yemekhane', 'Mola', 'Merdiven/Asansör', 'Üretim', 'Depo', 'Soyunma', 'Diğer'];
 export const AREA_COLORS = {
   Lobi: { fill: '#e0f2fe', stroke: '#0284c7' },
   Ofis: { fill: '#e0e7ff', stroke: '#4f46e5' },
   Yemekhane: { fill: '#fef3c7', stroke: '#d97706' },
   Mola: { fill: '#d1fae5', stroke: '#059669' },
+  'Merdiven/Asansör': { fill: '#ede9fe', stroke: '#7c3aed' },
+  Üretim: { fill: '#ffedd5', stroke: '#ea580c' },
+  Depo: { fill: '#e7e5e4', stroke: '#57534e' },
+  Soyunma: { fill: '#fce7f3', stroke: '#db2777' },
   Diğer: { fill: '#f1f5f9', stroke: '#64748b' },
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 export const snap = value => Math.round(value / GRID) * GRID;
 
-export function fromServer({ bolgeler = [], kapilar = [] }) {
+const rectPoints = ({ x, y, w, h }) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+const bounds = points => {
+  const xs = points.map(point => point[0]), ys = points.map(point => point[1]);
+  return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+};
+// A moved polygon keeps its shape; a resized one becomes its rectangle.
+const outline = area => {
+  if (!area.points) return rectPoints(area);
+  const box = bounds(area.points);
+  if (box.w !== area.w || box.h !== area.h) return rectPoints(area);
+  return area.points.map(([x, y]) => [x + area.x - box.x, y + area.y - box.y]);
+};
+const DEFAULT_FLOOR = { ref: 'zemin', kat_adi: 'Zemin Kat', sira: 0 };
+
+// shortcut: the editor still works on rectangles (the bounding box of each
+// polygon) and keeps floors as they are; a moved polygon keeps its shape. Faz 4 replaces this with polygon and floor editing.
+export function fromServer({ katlar = [], bolgeler = [], kapilar = [] }) {
   const refOf = id => (id == null ? null : `b${id}`);
   return {
+    floors: katlar.map(floor => ({ id: floor.ID, ref: `k${floor.ID}`, kat_adi: floor.Kat_Adi, sira: floor.Sira })),
     areas: bolgeler.map(area => ({
-      id: area.ID, ref: refOf(area.ID), name: area.Bolge_Adi, type: area.Bolge_Turu,
-      x: area.X, y: area.Y, w: area.Genislik, h: area.Yukseklik,
+      id: area.ID, ref: refOf(area.ID), name: area.Bolge_Adi, type: area.Bolge_Turu, floor: `k${area.Kat_ID}`,
+      group: area.Dikey_Grup, points: area.Noktalar, ...bounds(area.Noktalar),
     })),
     doors: kapilar.map(door => ({
       id: door.ID, name: door.Kapi_Adi, type: door.Kapi_Turu || 'İç Geçiş', active: door.Durum !== false,
-      permitted: door.Yetkili_Sayisi ?? 0, placed: door.Plan_X != null,
+      permitted: door.Yetkili_Sayisi ?? 0, placed: door.Plan_X != null, oneWay: door.Yon_Kisiti || 'Çift',
       x: door.Plan_X, y: door.Plan_Y, a: refOf(door.Bolge_A_ID), b: refOf(door.Bolge_B_ID),
     })),
   };
 }
 
-export function toServer({ areas, doors }) {
+export function toServer({ floors = [], areas, doors }) {
+  const katlar = floors.length ? floors.map(floor => ({ ...(floor.id ? { id: floor.id } : {}), ref: floor.ref, kat_adi: floor.kat_adi, sira: floor.sira })) : [DEFAULT_FLOOR];
   return {
+    katlar,
     bolgeler: areas.map(area => ({
-      ...(area.id ? { id: area.id } : {}), ref: area.ref, bolge_adi: area.name.trim(), bolge_turu: area.type,
-      x: area.x, y: area.y, genislik: area.w, yukseklik: area.h,
+      ...(area.id ? { id: area.id } : {}), ref: area.ref, kat: area.floor || katlar[0].ref, bolge_adi: area.name.trim(), bolge_turu: area.type,
+      noktalar: outline(area),
+      dikey_grup: area.type === 'Merdiven/Asansör' ? area.group || null : null,
     })),
-    kapilar: doors.filter(door => door.placed).map(door => ({ id: door.id, plan_x: door.x, plan_y: door.y, bolge_a: door.a, bolge_b: door.b })),
+    kapilar: doors.filter(door => door.placed).map(door => ({ id: door.id, plan_x: door.x, plan_y: door.y, bolge_a: door.a, bolge_b: door.b, yon_kisiti: door.oneWay || 'Çift' })),
   };
 }
 
@@ -107,7 +131,7 @@ export function replaceArea(plan, next) {
   const areas = plan.areas.map(area => area.ref === next.ref ? next : area);
   const doors = !dx && !dy ? plan.doors : plan.doors.map(door => door.placed && !door.a && door.b === next.ref
     ? { ...door, x: door.x + dx, y: door.y + dy } : door);
-  return { areas, doors: relink(areas, doors) };
+  return { ...plan, areas, doors: relink(areas, doors) };
 }
 
 export const isLinked = door => !door.placed || !!(door.a || door.b);

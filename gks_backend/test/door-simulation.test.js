@@ -103,4 +103,44 @@ test('door simulation plans a day and decides card reads on the server', { skip:
         assert.equal((await call('POST', '/simulasyon/okutma', { tarih: '2026-09-08', okutmalar: [read] }, token('user'))).status, 403);
         assert.equal(await logCount(), before);
     });
+
+    await t.test('on the plan, the areas a read crosses decide its meaning, frozen in the log', async () => {
+        const floor = (await sql.query("INSERT INTO Katlar(Kat_Adi,Sira) VALUES('Zemin',0) RETURNING ID")).recordset[0].ID;
+        const area = async (name, type) => (await new sql.Request().input('kat', sql.Int, floor).input('ad', sql.NVarChar, name).input('tur', sql.NVarChar, type)
+            .query("INSERT INTO Bolgeler(Kat_ID,Bolge_Adi,Bolge_Turu,Noktalar) VALUES(@kat,@ad,@tur,'[[0,0],[100,0],[100,100],[0,100]]') RETURNING ID")).recordset[0].ID;
+        const lobby = await area('Lobi', 'Lobi'), office = await area('Ofis', 'Ofis'), cafeteria = await area('Yemekhane', 'Yemekhane');
+        // Door types are deliberately misleading: only the areas count.
+        const door = async (name, type, a, b, rule = 'Çift') => (await new sql.Request().input('ad', sql.NVarChar, name).input('tur', sql.NVarChar, type)
+            .input('a', sql.Int, a).input('b', sql.Int, b).input('yon', sql.NVarChar, rule)
+            .query('INSERT INTO Doors(Kapi_Adi,Kapi_Turu,Plan_X,Plan_Y,Bolge_A_ID,Bolge_B_ID,Yon_Kisiti) VALUES(@ad,@tur,0,0,@a,@b,@yon) RETURNING ID')).recordset[0].ID;
+        const turnstile = await door('Turnike', 'İç Geçiş', null, lobby, 'A→B');
+        const back = await door('Arka Kapı', 'Ana Giriş', lobby, null);
+        const fromOffice = await door('Ofis Kapısı', 'İç Geçiş', office, cafeteria);
+        const fromLobby = await door('Lobi Kapısı', 'Ana Çıkış', lobby, cafeteria);
+        await new sql.Request().input('id', sql.Int, users.Ayşe).query("INSERT INTO Permissions(User_ID,Door_ID) SELECT @id,ID FROM Doors WHERE Plan_X IS NOT NULL");
+        const read = (kapi_id, zaman, yon) => ({ kart: '30000000001', kapi_id, zaman: '2026-09-09T' + zaman, yon });
+        const before = await logCount();
+        assert.equal((await call('POST', '/simulasyon/okutma', { tarih: '2026-09-09', okutmalar: [read(turnstile, '08:50:00')] })).status, 400, 'a plan door needs a direction');
+        assert.equal((await call('POST', '/simulasyon/okutma', { tarih: '2026-09-09', okutmalar: [read(turnstile, '08:50:00', 'yukarı')] })).status, 400);
+        assert.equal(await logCount(), before);
+        const result = await call('POST', '/simulasyon/okutma', { tarih: '2026-09-09', okutmalar: [
+            read(turnstile, '08:50:00', 'A→B'), read(fromOffice, '12:30:00', 'A→B'), read(fromLobby, '13:00:00', 'B→A'),
+            read(turnstile, '18:00:00', 'B→A'), read(back, '18:01:00', 'A→B'),
+        ] });
+        assert.equal(result.status, 200, JSON.stringify(result.data));
+        assert.deepEqual(result.data.sonuclar.map(row => [row.basarili, row.neden, row.gecis_anlami]), [
+            [true, 'Geçiş onaylandı', 'Ana Giriş'], [true, 'Geçiş onaylandı', 'Yemekhane Giriş'], [true, 'Geçiş onaylandı', 'Yemekhane Çıkış'],
+            [false, 'Bu yönde geçiş kapalı', 'Ana Çıkış'], [true, 'Geçiş onaylandı', 'Ana Çıkış'],
+        ]);
+        // Doors off the plan keep working without a direction and store no meaning.
+        const plain = await call('POST', '/simulasyon/okutma', { tarih: '2026-09-10', okutmalar: [{ kart: '30000000001', kapi_id: doors.Giriş, zaman: '2026-09-10T09:00:00' }] });
+        assert.deepEqual([plain.status, plain.data.sonuclar[0].gecis_anlami], [200, null]);
+        const report = async () => (await call('GET', '/reports/daily-attendance?tarih=2026-09-09')).data.find(item => item.User_ID === users.Ayşe);
+        const row = await report();
+        assert.deepEqual([row.Durum, row.Toplam_Yemek_Dk, row.Hesaplanan_Dk, row.Ilk_Giris, row.Son_Cikis], ['Normal', 30, 1, '2026-09-09T08:50:00.000Z', '2026-09-09T18:01:00.000Z']);
+        // A later plan change does not rewrite the past.
+        await sql.query("UPDATE Bolgeler SET Bolge_Turu='Diğer' WHERE Bolge_Adi='Yemekhane'");
+        await new sql.Request().input('id', sql.Int, fromLobby).query('UPDATE Doors SET Plan_X=NULL, Plan_Y=NULL, Bolge_A_ID=NULL, Bolge_B_ID=NULL WHERE ID=@id');
+        assert.deepEqual(await report(), row);
+    });
 });

@@ -26,7 +26,7 @@ async function attendance(start,end,{transaction,userId}={}) {
           AND (H.Baslangic_Tarihi IS NULL OR H.Baslangic_Tarihi<=D.Tarih) AND H.Bitis_Tarihi>=D.Tarih))
       ORDER BY D.Tarih,U.ID`);
     const logReq=new sql.Request(transaction);logReq.input('userId',sql.Int,userId??null);logReq.input('start',sql.Date,start);logReq.input('end',sql.Date,end);
-    const logs=await logReq.query(`SELECT L.User_ID,L.RFID_Kart_No,L.Zaman,D.Kapi_Turu FROM Logs L JOIN Doors D ON D.ID=L.Door_ID WHERE L.Zaman>=@start-1 AND L.Zaman<@end+2 AND L.Basarili_Mi=true AND (@userId IS NULL OR L.User_ID=@userId) ORDER BY L.Zaman,L.ID`);
+    const logs=await logReq.query(`SELECT L.User_ID,L.RFID_Kart_No,L.Zaman,COALESCE(L.Gecis_Anlami,D.Kapi_Turu) AS Kapi_Turu FROM Logs L JOIN Doors D ON D.ID=L.Door_ID WHERE L.Zaman>=@start-1 AND L.Zaman<@end+2 AND L.Basarili_Mi=true AND (@userId IS NULL OR L.User_ID=@userId) ORDER BY L.Zaman,L.ID`);
     const byUser=new Map();
     for(const l of logs.recordset) {if(!byUser.has(l.User_ID)) byUser.set(l.User_ID,[]);byUser.get(l.User_ID).push(l);}
     return users.recordset.map(row=>calculateAttendance(row,byUser.get(row.User_ID)||[]));
