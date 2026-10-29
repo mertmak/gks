@@ -30,10 +30,10 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
 
     await t.test('an empty plan is readable by every account; only admins change it', async () => {
         const empty = (await call('GET', '/kat-plani', undefined, viewer)).data;
-        assert.deepEqual(empty.bolgeler, []);
+        assert.deepEqual([empty.katlar, empty.bolgeler], [[], []]);
         assert.equal(empty.kapilar.length, 3);
-        assert.ok(empty.kapilar.every(door => door.Plan_X === null && door.Yetkili_Sayisi === 0));
-        assert.equal((await call('PUT', '/kat-plani', { bolgeler: [], kapilar: [] }, viewer)).status, 403);
+        assert.ok(empty.kapilar.every(door => door.Plan_X === null && door.Yetkili_Sayisi === 0 && door.Yon_Kisiti === 'Çift'));
+        assert.equal((await call('PUT', '/kat-plani', { katlar: [], bolgeler: [], kapilar: [] }, viewer)).status, 403);
         assert.equal((await call('POST', '/kat-plani/sablon', undefined, viewer)).status, 403);
     });
 
@@ -46,6 +46,9 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
         assert.equal(result.data.placed, 8);
         const current = await plan();
         assert.equal(current.bolgeler.length, 5);
+        assert.deepEqual(current.katlar.map(floor => [floor.Kat_Adi, floor.Sira]), [['Zemin Kat', 0]]);
+        assert.ok(current.bolgeler.every(area => area.Kat_ID === current.katlar[0].ID));
+        assert.deepEqual(current.bolgeler.find(area => area.Bolge_Turu === 'Lobi').Noktalar, [[40, 200], [240, 200], [240, 440], [40, 440]]);
         const lobby = current.bolgeler.find(area => area.Bolge_Turu === 'Lobi').ID;
         const entry = current.kapilar.find(door => door.Kapi_Adi === 'Giriş 1');
         assert.deepEqual([entry.Plan_X, entry.Plan_Y, entry.Bolge_A_ID, entry.Bolge_B_ID], [40, 280, null, lobby]);
@@ -64,46 +67,79 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
         assert.equal((await call('POST', '/kat-plani/sablon')).status, 409);
     });
 
-    await t.test('a save replaces the whole plan in one transaction', async () => {
+    const toBody = current => {
+        const katlar = current.katlar.map(floor => ({ id: floor.ID, ref: 'k' + floor.ID, kat_adi: floor.Kat_Adi, sira: floor.Sira }));
+        const bolgeler = current.bolgeler.map(area => ({ id: area.ID, ref: 'b' + area.ID, kat: 'k' + area.Kat_ID, bolge_adi: area.Bolge_Adi, bolge_turu: area.Bolge_Turu, noktalar: area.Noktalar, dikey_grup: area.Dikey_Grup }));
+        return { katlar, bolgeler };
+    };
+
+    await t.test('a save replaces the whole plan, floors included, in one transaction', async () => {
         const current = await plan();
-        const keep = current.bolgeler.filter(area => area.Bolge_Turu !== 'Diğer').map(area => ({
-            id: area.ID, ref: 'b' + area.ID, bolge_adi: area.Bolge_Adi, bolge_turu: area.Bolge_Turu, x: area.X, y: area.Y, genislik: area.Genislik, yukseklik: area.Yukseklik,
-        }));
+        const { katlar, bolgeler } = toBody(current);
+        const keep = bolgeler.filter(area => area.bolge_turu !== 'Diğer');
         keep[0].bolge_adi = 'Giriş Holü';
         const office = keep.find(area => area.bolge_turu === 'Ofis');
+        // The office moves to a new upper floor that takes the ground floor's place in the order.
+        office.kat = 'ust';
         const body = {
-            bolgeler: [...keep, { ref: 'yeni', bolge_adi: 'Arşiv', bolge_turu: 'Diğer', x: 540, y: 440, genislik: 180, yukseklik: 200 }],
-            kapilar: [{ id: current.kapilar[1].ID, plan_x: 620, plan_y: 440, bolge_a: office.ref, bolge_b: 'yeni' }],
+            katlar: [{ ...katlar[0], sira: 1 }, { ref: 'ust', kat_adi: 'Üst Kat', sira: 0 }],
+            bolgeler: [...keep,
+                { ref: 'yeni', kat: 'ust', bolge_adi: 'Arşiv', bolge_turu: 'Depo', noktalar: [[540, 440], [720, 440], [720, 640], [600, 640], [600, 540], [540, 540]] },
+                { ref: 'm', kat: 'ust', bolge_adi: 'Merdiven', bolge_turu: 'Merdiven/Asansör', dikey_grup: 'M1', noktalar: [[0, 0], [100, 0], [100, 100], [0, 100]] }],
+            kapilar: [{ id: current.kapilar[1].ID, plan_x: 620, plan_y: 440, bolge_a: office.ref, bolge_b: 'yeni', yon_kisiti: 'A→B' }],
         };
         const saved = await call('PUT', '/kat-plani', body);
         assert.equal(saved.status, 200, JSON.stringify(saved.data));
         const after = await plan();
-        assert.equal(after.bolgeler.length, 5);
+        assert.deepEqual(after.katlar.map(floor => [floor.Kat_Adi, floor.Sira]), [['Üst Kat', 0], ['Zemin Kat', 1]]);
+        const upper = after.katlar[0].ID;
+        assert.equal(after.bolgeler.length, 6);
         assert.ok(after.bolgeler.some(area => area.Bolge_Adi === 'Giriş Holü'));
         assert.ok(!after.bolgeler.some(area => area.Bolge_Adi === 'Toplantı Odası'));
-        const archive = after.bolgeler.find(area => area.Bolge_Adi === 'Arşiv').ID;
+        assert.equal(after.bolgeler.find(area => area.ID === office.id).Kat_ID, upper);
+        const archive = after.bolgeler.find(area => area.Bolge_Adi === 'Arşiv');
+        assert.deepEqual([archive.Kat_ID, archive.Noktalar.length], [upper, 6]);
+        assert.equal(after.bolgeler.find(area => area.Bolge_Adi === 'Merdiven').Dikey_Grup, 'M1');
         const placed = after.kapilar.filter(door => door.Plan_X !== null);
         assert.equal(placed.length, 1);
-        assert.deepEqual([placed[0].ID, placed[0].Bolge_A_ID, placed[0].Bolge_B_ID], [current.kapilar[1].ID, office.id, archive]);
+        assert.deepEqual([placed[0].ID, placed[0].Bolge_A_ID, placed[0].Bolge_B_ID, placed[0].Yon_Kisiti], [current.kapilar[1].ID, office.id, archive.ID, 'A→B']);
+        assert.ok(after.kapilar.filter(door => door.Plan_X === null).every(door => door.Yon_Kisiti === 'Çift'));
         const audit = (await sql.query('SELECT Detay, Islemi_Yapan FROM DoorLogs ORDER BY ID DESC LIMIT 1')).recordset[0];
-        assert.deepEqual(audit, { Detay: '5 bölge, 1 yerleşik kapı.', Islemi_Yapan: 'plan-admin' });
+        assert.deepEqual(audit, { Detay: '2 kat, 6 bölge, 1 yerleşik kapı.', Islemi_Yapan: 'plan-admin' });
+        // A removed floor takes its areas with it.
+        const { katlar: floors, bolgeler: areas } = toBody(after);
+        assert.equal((await call('PUT', '/kat-plani', { katlar: floors.slice(1), bolgeler: areas.filter(area => area.kat !== 'k' + upper), kapilar: [] })).status, 200);
+        assert.deepEqual([(await plan()).katlar.length, (await plan()).bolgeler.length], [1, 3]);
     });
 
     await t.test('invalid plans are rejected without changes', async () => {
         const before = await plan();
-        const area = { ref: 'a', bolge_adi: 'A', x: 0, y: 0, genislik: 100, yukseklik: 100 };
+        const floor = { ref: 'k', kat_adi: 'Zemin', sira: 0 };
+        const square = [[0, 0], [100, 0], [100, 100], [0, 100]];
+        const area = { ref: 'a', kat: 'k', bolge_adi: 'A', noktalar: square };
         const door = { id: before.kapilar[0].ID, plan_x: 0, plan_y: 50 };
+        const valid = { katlar: [floor], bolgeler: [area], kapilar: [] };
         for (const body of [
-            { bolgeler: [area], kapilar: [{ ...door, bolge_a: 'yok' }] },
-            { bolgeler: [area], kapilar: [{ ...door, bolge_a: 'a', bolge_b: 'a' }] },
-            { bolgeler: [{ ...area, x: 1950 }], kapilar: [] },
-            { bolgeler: [{ ...area, genislik: 20 }], kapilar: [] },
-            { bolgeler: [area, area], kapilar: [] },
-            { bolgeler: [area], kapilar: [door, door] },
-            { bolgeler: Array.from({ length: 31 }, (_, i) => ({ ...area, ref: 'r' + i })), kapilar: [] },
+            { ...valid, kapilar: [{ ...door, bolge_a: 'yok' }] },
+            { ...valid, kapilar: [{ ...door, bolge_a: 'a', bolge_b: 'a' }] },
+            { ...valid, kapilar: [{ ...door, bolge_a: 'a', yon_kisiti: 'tek' }] },
+            { ...valid, bolgeler: [{ ...area, noktalar: [[0, 0], [100, 100], [100, 0], [0, 100]] }] },
+            { ...valid, bolgeler: [{ ...area, noktalar: [[0, 0], [20, 0], [20, 20], [0, 20]] }] },
+            { ...valid, bolgeler: [{ ...area, noktalar: [[0, 0], [100, 0]] }] },
+            { ...valid, bolgeler: [{ ...area, noktalar: [[0, 0], [2100, 0], [0, 100]] }] },
+            { ...valid, bolgeler: [{ ...area, dikey_grup: 'M1' }] },
+            { ...valid, bolgeler: [{ ...area, kat: 'yok' }] },
+            { ...valid, bolgeler: [area, area] },
+            { ...valid, katlar: [floor, { ...floor, ref: 'u' }] },
+            { katlar: [floor, { ...floor, ref: 'u', sira: 1 }], bolgeler: [area, { ...area, ref: 'b', kat: 'u' }], kapilar: [{ ...door, bolge_a: 'a', bolge_b: 'b' }] },
+            { ...valid, kapilar: [door, door] },
+            { ...valid, bolgeler: Array.from({ length: 61 }, (_, i) => ({ ...area, ref: 'r' + i })) },
+            { ...valid, katlar: Array.from({ length: 11 }, (_, i) => ({ ...floor, ref: 'k' + i, sira: i })) },
+            { bolgeler: [], kapilar: [] },
         ]) assert.equal((await call('PUT', '/kat-plani', body)).status, 400, JSON.stringify(body));
-        assert.equal((await call('PUT', '/kat-plani', { bolgeler: [area], kapilar: [{ ...door, id: 999999 }] })).status, 404);
-        assert.equal((await call('PUT', '/kat-plani', { bolgeler: [{ ...area, id: 999999 }], kapilar: [] })).status, 404);
+        assert.equal((await call('PUT', '/kat-plani', { ...valid, kapilar: [{ ...door, id: 999999 }] })).status, 404);
+        assert.equal((await call('PUT', '/kat-plani', { ...valid, bolgeler: [{ ...area, id: 999999 }] })).status, 404);
+        assert.equal((await call('PUT', '/kat-plani', { ...valid, katlar: [{ ...floor, id: 999999 }] })).status, 404);
         assert.deepEqual(await plan(), before);
     });
 
@@ -115,7 +151,7 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
     });
 
     await t.test('outside a simulation the template adds doors without permissions', async () => {
-        assert.equal((await call('PUT', '/kat-plani', { bolgeler: [], kapilar: [] })).status, 200);
+        assert.equal((await call('PUT', '/kat-plani', { katlar: [], bolgeler: [], kapilar: [] })).status, 200);
         await sql.query('UPDATE Doors SET Durum=false');
         const lastDoor = (await sql.query('SELECT MAX(ID) AS n FROM Doors')).recordset[0].n;
         const dbName = process.env.DB_NAME;
@@ -128,5 +164,24 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
         const added = (await plan()).kapilar.filter(door => door.ID > lastDoor);
         assert.equal(added.length, 7);
         assert.ok(added.every(door => door.Yetkili_Sayisi === 0));
+    });
+
+    await t.test('the factory template builds two floors joined by a staircase', async () => {
+        assert.equal((await call('POST', '/kat-plani/sablon', { sablon: 'yok' })).status, 400);
+        assert.equal((await call('PUT', '/kat-plani', { katlar: [], bolgeler: [], kapilar: [] })).status, 200);
+        const result = await call('POST', '/kat-plani/sablon', { sablon: 'fabrika' });
+        assert.equal(result.status, 200, JSON.stringify(result.data));
+        assert.match(result.data.message, /^Fabrika şablonu/);
+        const current = await plan();
+        assert.deepEqual(current.katlar.map(floor => floor.Kat_Adi), ['Zemin Kat', '1. Kat']);
+        const stairs = current.bolgeler.filter(area => area.Dikey_Grup === 'Merdiven');
+        assert.deepEqual(new Set(stairs.map(area => area.Kat_ID)).size, 2);
+        const cafeteria = current.bolgeler.find(area => area.Bolge_Turu === 'Yemekhane').ID;
+        const into = current.kapilar.filter(door => door.Kapi_Turu === 'Yemekhane Giriş' && door.Bolge_B_ID === cafeteria);
+        assert.equal(into.length, 2, 'two entrances into the cafeteria');
+        assert.notEqual(into[0].Bolge_A_ID, into[1].Bolge_A_ID);
+        const floorOf = new Map(current.bolgeler.map(area => [area.ID, area.Kat_ID]));
+        assert.ok(current.kapilar.filter(door => door.Bolge_A_ID && door.Bolge_B_ID).every(door => floorOf.get(door.Bolge_A_ID) === floorOf.get(door.Bolge_B_ID)));
+        assert.equal(current.kapilar.filter(door => door.Plan_X !== null).length, 12, 'every slot is filled');
     });
 });

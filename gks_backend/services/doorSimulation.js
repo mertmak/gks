@@ -1,6 +1,8 @@
 const { sql } = require('../db');
+const { httpError } = require('../utils/transaction');
 const { simulationTimes } = require('../utils/simulationTimes');
 const { shiftWindow } = require('../utils/attendance');
+const { passageMeaning } = require('../utils/passageMeaning');
 
 const minute = 60000;
 const MAX_PEOPLE = 300;
@@ -56,28 +58,40 @@ async function dayPlan(day, { late = 0, absent = 0 } = {}, random = Math.random)
     return { tarih: day, kisiler };
 }
 
-const reasons = { door: 'Kapı pasif', card: 'Tanımsız kart', person: 'Personel pasif', permission: 'Kapı yetkisi yok' };
+const reasons = { door: 'Kapı pasif', card: 'Tanımsız kart', person: 'Personel pasif', permission: 'Kapı yetkisi yok', direction: 'Bu yönde geçiş kapalı' };
 
 // Decides each read like a controller would (card known, person and door
-// active, permission) and stores it in Logs; the owner trigger still runs.
+// active, permission, one-way door) and stores it in Logs with the meaning of
+// the passage; the owner trigger still runs.
 async function recordReads(tx, reads) {
     const cards = reads.map(read => read.kart), doors = reads.map(read => read.kapi_id);
     const facts = (await new sql.Request(tx).input('cards', cards).input('doors', doors).query(`
-        SELECT R.n, D.ID AS Door_ID, D.Durum AS Kapi_Durum, U.ID AS User_ID, U.Ad_Soyad, U.Durum AS Personel_Durum,
+        SELECT R.n, D.ID AS Door_ID, D.Durum AS Kapi_Durum, D.Yon_Kisiti, D.Bolge_A_ID, D.Bolge_B_ID,
+               A.Bolge_Turu AS Bolge_A_Turu, B.Bolge_Turu AS Bolge_B_Turu,
+               U.ID AS User_ID, U.Ad_Soyad, U.Durum AS Personel_Durum,
                EXISTS(SELECT 1 FROM Permissions P WHERE P.User_ID=U.ID AND P.Door_ID=D.ID) AS Yetkili
         FROM unnest(@cards::varchar[], @doors::int[]) WITH ORDINALITY R(kart, door, n)
         LEFT JOIN Doors D ON D.ID=R.door
+        LEFT JOIN Bolgeler A ON A.ID=D.Bolge_A_ID
+        LEFT JOIN Bolgeler B ON B.ID=D.Bolge_B_ID
         LEFT JOIN Users U ON gks_ci(U.RFID_Kart_No)=gks_ci(R.kart) AND U.RFID_Kart_No<>''
         ORDER BY R.n`)).recordset;
-    if (facts.some(fact => !fact.Door_ID)) throw Object.assign(new Error('Kapı bulunamadı. Kat planını yeniden yükleyin.'), { statusCode: 404 });
-    const results = facts.map(fact => {
+    if (facts.some(fact => !fact.Door_ID)) throw httpError(404, 'Kapı bulunamadı. Kat planını yeniden yükleyin.');
+    const meanings = facts.map((fact, i) => {
+        if (fact.Bolge_A_ID === null && fact.Bolge_B_ID === null) return null;
+        if (!reads[i].yon) throw httpError(400, 'Plandaki kapıda okutma yönü (yon) zorunludur.');
+        const [from, to] = [fact.Bolge_A_Turu ?? null, fact.Bolge_B_Turu ?? null];
+        return reads[i].yon === 'A→B' ? passageMeaning(from, to) : passageMeaning(to, from);
+    });
+    const results = facts.map((fact, i) => {
         const reason = fact.Kapi_Durum === false ? reasons.door : !fact.User_ID ? reasons.card
-            : fact.Personel_Durum === false ? reasons.person : !fact.Yetkili ? reasons.permission : null;
-        return { basarili: !reason, neden: reason || 'Geçiş onaylandı', user_id: fact.User_ID ?? null, ad_soyad: fact.Ad_Soyad ?? null };
+            : fact.Personel_Durum === false ? reasons.person : !fact.Yetkili ? reasons.permission
+            : meanings[i] && !['Çift', reads[i].yon].includes(fact.Yon_Kisiti) ? reasons.direction : null;
+        return { basarili: !reason, neden: reason || 'Geçiş onaylandı', user_id: fact.User_ID ?? null, ad_soyad: fact.Ad_Soyad ?? null, gecis_anlami: meanings[i] };
     });
     await new sql.Request(tx).input('cards', cards).input('doors', doors)
-        .input('ok', results.map(result => result.basarili)).input('times', reads.map(read => new Date(read.zaman + 'Z')))
-        .query('INSERT INTO Logs(RFID_Kart_No,Door_ID,Basarili_Mi,Zaman) SELECT * FROM unnest(@cards::varchar[],@doors::int[],@ok::boolean[],@times::timestamp[])');
+        .input('ok', results.map(result => result.basarili)).input('times', reads.map(read => new Date(read.zaman + 'Z'))).input('meanings', meanings)
+        .query('INSERT INTO Logs(RFID_Kart_No,Door_ID,Basarili_Mi,Zaman,Gecis_Anlami) SELECT * FROM unnest(@cards::varchar[],@doors::int[],@ok::boolean[],@times::timestamp[],@meanings::varchar[])');
     return results;
 }
 

@@ -14,7 +14,9 @@ Bitiş saati başlangıçtan küçükse vardiya ertesi gün biter. Örneğin 22:
 
 Okutmalar vardiya çevresindeki 24 saatlik pencereye alınır. Pencere başlangıcı, vardiya başlangıcından vardiya dışı sürenin yarısı kadar öncedir; son sınır dahil değildir. 09:00–18:00 vardiyasında 01:30–ertesi gün 01:30, 22:00–06:00 vardiyasında 14:00–ertesi gün 14:00 kullanılır. Aynı saatli ardışık vardiyalar birbirlerinin okutmalarını almaz. Bu pencere dışında kalan çok uzun çalışmalar veya farklı saatli ardışık vardiyalar için cihaz düzeyinde olay eşleştirme iddiası yoktur.
 
-Geçişler zamana göre sıralanır. İlk başarılı Ana Giriş ve bundan sonraki son başarılı Ana Çıkış esas alınır. Başarısız okutmalar devam hesabına girmez. Çoklu giriş/çıkışlar ayrı çalışma oturumlarına bölünmez. Kişi eşleştirmesi güncel karttan değil, logun sabit `User_ID` alanından yapılır.
+Geçişler zamana göre sıralanır. İlk başarılı Ana Giriş ve bundan sonraki son başarılı Ana Çıkış esas alınır.
+
+Her okutmanın türü (Ana Giriş, Ana Çıkış, Yemekhane Giriş/Çıkış, Mola / Sigara Alanı, İç Geçiş) şöyle belirlenir. Tesis planında bölgeye bağlı bir kapıda tür, okutma anında geçilen bölgelerden çıkar ve `Logs.Gecis_Anlami` alanına yazılır: bina dışından içeri Ana Giriş, içeriden dışarı Ana Çıkış, yemekhaneye Yemekhane Giriş, yemekhaneden Yemekhane Çıkış, mola alanına Mola / Sigara Alanı, diğer geçişler İç Geçiş (sıra bu önceliktedir; ör. dışarıdan doğrudan yemekhaneye Ana Giriş). Böylece bir bölgenin kaç kapısı olduğu önemsizdir: yemekhaneye hangi kapıdan girilirse girilsin yemek süresi aynı hesaplanır. Plana bağlı olmayan kapılarda ve bu alandan önceki kayıtlarda kapının güncel `Kapi_Turu` değeri kullanılır. Başarısız okutmalar devam hesabına girmez. Çoklu giriş/çıkışlar ayrı çalışma oturumlarına bölünmez. Kişi eşleştirmesi güncel karttan değil, logun sabit `User_ID` alanından yapılır.
 
 ## Günlük durum ve dakikalar
 

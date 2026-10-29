@@ -29,25 +29,40 @@ const baseTarget = { hedef_turu: z.enum(['Tumu', 'Sirket', 'Departman']), hedef_
 const targetRequired = value => value.hedef_turu === 'Tumu' || !!value.hedef_deger;
 const targetMessage = { message: 'Şirket veya departman seçiniz.', path: ['hedef_deger'] };
 const doorIds = z.array(id).max(1000).refine(a => new Set(a).size === a.length, 'Aynı kapı birden fazla seçilemez.');
-// Floor plan: a 2000 x 2000 grid; doors refer to areas by their `ref`.
+// Floor plan: floors of polygon areas on a 2000 x 2000 grid; areas refer to
+// their floor and doors to their areas by `ref`, so new rows need no ID yet.
+const { area: polygonArea, isSimple } = require('../utils/polygon');
 const coordinate = number(0, 2000);
-const areaRef = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, 'Bölge anahtarı geçersiz.');
-const floorArea = z.object({ id: id.optional(), ref: areaRef, bolge_adi: text(100).min(1, 'Bölge adı zorunludur.'), bolge_turu: z.enum(['Lobi', 'Ofis', 'Yemekhane', 'Mola', 'Diğer']).default('Diğer'),
-    x: coordinate, y: coordinate, genislik: number(40, 2000), yukseklik: number(40, 2000) })
-    .refine(v => v.x + v.genislik <= 2000 && v.y + v.yukseklik <= 2000, 'Bölge plan sınırını (2000) aşamaz.');
-const floorDoor = z.object({ id, plan_x: coordinate, plan_y: coordinate, bolge_a: areaRef.nullable().default(null), bolge_b: areaRef.nullable().default(null) })
+const planRef = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, 'Plan anahtarı geçersiz.');
+const AREA_TYPES = ['Lobi', 'Ofis', 'Yemekhane', 'Mola', 'Merdiven/Asansör', 'Üretim', 'Depo', 'Soyunma', 'Diğer'];
+const DOOR_DIRECTIONS = ['A→B', 'B→A'];
+const floorLevel = z.object({ id: id.optional(), ref: planRef, kat_adi: text(100).min(1, 'Kat adı zorunludur.'), sira: number(-100, 100) });
+const floorArea = z.object({ id: id.optional(), ref: planRef, kat: planRef, bolge_adi: text(100).min(1, 'Bölge adı zorunludur.'), bolge_turu: z.enum(AREA_TYPES).default('Diğer'),
+    noktalar: z.array(z.tuple([coordinate, coordinate])).min(3, 'Bölge en az 3 noktadan oluşur.').max(40, 'Bölge en fazla 40 noktadan oluşur.'),
+    dikey_grup: z.preprocess(v => v === '' ? null : v, text(40).nullish().default(null)) })
+    .refine(v => isSimple(v.noktalar), 'Bölge sınırı kendini kesemez.')
+    .refine(v => polygonArea(v.noktalar) >= 1600, 'Bölge en az 40×40 alan kaplamalıdır.')
+    .refine(v => !v.dikey_grup || v.bolge_turu === 'Merdiven/Asansör', 'Dikey grup yalnız merdiven/asansör bölgesine verilir.');
+const floorDoor = z.object({ id, plan_x: coordinate, plan_y: coordinate, bolge_a: planRef.nullable().default(null), bolge_b: planRef.nullable().default(null),
+    yon_kisiti: z.enum(['Çift', ...DOOR_DIRECTIONS]).default('Çift') })
     .refine(v => !v.bolge_a || v.bolge_a !== v.bolge_b, 'Kapı aynı bölgeyi kendisine bağlayamaz.');
-const floorPlanSchema = z.object({ bolgeler: z.array(floorArea).max(30, 'En fazla 30 bölge eklenebilir.'), kapilar: z.array(floorDoor).max(60) }).superRefine((plan, ctx) => {
-    const refs = plan.bolgeler.map(area => area.ref);
-    const ids = plan.bolgeler.map(area => area.id).filter(Boolean);
-    if (new Set(refs).size !== refs.length || new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Aynı bölge birden fazla gönderilemez.' });
-    if (new Set(plan.kapilar.map(door => door.id)).size !== plan.kapilar.length) ctx.addIssue({ code: 'custom', message: 'Aynı kapı birden fazla yerleştirilemez.' });
-    if (plan.kapilar.some(door => [door.bolge_a, door.bolge_b].some(ref => ref && !refs.includes(ref)))) ctx.addIssue({ code: 'custom', message: 'Kapının bağlandığı bölge planda yok.' });
+const unique = values => new Set(values).size === values.length;
+const floorPlanSchema = z.object({ katlar: z.array(floorLevel).max(10, 'En fazla 10 kat eklenebilir.'), bolgeler: z.array(floorArea).max(60, 'En fazla 60 bölge eklenebilir.'), kapilar: z.array(floorDoor).max(60) }).superRefine((plan, ctx) => {
+    const issue = message => ctx.addIssue({ code: 'custom', message });
+    if (!unique(plan.katlar.map(floor => floor.ref)) || !unique(plan.katlar.map(floor => floor.id).filter(Boolean))) issue('Aynı kat birden fazla gönderilemez.');
+    if (!unique(plan.katlar.map(floor => floor.sira))) issue('Kat sıraları farklı olmalıdır.');
+    if (!unique(plan.bolgeler.map(area => area.ref)) || !unique(plan.bolgeler.map(area => area.id).filter(Boolean))) issue('Aynı bölge birden fazla gönderilemez.');
+    if (!unique(plan.kapilar.map(door => door.id))) issue('Aynı kapı birden fazla yerleştirilemez.');
+    const floors = new Set(plan.katlar.map(floor => floor.ref));
+    if (plan.bolgeler.some(area => !floors.has(area.kat))) issue('Bölgenin katı planda yok.');
+    const floorOf = new Map(plan.bolgeler.map(area => [area.ref, area.kat]));
+    if (plan.kapilar.some(door => [door.bolge_a, door.bolge_b].some(ref => ref && !floorOf.has(ref)))) issue('Kapının bağlandığı bölge planda yok.');
+    else if (plan.kapilar.some(door => door.bolge_a && door.bolge_b && floorOf.get(door.bolge_a) !== floorOf.get(door.bolge_b))) issue('Kapının iki bölgesi aynı katta olmalıdır.');
 });
 // Card reads from the door simulation: wall-clock times without a zone,
 // within the simulated day and its neighbours (night shifts).
 const wallClock = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/, 'Zaman YYYY-MM-DDTHH:MM:SS olmalıdır.');
-const simReadSchema = z.object({ tarih: date, okutmalar: z.array(z.object({ kart: text(50).min(1, 'Kart numarası zorunludur.'), kapi_id: id, zaman: wallClock })).min(1).max(50, 'Bir istekte en fazla 50 okutma gönderilebilir.') })
+const simReadSchema = z.object({ tarih: date, okutmalar: z.array(z.object({ kart: text(50).min(1, 'Kart numarası zorunludur.'), kapi_id: id, zaman: wallClock, yon: z.enum(DOOR_DIRECTIONS).optional() })).min(1).max(50, 'Bir istekte en fazla 50 okutma gönderilebilir.') })
     .refine(v => {
         const day = Date.parse(v.tarih + 'T00:00:00Z');
         return v.okutmalar.every(read => { const time = Date.parse(read.zaman + 'Z'); return time >= day - 86400000 && time < day + 2 * 86400000; });
@@ -72,6 +87,7 @@ const schemas = {
     personelDoorsSchema: z.object({ doorIds }),
     personelShiftSchema: z.object({ vardiya_id: optionalId }),
     floorPlanSchema,
+    templateSchema: z.preprocess(v => v ?? {}, z.object({ sablon: z.enum(['ofis', 'fabrika']).default('ofis') })),
     simReadSchema,
 };
 module.exports = { validate, schemas, date, validDateRange, id, number };

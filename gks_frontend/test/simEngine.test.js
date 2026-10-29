@@ -57,6 +57,8 @@ test('a day produces the reads attendance needs, in order and on the minute', ()
   while (!finished(sim)) step(sim, 10 * 60000);
   const ayse = sim.feed.filter(entry => entry.personId === 1).reverse();
   assert.deepEqual(ayse.map(entry => entry.doorId), [1, 3, 6, 7, 4, 5, 3, 2]);
+  // The side a read comes from: A is the door's first area (null = outside).
+  assert.deepEqual(ayse.map(entry => entry.direction), ['A→B', 'A→B', 'A→B', 'B→A', 'A→B', 'B→A', 'B→A', 'B→A']);
   assert.ok(ayse.every(entry => entry.ok));
   assert.ok(ayse[0].at > Date.parse('2026-09-08T09:00:00Z') && ayse[0].at < Date.parse('2026-09-08T09:10:00Z'));
   // Burak has no permission for the main entry: denied and stays outside.
@@ -69,6 +71,7 @@ test('a day produces the reads attendance needs, in order and on the minute', ()
   assert.equal(sim.outbox.length, 4);
   assert.equal(body.tarih, '2026-09-08');
   assert.match(body.okutmalar[0].zaman, /^2026-09-08T09:0\d:\d{2}$/);
+  assert.equal(body.okutmalar[0].yon, 'A→B');
   settleReads(sim, batch, batch.map(() => ({ basarili: true, neden: 'Geçiş onaylandı' })));
   assert.equal(batch[0].server, true);
 });

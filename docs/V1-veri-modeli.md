@@ -13,6 +13,7 @@ erDiagram
     Users ||--o{ Mesai_Onaylari : gunluk_kararlari
     Users o|--o{ Logs : olay_anindaki_kisi
     Doors ||--o{ Logs : olay_kapisi
+    Katlar ||--o{ Bolgeler : kattaki_bolgeler
     Bolgeler o|--o{ Doors : kat_plani_baglantisi
 ```
 
@@ -20,7 +21,8 @@ erDiagram
 |---|---|
 | `Users` | Personel kimliği, güncel kart, şirket/departman ve güncel çalışma dönemi. Panel hesabı değildir. Kart, TC ve sicil tekilliği migration kısıtlarıyla korunur; kart ve sicil büyük/küçük harf duyarsız tekildir. |
 | `Doors` | Sentetik geçiş noktası, kapı türü ve aktiflik. Fiziksel röle/turnike sürücüsü yoktur. |
-| `Bolgeler` | Kat planındaki dikdörtgen bölgeler (ad, tür, 2000 × 2000 ızgarada konum ve boyut). Kapılar `Doors.Plan_X/Plan_Y` ile bölge sınırına yerleştirilir ve `Bolge_A_ID`/`Bolge_B_ID` ile iki bölgeyi bağlar; boş taraf bina dışıdır. Bölge silinirse kapının o tarafı boşalır. |
+| `Katlar` | Tesisin katları (ad, benzersiz sıra). Kat silinirse bölgeleri de silinir. |
+| `Bolgeler` | Bir kattaki çokgen bölgeler (ad, tür, 2000 × 2000 ızgarada `Noktalar` = `[[x,y],…]`, 3–40 köşe, kendini kesmez). Merdiven/Asansör bölgeleri `Dikey_Grup` ile katlar arasında eşlenir. Kapılar `Doors.Plan_X/Plan_Y` ile bölge sınırına yerleştirilir ve `Bolge_A_ID`/`Bolge_B_ID` ile aynı kattaki iki bölgeyi bağlar; boş taraf bina dışıdır. `Doors.Yon_Kisiti` (`Çift`, `A→B`, `B→A`) tek yönlü kapıyı (turnike) belirtir. Bölge silinirse kapının o tarafı boşalır. |
 | `Permissions` | Personel–kapı çoktan çoğa ilişkisi. Aynı çift yinelenemez. Kapıyı pasife almak mevcut izinlerini kaldırır; tekrar aktifleştirmek izinleri geri getirmez. |
 | `Vardiyalar` | Saatler, tolerans, mola hakkı, haftanın çalışma günleri ve aktiflik. |
 | `Personel_Vardiya` | Tarihli personel ataması ve atama anındaki vardiya alanlarının kopyası. Rapor tanımın güncel saatleri yerine bu kopyayı kullanır. |
@@ -43,3 +45,4 @@ Kritik değişiklikler ile işlem geçmişi aynı transaction'a yazılır. Commi
 `001_initial.sql` önceki SQL Server sürümünün beş migration'ından sonraki son şemanın PostgreSQL karşılığıdır; eski veriyi dönüştüren adımları içermez. Veritabanı `db:init` ile UTF-8, `tr-TR` ICU sıralaması ve `BUSINESS_TIMEZONE` varsayılan saat dilimiyle oluşturulur. Sonraki şema değişiklikleri yeni numaralı dosyalarla eklenir; uygulanmış dosya değiştirilmez. Personel adı/departmanı ve kapı türü için ayrı tarihsel sürüm tablosu yoktur. Ayrıntılı davranış [hesaplama kurallarında](V1-hesaplama-kurallari.md) ve [README'deki geçmiş sözleşmesinde](../README.md) açıklanır.
 
 3. `003_kat_plani.sql`: kat planı. `Bolgeler` tablosu ve `Doors` tablosuna yerleşim kolonları (`Plan_X`, `Plan_Y`, `Bolge_A_ID`, `Bolge_B_ID`; hepsi boş başlar, mevcut kapılar ve kurulumlar etkilenmez). Kısıtlar: koordinatlar 0–2000, bölge en az 40 × 40, yerleşmemiş kapı bölgeye bağlanamaz, kapı aynı bölgeyi kendisine bağlayamaz. Simülasyon alanlarında `Bolgeler` de demo verisinden kopyalanır (kota 30).
+4. `004_tesis.sql`: tesis modeli. `Katlar` tablosu; `Bolgeler` dikdörtgenden çokgene geçer (`Kat_ID`, `Noktalar` jsonb, `Dikey_Grup`; `X/Y/Genislik/Yukseklik` kaldırılır) ve tür listesine `Merdiven/Asansör`, `Üretim`, `Depo`, `Soyunma` eklenir. Bölgesi olan kurulumda "Zemin Kat" oluşturulur ve her dikdörtgen dört köşeli çokgene çevrilir. `Doors.Yon_Kisiti` (varsayılan `Çift`) ve `Logs.Gecis_Anlami` (okutma anında geçilen bölgelerden yazılan anlam; eski kayıtlarda boş) eklenir. Simülasyon alanı kotaları: `Katlar` 10, `Bolgeler` 60.

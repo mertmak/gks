@@ -42,23 +42,38 @@ test('areas stay on the grid, inside the plan and at least 40 units wide', () =>
 
 test('server rows round-trip through the editor model', () => {
   const server = {
-    bolgeler: [{ ID: 7, Bolge_Adi: 'Lobi', Bolge_Turu: 'Lobi', X: 40, Y: 200, Genislik: 200, Yukseklik: 240 }],
+    katlar: [{ ID: 3, Kat_Adi: 'Zemin Kat', Sira: 0 }],
+    bolgeler: [
+      { ID: 7, Kat_ID: 3, Bolge_Adi: 'Lobi', Bolge_Turu: 'Lobi', Noktalar: [[40, 200], [240, 200], [240, 440], [40, 440]], Dikey_Grup: null },
+      { ID: 8, Kat_ID: 3, Bolge_Adi: 'Üretim', Bolge_Turu: 'Üretim', Noktalar: [[440, 40], [840, 40], [840, 240], [640, 240], [640, 440], [440, 440]], Dikey_Grup: null },
+    ],
     kapilar: [
-      { ID: 1, Kapi_Adi: 'Giriş', Kapi_Turu: 'Ana Giriş', Durum: true, Plan_X: 40, Plan_Y: 300, Bolge_A_ID: null, Bolge_B_ID: 7, Yetkili_Sayisi: 3 },
+      { ID: 1, Kapi_Adi: 'Giriş', Kapi_Turu: 'Ana Giriş', Durum: true, Plan_X: 40, Plan_Y: 300, Bolge_A_ID: null, Bolge_B_ID: 7, Yon_Kisiti: 'A→B', Yetkili_Sayisi: 3 },
       { ID: 2, Kapi_Adi: 'Depo', Kapi_Turu: null, Durum: false, Plan_X: null, Plan_Y: null, Bolge_A_ID: null, Bolge_B_ID: null },
     ],
   };
   const model = fromServer(server);
   assert.equal(model.doors[1].type, 'İç Geçiş');
   assert.equal(model.doors[1].active, false);
+  assert.deepEqual([model.areas[1].x, model.areas[1].y, model.areas[1].w, model.areas[1].h], [440, 40, 400, 400], 'the editor works on the bounding box');
   model.areas.push({ id: null, ref: 'n1', name: ' Ofis ', type: 'Ofis', x: 240, y: 200, w: 200, h: 200 });
+  // Moving keeps the polygon; resizing turns it into its rectangle.
+  model.areas[1] = { ...model.areas[1], x: 460 };
+  const lShape = [[460, 40], [860, 40], [860, 240], [660, 240], [660, 440], [460, 440]];
   assert.deepEqual(toServer(model), {
+    katlar: [{ id: 3, ref: 'k3', kat_adi: 'Zemin Kat', sira: 0 }],
     bolgeler: [
-      { id: 7, ref: 'b7', bolge_adi: 'Lobi', bolge_turu: 'Lobi', x: 40, y: 200, genislik: 200, yukseklik: 240 },
-      { ref: 'n1', bolge_adi: 'Ofis', bolge_turu: 'Ofis', x: 240, y: 200, genislik: 200, yukseklik: 200 },
+      { id: 7, ref: 'b7', kat: 'k3', bolge_adi: 'Lobi', bolge_turu: 'Lobi', noktalar: server.bolgeler[0].Noktalar, dikey_grup: null },
+      { id: 8, ref: 'b8', kat: 'k3', bolge_adi: 'Üretim', bolge_turu: 'Üretim', noktalar: lShape, dikey_grup: null },
+      { ref: 'n1', kat: 'k3', bolge_adi: 'Ofis', bolge_turu: 'Ofis', noktalar: [[240, 200], [440, 200], [440, 400], [240, 400]], dikey_grup: null },
     ],
-    kapilar: [{ id: 1, plan_x: 40, plan_y: 300, bolge_a: null, bolge_b: 'b7' }],
+    kapilar: [{ id: 1, plan_x: 40, plan_y: 300, bolge_a: null, bolge_b: 'b7', yon_kisiti: 'A→B' }],
   });
+  model.areas[1] = { ...model.areas[1], w: 300 };
+  assert.deepEqual(toServer(model).bolgeler[1].noktalar, [[460, 40], [760, 40], [760, 440], [460, 440]]);
+  // An empty plan gets a ground floor for its first area.
+  const empty = toServer({ areas: [{ id: null, ref: 'n1', name: 'A', type: 'Lobi', x: 0, y: 0, w: 100, h: 100 }], doors: [] });
+  assert.deepEqual([empty.katlar, empty.bolgeler[0].kat], [[{ ref: 'zemin', kat_adi: 'Zemin Kat', sira: 0 }], 'zemin']);
 });
 
 test('outer doors move with their area; shared doors stay on the other area', () => {
