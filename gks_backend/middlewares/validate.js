@@ -29,6 +29,21 @@ const baseTarget = { hedef_turu: z.enum(['Tumu', 'Sirket', 'Departman']), hedef_
 const targetRequired = value => value.hedef_turu === 'Tumu' || !!value.hedef_deger;
 const targetMessage = { message: 'Şirket veya departman seçiniz.', path: ['hedef_deger'] };
 const doorIds = z.array(id).max(1000).refine(a => new Set(a).size === a.length, 'Aynı kapı birden fazla seçilemez.');
+// Floor plan: a 2000 x 2000 grid; doors refer to areas by their `ref`.
+const coordinate = number(0, 2000);
+const areaRef = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, 'Bölge anahtarı geçersiz.');
+const floorArea = z.object({ id: id.optional(), ref: areaRef, bolge_adi: text(100).min(1, 'Bölge adı zorunludur.'), bolge_turu: z.enum(['Lobi', 'Ofis', 'Yemekhane', 'Mola', 'Diğer']).default('Diğer'),
+    x: coordinate, y: coordinate, genislik: number(40, 2000), yukseklik: number(40, 2000) })
+    .refine(v => v.x + v.genislik <= 2000 && v.y + v.yukseklik <= 2000, 'Bölge plan sınırını (2000) aşamaz.');
+const floorDoor = z.object({ id, plan_x: coordinate, plan_y: coordinate, bolge_a: areaRef.nullable().default(null), bolge_b: areaRef.nullable().default(null) })
+    .refine(v => !v.bolge_a || v.bolge_a !== v.bolge_b, 'Kapı aynı bölgeyi kendisine bağlayamaz.');
+const floorPlanSchema = z.object({ bolgeler: z.array(floorArea).max(30, 'En fazla 30 bölge eklenebilir.'), kapilar: z.array(floorDoor).max(60) }).superRefine((plan, ctx) => {
+    const refs = plan.bolgeler.map(area => area.ref);
+    const ids = plan.bolgeler.map(area => area.id).filter(Boolean);
+    if (new Set(refs).size !== refs.length || new Set(ids).size !== ids.length) ctx.addIssue({ code: 'custom', message: 'Aynı bölge birden fazla gönderilemez.' });
+    if (new Set(plan.kapilar.map(door => door.id)).size !== plan.kapilar.length) ctx.addIssue({ code: 'custom', message: 'Aynı kapı birden fazla yerleştirilemez.' });
+    if (plan.kapilar.some(door => [door.bolge_a, door.bolge_b].some(ref => ref && !refs.includes(ref)))) ctx.addIssue({ code: 'custom', message: 'Kapının bağlandığı bölge planda yok.' });
+});
 const schemas = {
     loginSchema: z.object({ username, password: z.string().min(1, 'Şifre zorunludur.').max(200) }),
     ilkKurulumSchema: z.object({ username, password }),
@@ -48,5 +63,6 @@ const schemas = {
     personelStatusSchema: z.object({ durum: bit, cikis_tarihi: optionalDate, cikis_nedeni: text(255).default(''), ad_soyad: text(100).optional(), sicil: text(50).optional() }).refine(v => v.durum !== 0 || !!v.cikis_tarihi, 'İşten çıkış tarihi zorunludur.'),
     personelDoorsSchema: z.object({ doorIds }),
     personelShiftSchema: z.object({ vardiya_id: optionalId }),
+    floorPlanSchema,
 };
 module.exports = { validate, schemas, date, validDateRange, id, number };

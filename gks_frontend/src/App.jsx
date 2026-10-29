@@ -14,6 +14,7 @@ const Users = lazy(() => import('./pages/Users'));
 const PersonnelOperations = lazy(() => import('./pages/PersonnelOperations'));
 const BulkOperations = lazy(() => import('./pages/BulkOperations'));
 const Doors = lazy(() => import('./pages/Doors'));
+const FloorPlan = lazy(() => import('./pages/FloorPlan'));
 const Shifts = lazy(() => import('./pages/Shifts'));
 const Leaves = lazy(() => import('./pages/Leaves'));
 const Reports = lazy(() => import('./pages/Reports'));
@@ -161,7 +162,7 @@ function App() {
           {/* KAPI İŞLEMLERİ */}
           <DropdownMenu title="Kapılar" activePaths={['/kapilar']}>
             <DropdownItem to="/kapilar/yonetim" label="Kapı Tanımlama ve Yönetim" />
-            {/* İleride kapılarla ilgili yeni sayfalar eklersen buraya ekleyebilirsin */}
+            <DropdownItem to="/kapilar/kat-plani" label="Kat Planı" />
           </DropdownMenu>
 
           {/* VARDİYA & İZİN İŞLEMLERİ */}
@@ -207,6 +208,7 @@ function App() {
 
           {/* Kapı Rotası */}
           <Route path="/kapilar/yonetim" element={<Doors />} />
+          <Route path="/kapilar/kat-plani" element={<FloorPlan />} />
 
           {/* Vardiya ve İzin Rotaları */}
           <Route path="/vardiya" element={<Shifts />} />

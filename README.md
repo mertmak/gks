@@ -93,6 +93,7 @@ GitHub Actions yapılandırması birim testlerini, kod kontrolünü, derlemeyi v
 - Raporlar vardiyanın ertesi güne sarkan çıkışını, vardiya tarihçesini, onaylı izinleri ve personelin işe giriş/çıkış tarihlerini dikkate alır. Hesaplanan mesai ile onaylanan mesai ayrıdır; sıfır dakika onayı korunur.
 - Saklanan saat dilimsiz `timestamp` kayıtları Türkiye yerel saatini temsil ediyor kabul edilir. Sürücü bunları UTC biçiminde taşısa da ekran tekrar üç saat eklemez. Gün seçimi `BUSINESS_TIMEZONE=Europe/Istanbul` kullanır; veritabanı oturumu da aynı saat dilimiyle açıldığı için `LOCALTIMESTAMP` ve `CURRENT_DATE` iş gününü verir. Gerçek cihaz zaman damgası entegrasyonu V1 kapsamı dışındadır.
 - Personel, departman ve log aramaları büyük/küçük harf ve aksan duyarsızdır (`ISIK` → `Işık`, `isci` → `İŞÇİ`). Kart no, sicil no ve panel kullanıcı adı büyük/küçük harf duyarsız olarak tekildir.
+- Kat planı (Kapılar → Kat Planı): yönetici bölgeleri çizer ve kapıları bölge sınırlarına yerleştirir; kapı iki bölgeyi ya da bir bölgeyi bina dışıyla bağlar. Boş plana hazır ofis şablonu uygulanabilir (eksik kapı türleri eklenir). Plan tek istekte bütün olarak kaydedilir ve kapı işlem loguna yazılır; düzenleme geniş ekranda yapılır, telefonda plan görüntülenir.
 - Simülasyon varsayılan kapalıdır, üretimde çalışmaz. Açılması için backend `ENABLE_SIMULATION=true`, frontend `VITE_ENABLE_SIMULATION=true` ve ayrı `gksreview_`/`gkstest_` veritabanı gerekir. Yalnızca ekleme yapar; mevcut geçmişi topluca silmez.
 
 Yayın kapsamı ve geri dönüş adımları: [V1 sürüm notları](docs/V1-surum-notlari.md).
@@ -148,7 +149,7 @@ Bu kurallar veritabanında iki `BEFORE INSERT` trigger'ı (geçişte kart sahibi
 
 ## Denetim kayıtları
 
-Personel oluşturma/düzenleme, bireysel/toplu yetki-vardiya-durum işlemleri, izinler, kapılar, vardiya tanımları, mesai kararları, panel hesabı oluşturma/silme ve parola değişikliği kendi denetim kayıtlarıyla aynı transaction içinde tamamlanır. Denetim kaydı yazılamazsa iş değişikliği geri alınır. Socket bildirimleri commit sonrasında gönderilir. HTTP ve CLI ilk yönetici kurulumu da denetim kaydı oluşturur.
+Personel oluşturma/düzenleme, bireysel/toplu yetki-vardiya-durum işlemleri, izinler, kapılar, kat planı, vardiya tanımları, mesai kararları, panel hesabı oluşturma/silme ve parola değişikliği kendi denetim kayıtlarıyla aynı transaction içinde tamamlanır. Denetim kaydı yazılamazsa iş değişikliği geri alınır. Socket bildirimleri commit sonrasında gönderilir. HTTP ve CLI ilk yönetici kurulumu da denetim kaydı oluşturur.
 
 Parola, parola hash'i ve tokenlar audit detayına yazılmaz. Parola değişikliği oturum sürümünü artırır; aynı eski parola ile eşzamanlı değişikliklerden yalnız biri tamamlanabilir. Audit hata verirse parola ve oturum sürümü de geri alınır. Bu kayıtlar uygulama işlemlerinin geçmişidir; SQL yöneticisinin doğrudan müdahalesine karşı değiştirilemez arşiv veya harici güvenlik izleme sistemi değildir.
 
