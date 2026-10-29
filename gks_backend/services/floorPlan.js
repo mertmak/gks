@@ -69,9 +69,10 @@ async function updatePlan(tx, plan, user) {
 const templateMinimum = { 'İç Geçiş': 2 };
 
 // Places the existing doors by type (active ones first) and adds the missing
-// active doors, permitted for every active person, so the template is usable
-// by the door simulation at once.
-async function applyTemplate(tx, user) {
+// active doors. Where simulations run, the added doors are permitted for every
+// active person so the door simulation can use the template at once; elsewhere
+// permissions stay an explicit admin decision.
+async function applyTemplate(tx, user, { grant = false } = {}) {
     const request = () => new sql.Request(tx);
     if ((await request().query('SELECT ID FROM Bolgeler LIMIT 1')).recordset.length) {
         throw httpError(409, 'Kat planı boş değil. Şablon yalnız bölgesi olmayan plana uygulanır.');
@@ -84,10 +85,10 @@ async function applyTemplate(tx, user) {
             const name = i ? `Plan ${type} ${i + 1}` : `Plan ${type}`;
             const row = (await request().input('ad', sql.NVarChar, name).input('tur', sql.NVarChar, type)
                 .query("INSERT INTO Doors(Kapi_Adi, Kapi_Turu, Departman, Konum, Durum) VALUES(@ad, @tur, '', 'Kat planı şablonu', true) RETURNING ID")).recordset[0];
-            const permitted = await request().input('door', sql.Int, row.ID)
-                .query('INSERT INTO Permissions(User_ID, Door_ID) SELECT ID, @door FROM Users WHERE Durum=true');
+            const permitted = grant && (await request().input('door', sql.Int, row.ID)
+                .query('INSERT INTO Permissions(User_ID, Door_ID) SELECT ID, @door FROM Users WHERE Durum=true')).rowsAffected[0];
             doors.push({ ID: row.ID, Kapi_Turu: type, Durum: true });
-            await addDoorLog(user, 'YENİ KAPI', name, `Kapı türü: ${type}. Kat planı şablonuyla eklendi; ${permitted.rowsAffected[0]} aktif personele yetki verildi.`, tx);
+            await addDoorLog(user, 'YENİ KAPI', name, `Kapı türü: ${type}. Kat planı şablonuyla eklendi${grant ? `; ${permitted} aktif personele yetki verildi` : ''}.`, tx);
             created++;
         }
     }

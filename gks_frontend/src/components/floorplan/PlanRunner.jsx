@@ -14,7 +14,7 @@ const initials = name => name.match(/(\d{1,2})\s*$/)?.[1] || name.split(/\s+/).m
 // The demo's data ends on its reference day; simulate the next one.
 const defaultDay = () => demoSettings().demo ? shiftDateDays(demoSettings().referenceDate, 1) : businessDate();
 
-export default function PlanRunner({ plan }) {
+export default function PlanRunner({ plan, onUnsentChange }) {
   const [form, setForm] = useState(() => ({ tarih: defaultDay(), gec: 10, devamsiz: 5, hatali: 5 }));
   // The engine mutates the simulation object; `frame` triggers the redraw.
   const [current, setCurrent] = useState(null);
@@ -23,6 +23,8 @@ export default function PlanRunner({ plan }) {
   const [speed, setSpeed] = useState(SPEEDS[1]);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState('');
+  // A failed send stops sending until the user retries.
+  const [failed, setFailed] = useState(false);
   const [hint, setHint] = useState('');
   const [person, setPerson] = useState(null);
   const [door, setDoor] = useState(null);
@@ -35,7 +37,7 @@ export default function PlanRunner({ plan }) {
     try {
       const { data } = await api.get('/simulasyon/plan', { params: { tarih: form.tarih, gec: form.gec, devamsiz: form.devamsiz } });
       setCurrent(createSimulation(plan, data, { misread: form.hatali / 100 }));
-      setPerson(null); setDoor(null);
+      setPerson(null); setDoor(null); setFailed(false);
       setRunning(true); redraw();
     } catch (err) { setError(err.response?.data?.message || 'Simülasyon planı alınamadı.'); }
     finally { setPreparing(false); }
@@ -56,10 +58,10 @@ export default function PlanRunner({ plan }) {
     return () => cancelAnimationFrame(frame);
   }, [running, speed, current, redraw]);
 
-  // Queued reads go to the server in batches; failures pause the run and
-  // keep the batch for the next attempt.
+  // Queued reads go to the server in batches; a failure pauses the run and
+  // keeps the batch until the user retries.
   useEffect(() => {
-    if (!current) return;
+    if (!current || failed) return;
     const timer = setInterval(async () => {
       if (!current.outbox.length || sending.current) return;
       sending.current = true;
@@ -70,17 +72,20 @@ export default function PlanRunner({ plan }) {
         setError('');
       } catch (err) {
         current.outbox.unshift(...batch);
-        setRunning(false);
-        setError((err.response?.data?.message || 'Okutmalar sunucuya gönderilemedi.') + ' Simülasyon duraklatıldı; devam ettiğinizde yeniden gönderilir.');
+        setRunning(false); setFailed(true);
+        setError((err.response?.data?.message || 'Okutmalar sunucuya gönderilemedi.') + ' Simülasyon duraklatıldı; "Yeniden dene" ile tekrar gönderilir. Yeni gün başlatırsanız gönderilmeyen okutmalar atılır.');
       } finally { sending.current = false; redraw(); }
     }, SEND_EVERY);
     return () => clearInterval(timer);
-  }, [current, redraw]);
+  }, [current, failed, redraw]);
 
   const selectedPerson = current?.people.find(item => item.id === person);
   const selectedDoor = plan.doors.find(item => item.id === door);
   const done = current && finished(current);
   const pending = current?.outbox.length || 0;
+  // Unsent reads would be lost by a new day or by leaving the run tab.
+  const unsent = pending > 0 && !failed;
+  useEffect(() => { onUnsentChange?.(unsent); }, [unsent, onUnsentChange]);
   const mismatches = current?.feed.filter(entry => entry.server !== undefined && entry.server !== entry.ok).length || 0;
   const input = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm';
   const button = 'px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50';
@@ -106,7 +111,7 @@ export default function PlanRunner({ plan }) {
         {current && <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-slate-100">
           <span className="text-2xl font-black tabular-nums text-slate-800" aria-live="off">{clockLabel(current.clock)}</span>
           <span className="text-xs text-slate-500 mr-auto">{new Date(current.clock).toISOString().slice(0, 10)}</span>
-          <button type="button" disabled={done} onClick={() => setRunning(value => !value)} className={`${button} bg-slate-900 text-white`}>{running ? 'Duraklat' : 'Devam'}</button>
+          <button type="button" disabled={done && !failed} onClick={() => { setFailed(false); setRunning(value => !value); }} className={`${button} bg-slate-900 text-white`}>{failed ? 'Yeniden dene' : running ? 'Duraklat' : 'Devam'}</button>
           <div role="group" aria-label="Hız" className="flex rounded-lg border border-slate-300 overflow-hidden">
             {SPEEDS.map(value => <button key={value} type="button" aria-pressed={speed === value} onClick={() => setSpeed(value)}
               className={`px-3 py-2 text-sm font-bold ${speed === value ? 'bg-cyan-600 text-white' : 'bg-white text-slate-700'}`}>{value}×</button>)}
@@ -136,7 +141,8 @@ export default function PlanRunner({ plan }) {
               </label>
             ))}
           </div>
-          <button type="submit" disabled={preparing || !plan.areas.length} className={`${button} w-full bg-blue-600 text-white`}>{preparing ? 'Plan hazırlanıyor…' : current ? 'Bu günü başlat' : 'Simülasyonu başlat'}</button>
+          <button type="submit" disabled={preparing || !plan.areas.length || unsent} className={`${button} w-full bg-blue-600 text-white`}>{preparing ? 'Plan hazırlanıyor…' : current ? 'Bu günü başlat' : 'Simülasyonu başlat'}</button>
+          {unsent && <p className="text-xs text-amber-700">Bekleyen okutmalar gönderilince yeni gün başlatılabilir.</p>}
           <p className="text-xs text-slate-500">Okutmalar seçilen güne gerçek geçiş kaydı olarak yazılır ve puantaja yansır. Aynı günü tekrar çalıştırmak kayıtları çoğaltır.</p>
         </form>
 
