@@ -3,7 +3,7 @@ import { AREA_COLORS, GRID, moveArea, resizeArea, placeDoor, viewBox } from '../
 
 // SVG drawing of the plan. Dragging moves areas and doors; the parent owns the
 // data and re-links doors whenever an area changes.
-export default function PlanCanvas({ areas, doors, selected, editable, placing, onSelect, onAreaChange, onDoorMove, onPlace, onInvalidPlace }) {
+export default function PlanCanvas({ areas, doors, selected, editable, placing, onSelect, onAreaChange, onDoorMove, onPlace, onInvalidPlace, children }) {
   const svg = useRef(null);
   const drag = useRef(null);
   const { width, height } = viewBox(areas, doors);
@@ -87,6 +87,7 @@ export default function PlanCanvas({ areas, doors, selected, editable, placing, 
           </g>
         );
       })}
+      {children}
     </svg>
   );
 }

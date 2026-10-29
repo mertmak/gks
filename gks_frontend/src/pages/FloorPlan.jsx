@@ -4,6 +4,7 @@ import api from '../api/axios';
 import { socket } from '../api/socket';
 import AlertMessage from '../components/AlertMessage';
 import PlanCanvas from '../components/floorplan/PlanCanvas';
+import PlanRunner from '../components/floorplan/PlanRunner';
 import { usePendingAction } from '../hooks/usePendingAction';
 import { readSession } from '../utils/session';
 import { demoSettings } from '../utils/demo';
@@ -27,7 +28,11 @@ function useWideScreen() {
 function FloorPlan() {
   const session = readSession();
   const wide = useWideScreen();
-  const editable = session?.role === 'admin' && wide;
+  // Running writes card reads: only in a personal copy or a local test setup.
+  const simulation = session?.role === 'admin' && (!!session.sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true');
+  const [mode, setMode] = useState('design');
+  const running = simulation && mode === 'run';
+  const editable = session?.role === 'admin' && wide && !running;
   const [plan, setPlan] = useState(EMPTY);
   const [saved, setSaved] = useState(EMPTY);
   const [state, setState] = useState({ loading: true, error: '' });
@@ -122,7 +127,15 @@ function FloorPlan() {
         <p className="text-slate-500 text-sm mt-1">Bölgeleri çizin ve kapıları bölge sınırlarına yerleştirin. Bir kapı iki bölgeyi ya da bir bölgeyi bina dışıyla bağlar; geçiş simülasyonu bu planı kullanır.</p>
       </div>
 
-      {!editable && session?.role === 'admin' && <p className="rounded-xl bg-slate-100 text-slate-700 px-4 py-3 text-sm">Plan düzenleme geniş ekranda yapılır; bu ekranda plan yalnız görüntülenir.</p>}
+      {simulation && <div role="tablist" aria-label="Kat planı modu" className="flex gap-2">
+        {[['design', 'Tasarla'], ['run', 'Çalıştır']].map(([value, label]) => <button key={value} type="button" role="tab" aria-selected={mode === value}
+          disabled={value === 'run' && (dirty || !!placing)} title={value === 'run' && dirty ? 'Önce planı kaydedin.' : undefined}
+          onClick={() => { setMode(value); setSelected(null); setMessage({ text: '', type: '' }); }}
+          className={`px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50 ${mode === value ? 'bg-slate-900 text-white' : 'bg-white border border-slate-300 text-slate-700'}`}>{label}</button>)}
+        {dirty && <span className="self-center text-xs text-slate-500">Çalıştırmak için önce planı kaydedin.</span>}
+      </div>}
+
+      {!wide && !running && session?.role === 'admin' && <p className="rounded-xl bg-slate-100 text-slate-700 px-4 py-3 text-sm">Plan düzenleme geniş ekranda yapılır; bu ekranda plan yalnız görüntülenir.</p>}
       {session?.role !== 'admin' && demoSettings().demo && <p className="rounded-xl bg-amber-50 text-amber-900 px-4 py-3 text-sm">Salt okunur görünüm. Planı düzenlemek için giriş ekranından kişisel simülasyon alanı başlatın.</p>}
       {stale && <div role="status" className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 text-sm flex flex-wrap items-center gap-3">
         <span className="flex-1">Kat planı veya kapılar başka bir oturumda değişti. Kaydetmeden önce güncel planı yükleyin.</span>
@@ -143,11 +156,12 @@ function FloorPlan() {
         <button type="button" onClick={() => setPlacing(null)} className="rounded-lg border border-cyan-700/40 px-3 py-1 font-bold">Vazgeç</button>
       </div>}
 
+      {running && !state.loading && !state.error && <PlanRunner plan={saved} />}
       {state.loading && <p role="status">Kat planı yükleniyor…</p>}
       {state.error && <div role="alert" className="text-red-700 font-bold flex gap-3 items-center">{state.error}
         <button type="button" onClick={() => { setState({ loading: true, error: '' }); load(); }} className="rounded-lg bg-slate-900 text-white px-3 py-1 text-sm">Tekrar dene</button></div>}
 
-      {!state.loading && !state.error && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+      {!running && !state.loading && !state.error && <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           {!plan.areas.length && <p className="px-5 pt-4 text-sm text-slate-500">{editable ? 'Plan boş. Hazır ofis şablonuyla başlayabilir veya bölge ekleyebilirsiniz.' : 'Henüz kat planı çizilmemiş.'}</p>}
           <div className="overflow-auto max-h-[70vh]">

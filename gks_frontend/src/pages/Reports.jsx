@@ -5,6 +5,7 @@ import { usePendingAction } from '../hooks/usePendingAction';
 import AlertMessage from '../components/AlertMessage';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../api/axios';
+import { useSearchParams } from 'react-router-dom';
 
 // ORTAK BİLEŞENLER
 import CustomDataGrid from '../components/CustomDataGrid';
@@ -23,8 +24,11 @@ function Reports() {
   const { pending, run } = usePendingAction();
   const [message, setMessage] = useState({ text: '', type: '' });
   const today = businessDate();
+  // Links such as the door simulation's "Bu günün puantajı" pass ?tarih=.
+  const [searchParams] = useSearchParams();
+  const linkedDate = searchParams.get('tarih');
 
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(() => /^\d{4}-\d{2}-\d{2}$/.test(linkedDate || '') ? linkedDate : today);
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reportError, setReportError] = useState('');

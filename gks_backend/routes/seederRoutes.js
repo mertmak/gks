@@ -21,7 +21,7 @@ const parseCustomList = (str, defaultList) => {
 
 router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
     const sandbox = !!req.user.sandbox; // writes only to the visitor's own copy
-    if (!sandbox && (require('../config/demo').enabled || process.env.NODE_ENV === 'production' || !/^(GksReview_|GksTest_)/i.test(process.env.DB_NAME || ''))) return res.status(403).json({success:false,message:'Simülasyon yalnızca ayrı test veritabanında çalışır.'});
+    if (!require('../config/simulation').allowed(req)) return res.status(403).json({success:false,message:'Simülasyon yalnızca ayrı test veritabanında çalışır.'});
     const { z } = require('zod');
     const { date, id, number, validDateRange } = require('../middlewares/validate');
     const parsed = z.object({

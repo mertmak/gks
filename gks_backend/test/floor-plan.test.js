@@ -9,6 +9,7 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
     await sql.query("INSERT INTO Yoneticiler(Kullanici_Adi,Sifre_Hash,Rol) VALUES('plan-admin','x','admin'),('plan-viewer','x','user')");
     await sql.query("INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES('Giriş 1','Ana Giriş'),('Koridor','İç Geçiş'),('Eski Kapı','Ana Çıkış')");
     await sql.query("UPDATE Doors SET Durum=false WHERE Kapi_Adi='Eski Kapı'");
+    await sql.query("INSERT INTO Users(Ad_Soyad,RFID_Kart_No) VALUES('Şablon Kişisi','10000000009')");
     const { app } = require('../server');
     const server = require('http').createServer(app);
     const io = require('../utils/socket').init(server);
@@ -39,9 +40,10 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
     await t.test('the template adds missing door types and places every door it can', async () => {
         const result = await call('POST', '/kat-plani/sablon');
         assert.equal(result.status, 200, JSON.stringify(result.data));
-        // Ana Çıkış has only a passive door, so it is added like the three missing types.
-        assert.equal(result.data.created, 4);
-        assert.equal(result.data.placed, 7);
+        // Ana Çıkış has only a passive door, so it is added like the three missing
+        // types; a second inner door is the way back from the break area.
+        assert.equal(result.data.created, 5);
+        assert.equal(result.data.placed, 8);
         const current = await plan();
         assert.equal(current.bolgeler.length, 5);
         const lobby = current.bolgeler.find(area => area.Bolge_Turu === 'Lobi').ID;
@@ -50,9 +52,15 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
         // Active doors take the first slot of their type.
         assert.equal(current.kapilar.find(door => door.Kapi_Adi === 'Plan Ana Çıkış').Plan_Y, 360);
         assert.equal(current.kapilar.find(door => door.Kapi_Adi === 'Eski Kapı').Plan_Y, 400);
+        const areaId = type => current.bolgeler.find(area => area.Bolge_Turu === type).ID;
+        const back = current.kapilar.find(door => door.Kapi_Adi === 'Plan İç Geçiş 2');
+        assert.deepEqual([back.Bolge_A_ID, back.Bolge_B_ID], [areaId('Ofis'), areaId('Mola')]);
+        // Added doors are usable at once; existing permissions are not touched.
+        assert.ok(current.kapilar.filter(door => door.Kapi_Adi.startsWith('Plan ')).every(door => door.Yetkili_Sayisi === 1));
+        assert.equal(current.kapilar.find(door => door.Kapi_Adi === 'Koridor').Yetkili_Sayisi, 0);
         assert.ok(current.kapilar.every(door => door.Plan_X !== null));
         const logs = (await sql.query("SELECT Islem_Tipi FROM DoorLogs ORDER BY ID")).recordset.map(row => row.Islem_Tipi);
-        assert.deepEqual(logs, [...Array(4).fill('YENİ KAPI'), 'KAT PLANI GÜNCELLENDİ']);
+        assert.deepEqual(logs, [...Array(5).fill('YENİ KAPI'), 'KAT PLANI GÜNCELLENDİ']);
         assert.equal((await call('POST', '/kat-plani/sablon')).status, 409);
     });
 
@@ -103,6 +111,6 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
         const door = (await plan()).kapilar[0].ID;
         await sql.query("INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Durum) VALUES('Aktif','10000000001',true),('Pasif','10000000002',false)");
         await new sql.Request().input('door', sql.Int, door).query('INSERT INTO Permissions(User_ID,Door_ID) SELECT ID,@door FROM Users');
-        assert.equal((await plan()).kapilar[0].Yetkili_Sayisi, 1);
+        assert.equal((await plan()).kapilar[0].Yetkili_Sayisi, 2);
     });
 });
