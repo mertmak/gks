@@ -235,7 +235,7 @@ function Shifts() {
     <div className="space-y-8 relative mt-8">
 
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Vardiya ve Çalışma Saatleri</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Vardiya Yönetimi</h2>
         <p className="text-slate-500 text-sm mt-1">Sistemdeki çalışma vardiyalarını, günleri ve mola sürelerini yönetebilirsiniz.</p>
       </div>
 

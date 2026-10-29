@@ -88,7 +88,7 @@ function Logs() {
   return (
     <div className="mt-8 flex flex-col h-[85vh] space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Geçiş Logları</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Geçiş Hareketleri</h2>
         <p className="text-slate-500 text-sm mt-1">Lütfen görüntülemek istediğiniz aralığı seçin.</p>
       </div>
 
@@ -120,7 +120,7 @@ function Logs() {
 
         <div className="flex items-end">
           <button type="submit" disabled={loading} className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-lg transition-colors">
-            {loading ? 'Aranıyor...' : 'Logları Getir'}
+            {loading ? 'Aranıyor...' : 'Kayıtları Getir'}
           </button>
         </div>
       </form>
@@ -131,7 +131,7 @@ function Logs() {
         <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col p-2">
           <div className="p-2 text-sm font-bold text-slate-700">Arama Sonuçları ({logs.length} Kayıt)</div>
           <CustomDataGrid
-            exportFileName={`Gecis_Loglari_${businessDate()}`}
+            exportFileName={`Gecis_Hareketleri_${businessDate()}`}
             rowData={logs}
             serverPagination={pagination}
             onPageChange={goToPage}

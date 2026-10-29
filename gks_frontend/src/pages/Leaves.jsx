@@ -154,7 +154,7 @@ function Leaves() {
   return (
     <div className="space-y-8 relative mt-8">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">İzin ve Tatil Yönetimi</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">İzin ve Rapor Girişi</h2>
         <p className="text-slate-500 text-sm mt-1">Personellerin yıllık izin, sağlık raporu veya mazeret izinlerini buradan yönetebilirsiniz.</p>
       </div>
 

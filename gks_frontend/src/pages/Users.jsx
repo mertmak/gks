@@ -355,7 +355,7 @@ function Users() {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Personel Listesi ve Hızlı İşlemler</h2>
+          <h2 className="text-xl font-bold text-slate-800">Personel Listesi</h2>
           <p className="text-slate-500 text-sm mt-1">Sistemdeki personelleri arayın, yönetin veya yeni kayıt ekleyin.</p>
         </div>
         {isAdmin && <button disabled={pending}
@@ -383,11 +383,11 @@ function Users() {
           <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-1">T.C. Kimlik No (11 Hane) *</label><input id="users-field-1" type="text" maxLength="11" minLength="11" name="tc" value={formData.tc} onChange={handleNumericChange} required placeholder="11 haneli sayı" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-widest" /></div>
           <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-2">Ad Soyad *</label><input id="users-field-2" type="text" name="ad_soyad" maxLength={100} value={formData.ad_soyad} onChange={handleChange} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" /></div>
           <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-3">Kurum Sicil No (5 Hane) *</label><input id="users-field-3" type="text" maxLength="5" minLength="5" name="sicil" value={formData.sicil} onChange={handleNumericChange} required placeholder="5 haneli sayı" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-widest" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-4">RFID Kart No (11 Hane)</label><input id="users-field-4" type="text" maxLength="11" minLength="11" name="rfid" value={formData.rfid} onChange={handleNumericChange} placeholder="11 haneli sayı" className="w-full px-3 py-2 border rounded-lg bg-slate-50 outline-none font-mono tracking-widest" /></div>
+          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-4">RFID Kart No (11 Hane)</label><input id="users-field-4" type="text" maxLength="11" minLength="11" name="rfid" value={formData.rfid} onChange={handleNumericChange} placeholder="11 haneli sayı" className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-mono tracking-widest" /></div>
 
-          <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-5">Şirket / Taşeron</label><input id="users-field-5" type="text" name="sirket" maxLength={100} value={formData.sirket} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg outline-none" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-6">Departman</label><input id="users-field-6" type="text" name="departman" maxLength={100} value={formData.departman} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg outline-none" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-7">İşe Giriş Tarihi</label><input id="users-field-7" type="date" name="ise_giris" value={formData.ise_giris} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg outline-none" /></div>
+          <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-5">Şirket / Taşeron</label><input id="users-field-5" type="text" name="sirket" maxLength={100} value={formData.sirket} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-6">Departman</label><input id="users-field-6" type="text" name="departman" maxLength={100} value={formData.departman} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-7">İşe Giriş Tarihi</label><input id="users-field-7" type="date" name="ise_giris" value={formData.ise_giris} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" /></div>
 
           <div className="md:col-span-4 flex justify-end space-x-3 mt-4">
             <button type="button" onClick={cancelEdit} className="px-6 py-2 bg-slate-200 font-bold rounded-lg hover:bg-slate-300">İptal</button>
@@ -403,7 +403,7 @@ function Users() {
         <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
         <AdminForm disabled={pending} onSubmit={handleExitSubmit} className="space-y-4">
           <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-8">İşten Çıkış Tarihi *</label><input id="users-field-8" type="date" name="cikis_tarihi" min={exitUser?.Ise_Giris_Tarihi?.slice(0, 10)} max={businessDate()} value={exitData.cikis_tarihi} onChange={handleExitChange} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 outline-none" /></div>
-          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-9">Çıkış Nedeni (Opsiyonel)</label><textarea id="users-field-9" name="cikis_nedeni" maxLength={255} value={exitData.cikis_nedeni} onChange={handleExitChange} rows="3" className="w-full px-3 py-2 border rounded-lg outline-none resize-none"></textarea></div>
+          <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="users-field-9">Çıkış Nedeni (Opsiyonel)</label><textarea id="users-field-9" name="cikis_nedeni" maxLength={255} value={exitData.cikis_nedeni} onChange={handleExitChange} rows="3" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea></div>
           <div className="flex justify-end space-x-3 mt-6"><button type="button" onClick={() => setShowExitModal(false)} className="px-4 py-2 bg-slate-100 font-bold rounded-lg hover:bg-slate-200">İptal</button><button type="submit" className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700">Onayla ve Kapat</button></div>
         </AdminForm>
       </Modal>

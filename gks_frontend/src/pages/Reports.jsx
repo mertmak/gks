@@ -230,7 +230,7 @@ function Reports() {
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Günlük Puantaj & Devam Kontrol</h2>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Puantaj</h2>
           <p className="text-slate-500 text-sm mt-1">Personellerin giriş-çıkış hareketlerini, yemek sürelerini ve mola uyumlarını inceleyin.</p>
         </div>
 

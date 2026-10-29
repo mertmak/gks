@@ -108,7 +108,7 @@ function BulkOperations() {
   return (
     <div className="space-y-6 mt-8 relative animate-fade-in-up">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Toplu İşlem Merkezi</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Toplu İşlemler</h2>
         <p className="text-slate-500 text-sm mt-1">Belirli bir gruba veya sistemdeki tüm personellere ait vardiya, yetki ve durum bilgilerini tek tıklamayla yönetin.</p>
       </div>
 

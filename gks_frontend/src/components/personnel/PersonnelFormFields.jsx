@@ -41,7 +41,7 @@ function PersonnelFormFields({ formData, onChange, onNumericChange }) {
           name="rfid" value={formData.rfid || ''}
           onChange={onNumericChange}
           placeholder="11 haneli sayı"
-          className="w-full px-3 py-2 border rounded-lg bg-slate-50 outline-none font-mono"
+          className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-mono"
         />
       </div>
 
@@ -49,7 +49,7 @@ function PersonnelFormFields({ formData, onChange, onNumericChange }) {
         <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor={id + '-5'}>Şirket / Taşeron</label>
         <input id={id + '-5'}           type="text" name="sirket" value={formData.sirket || ''}
           onChange={onChange}
-          className="w-full px-3 py-2 border rounded-lg outline-none"
+          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
 
@@ -57,7 +57,7 @@ function PersonnelFormFields({ formData, onChange, onNumericChange }) {
         <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor={id + '-6'}>Departman</label>
         <input id={id + '-6'}           type="text" name="departman" value={formData.departman || ''}
           onChange={onChange}
-          className="w-full px-3 py-2 border rounded-lg outline-none"
+          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
 
@@ -65,7 +65,7 @@ function PersonnelFormFields({ formData, onChange, onNumericChange }) {
         <label className="block text-xs font-bold text-slate-500 mb-1" htmlFor={id + '-7'}>İşe Giriş Tarihi</label>
         <input id={id + '-7'}           type="date" name="ise_giris" value={formData.ise_giris || ''}
           onChange={onChange}
-          className="w-full px-3 py-2 border rounded-lg outline-none"
+          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
     </>

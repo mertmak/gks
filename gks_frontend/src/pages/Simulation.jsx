@@ -80,7 +80,7 @@ function Simulation() {
   return (
     <div className="space-y-8 mt-8 animate-fade-in-up pb-10">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Gelişmiş Veri Simülatörü</h2>
+        <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Simülasyon</h2>
         <p className="text-slate-500 text-sm mt-1">{readSession()?.sandbox
           ? 'Kişisel simülasyon alanınıza sentetik personel, kapı ve geçiş kayıtları ekleyin (en fazla 50 personel, 10 kapı, 14 gün). Sonuçları Puantaj ve Mesai sayfalarında görebilirsiniz.'
           : 'Ayrı yerel test veritabanına sentetik personel, kapı ve geçiş kayıtları ekleyin. Public demo seed komutundan bağımsızdır.'}</p>

@@ -193,7 +193,7 @@ function PersonnelOperations() {
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Personel İşlem Merkezi</h2>
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Personel Düzenleme</h2>
           <p className="text-slate-500 text-sm mt-1">Personeli arayın veya sisteme yeni personel kaydı gerçekleştirin.</p>
         </div>
         <button 
@@ -362,7 +362,7 @@ function PersonnelOperations() {
               <div><label className="block text-xs font-bold text-slate-500 mb-1" htmlFor="personneloperations-field-2">Çıkış Nedeni</label><textarea id="personneloperations-field-2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} rows="3" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea></div>
             </>
           ) : (
-            <p className="text-sm font-medium text-slate-600 mb-4">Bu personeli tekrar sisteme dahil etmek istediğinize emin misiniz? (Geçmiş logları korunacaktır).</p>
+            <p className="text-sm font-medium text-slate-600 mb-4">Bu personeli tekrar sisteme dahil etmek istediğinize emin misiniz? (Geçmiş kayıtları korunacaktır).</p>
           )}
           <div className="flex justify-end space-x-3 mt-6">
             <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-slate-100 font-bold rounded-lg hover:bg-slate-200">İptal</button>
