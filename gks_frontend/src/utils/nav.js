@@ -1,5 +1,5 @@
-// Menu structure; `admin` items are hidden from viewers, `when: false` hides an entry.
-export function buildNav({ admin, simulation }) {
+// Menu structure; `admin` items are hidden from viewers.
+export function buildNav({ admin }) {
   const nav = [
     { label: 'Ana Sayfa', to: '/', icon: 'home' },
     { label: 'Personel', icon: 'users', items: [
@@ -20,10 +20,8 @@ export function buildNav({ admin, simulation }) {
       { label: 'Kapı Değişiklikleri', to: '/denetim/kapi' },
       { label: 'Sistem İşlemleri', to: '/denetim/sistem' },
     ] },
-    { label: 'Simülasyon', to: '/simulasyon', icon: 'play', when: simulation },
   ];
-  return nav.filter(entry => entry.when !== false)
-    .map(entry => entry.items ? { ...entry, items: entry.items.filter(item => admin || !item.admin) } : entry);
+  return nav.map(entry => entry.items ? { ...entry, items: entry.items.filter(item => admin || !item.admin) } : entry);
 }
 
 const EXTRA_TITLES = { '/settings': 'Hesap Ayarları', '/hesap-ekle': 'Yönetici Hesapları' };

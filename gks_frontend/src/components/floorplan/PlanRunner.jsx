@@ -4,7 +4,8 @@ import api from '../../api/axios';
 import PlanCanvas from './PlanCanvas';
 import { businessDate, shiftDateDays } from '../../utils/dates';
 import { demoSettings } from '../../utils/demo';
-import { areaName } from '../../utils/floorPlan';
+import { areaName, areasOn } from '../../utils/floorPlan';
+import FloorTabs from './FloorTabs';
 import { OUTSIDE, SPEEDS, clockLabel, createSimulation, finished, inside, manualPass, settleReads, step, takeReads, unknownCard } from '../../utils/simEngine';
 
 const MINUTE = 60000;
@@ -14,7 +15,8 @@ const initials = name => name.match(/(\d{1,2})\s*$/)?.[1] || name.split(/\s+/).m
 // The demo's data ends on its reference day; simulate the next one.
 const defaultDay = () => demoSettings().demo ? shiftDateDays(demoSettings().referenceDate, 1) : businessDate();
 
-export default function PlanRunner({ plan, onUnsentChange }) {
+export default function PlanRunner({ plan, floor: initialFloor, onUnsentChange }) {
+  const [floor, setFloor] = useState(initialFloor);
   const [form, setForm] = useState(() => ({ tarih: defaultDay(), gec: 10, devamsiz: 5, hatali: 5 }));
   // The engine mutates the simulation object; `frame` triggers the redraw.
   const [current, setCurrent] = useState(null);
@@ -90,12 +92,13 @@ export default function PlanRunner({ plan, onUnsentChange }) {
   const input = 'w-full border border-line-strong rounded-lg px-3 py-2 text-sm';
   const button = 'px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50';
 
+  const floorAreas = areasOn(plan.areas, floor), floorDoors = plan.doors.filter(item => item.floor === floor);
   const overlay = current && <g>
     {current.flashes.map((flash, i) => {
-      const target = plan.doors.find(item => item.id === flash.doorId);
+      const target = floorDoors.find(item => item.id === flash.doorId);
       return target && <circle key={i} cx={target.x} cy={target.y} r="20" fill="none" stroke={flash.ok ? '#16a34a' : '#dc2626'} strokeWidth="5" opacity="0.8" pointerEvents="none" />;
     })}
-    {current.people.filter(item => item.node !== OUTSIDE || item.legs.length).map(item => (
+    {current.people.filter(item => item.floor === floor && (item.node !== OUTSIDE || item.legs.length)).map(item => (
       <g key={item.id} transform={`translate(${item.x} ${item.y})`} className="cursor-pointer"
         onPointerDown={event => { event.stopPropagation(); setPerson(item.id); }}>
         <title>{item.name}</title>
@@ -118,9 +121,11 @@ export default function PlanRunner({ plan, onUnsentChange }) {
           </div>
           <button type="button" disabled={done} onClick={() => { step(current, 30 * MINUTE); redraw(); }} className={`${button} bg-surface-3 text-ink`}>+30 dk</button>
         </div>}
+        {plan.floors.length > 1 && <div className="px-4 pt-3"><FloorTabs floors={plan.floors} current={floor} onSelect={setFloor}
+          count={ref => current ? current.people.filter(item => item.floor === ref && item.node !== OUTSIDE).length : null} /></div>}
         <div className="overflow-auto max-h-[70vh]">
-          <PlanCanvas areas={plan.areas} doors={plan.doors} selected={door ? { kind: 'door', key: door } : null} editable={false} placing={null}
-            onSelect={value => setDoor(value?.kind === 'door' ? value.key : null)} onAreaChange={() => {}} onDoorMove={() => {}} onPlace={() => {}} onInvalidPlace={() => {}}>
+          <PlanCanvas areas={floorAreas} doors={floorDoors} selected={door ? { kind: 'door', key: door } : null} editable={false}
+            onSelect={value => setDoor(value?.kind === 'door' ? value.key : null)}>
             {overlay}
           </PlanCanvas>
         </div>

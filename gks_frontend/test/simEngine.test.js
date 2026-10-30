@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { OUTSIDE, MISREAD_CARD, canPass, route, createSimulation, step, finished, inside, manualPass, unknownCard, takeReads, settleReads, workAreas } from '../src/utils/simEngine.js';
+import { OUTSIDE, MISREAD_CARD, canPass, opensFrom, route, createSimulation, step, finished, inside, manualPass, unknownCard, takeReads, settleReads, workAreas } from '../src/utils/simEngine.js';
 
 // The office template: lobby, office, cafeteria, break area.
-const area = (ref, type, x, y, w, h) => ({ id: 1, ref, name: ref, type, x, y, w, h });
-const door = (id, type, x, y, a, b, active = true) => ({ id, name: type + id, type, active, placed: true, x, y, a, b });
+const area = (ref, type, x, y, w, h, floor = 'z', group = '') => ({ id: 1, ref, name: ref, type, floor, group, points: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]] });
+const door = (id, type, x, y, a, b, active = true, oneWay = 'Çift') => ({ id, name: type + id, type, active, placed: true, floor: 'z', oneWay, x, y, a, b });
 const plan = {
   areas: [area('lobi', 'Lobi', 40, 200, 200, 240), area('ofis', 'Ofis', 240, 40, 480, 400), area('yemek', 'Yemekhane', 240, 440, 300, 200), area('mola', 'Mola', 720, 40, 200, 200)],
   doors: [
@@ -104,4 +104,39 @@ test('manual passes and unknown cards', () => {
 test('people work in office areas first', () => {
   assert.deepEqual(workAreas(plan.areas).map(item => item.ref), ['ofis']);
   assert.deepEqual(workAreas([plan.areas[0]]).map(item => item.ref), ['lobi']);
+});
+
+test('one-way doors are routed around and denied the closed way', () => {
+  // The inner door opens only from the lobby (A): the way back is the second inner door.
+  const oneWay = { ...plan, doors: plan.doors.map(item => item.id === 3 ? { ...item, oneWay: 'A→B' } : item).concat(door(8, 'İç Geçiş', 240, 400, 'lobi', 'ofis')) };
+  assert.equal(opensFrom(oneWay.doors[2], 'lobi'), true);
+  assert.equal(opensFrom(oneWay.doors[2], 'ofis'), false);
+  assert.deepEqual(ids(route(oneWay, OUTSIDE, 'ofis')), [1, 3]);
+  assert.deepEqual(ids(route(oneWay, 'ofis', OUTSIDE)), [8, 2]);
+  const sim = createSimulation(oneWay, dayPlan());
+  step(sim, 60 * 60000);
+  // Tried by hand from the office side, the turnstile refuses.
+  assert.equal(manualPass(sim, 1, 3), null);
+  step(sim, 5 * 60000);
+  assert.deepEqual([sim.feed[0].doorId, sim.feed[0].ok, sim.feed[0].reason, sim.feed[0].direction], [3, false, 'Bu yönde geçiş kapalı', 'B→A']);
+});
+
+test('people take the stairs between floors, without a read on the stairs', () => {
+  const twoFloors = {
+    areas: [area('lobi', 'Lobi', 40, 200, 200, 240), area('m0', 'Merdiven/Asansör', 240, 200, 100, 100, 'z', 'M'),
+      area('m1', 'Merdiven/Asansör', 240, 200, 100, 100, 'u', 'M'), area('ust', 'Ofis', 340, 200, 300, 300, 'u'),
+      area('yemek', 'Yemekhane', 340, 300, 200, 200), area('yemek2', 'Lobi', 40, 440, 200, 100)],
+    doors: [door(1, 'Ana Giriş', 40, 280, null, 'lobi'), door(2, 'İç Geçiş', 240, 240, 'lobi', 'm0'), { ...door(3, 'İç Geçiş', 340, 240, 'm1', 'ust'), floor: 'u' },
+      // Two doors into the cafeteria: from the lobby and from the stairs.
+      door(4, 'Yemekhane Giriş', 300, 300, 'm0', 'yemek'), door(5, 'Yemekhane Giriş', 240, 380, 'lobi', 'yemek')],
+  };
+  const steps = route(twoFloors, OUTSIDE, 'ust');
+  assert.deepEqual(steps.map(item => item.door?.id ?? 'merdiven'), [1, 2, 'merdiven', 3]);
+  assert.deepEqual(ids(route(twoFloors, 'lobi', 'yemek')), [5]);
+  assert.deepEqual(ids(route(twoFloors, 'm0', 'yemek')), [4]);
+  const sim = createSimulation(twoFloors, { tarih: '2026-09-08', kisiler: [{ id: 1, ad_soyad: 'Ayşe', kart: '1', kapilar: [1, 2, 3, 4, 5], gec: false, durum: 'Planlı', olaylar: [{ tur: 'giris', zaman: '2026-09-08T09:00:00' }] }] });
+  assert.equal(sim.people[0].home, 'ust');
+  while (!finished(sim)) step(sim, 10 * 60000);
+  assert.deepEqual(sim.feed.map(entry => entry.doorId).reverse(), [1, 2, 3]);
+  assert.deepEqual([sim.people[0].node, sim.people[0].floor], ['ust', 'u']);
 });

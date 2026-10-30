@@ -14,11 +14,10 @@ const Users = lazy(() => import('./pages/Users'));
 const PersonnelOperations = lazy(() => import('./pages/PersonnelOperations'));
 const BulkOperations = lazy(() => import('./pages/BulkOperations'));
 const Doors = lazy(() => import('./pages/Doors'));
-const FloorPlan = lazy(() => import('./pages/FloorPlan'));
+const Facility = lazy(() => import('./pages/Facility'));
 const Shifts = lazy(() => import('./pages/Shifts'));
 const Leaves = lazy(() => import('./pages/Leaves'));
 const Reports = lazy(() => import('./pages/Reports'));
-const Simulation = lazy(() => import('./pages/Simulation'));
 const Settings = lazy(() => import('./pages/Settings'));
 const HesapEkle = lazy(() => import('./pages/HesapEkle'));
 const Login = lazy(() => import('./pages/Login'));
@@ -111,7 +110,7 @@ function App() {
     ? <SandboxBanner expiresAt={expiresAt} referenceDate={config.referenceDate} onClose={closeSandbox} />
     : config.demo && <p className="bg-warning-soft text-ink px-4 lg:px-8 py-2 text-sm">Salt okunur demo · Verilerin tamamı sentetiktir · Referans gün: {config.referenceDate}. Değişiklikler local kurulumda kullanılabilir.</p>;
   return (
-    <AppShell nav={buildNav({ admin: userRole === 'admin', simulation: simulationEnabled })} banner={banner} account={account}>
+    <AppShell nav={buildNav({ admin: userRole === 'admin' })} banner={banner} account={account}>
         <Suspense fallback={<p role="status" className="p-8">Sayfa yükleniyor…</p>}><Routes>
           <Route path="/" element={<Dashboard />} />
           
@@ -122,7 +121,7 @@ function App() {
 
           {/* Kapı Rotası */}
           <Route path="/gecis-noktalari" element={<Doors />} />
-          <Route path="/tesis-tasarimi" element={<FloorPlan />} />
+          <Route path="/tesis-tasarimi" element={<Facility />} />
 
           {/* Vardiya ve İzin Rotaları */}
           <Route path="/vardiya" element={<Shifts />} />
@@ -138,7 +137,7 @@ function App() {
           <Route path="/denetim/sistem" element={<SystemLogs />} />
 
           {/* Admin Rotaları */}
-          <Route path="/simulasyon" element={simulationEnabled ? <Simulation /> : <Navigate to="/" replace />} />
+          <Route path="/simulasyon" element={<Navigate to={simulationEnabled ? '/tesis-tasarimi?sekme=uretici' : '/'} replace />} />
           <Route path="/hesap-ekle" element={sandbox ? <Navigate to="/" replace /> : adminOnly(<HesapEkle />)} />
           
           {/* Ortak Rotalar */}
