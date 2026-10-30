@@ -6,8 +6,8 @@ export default function ConfirmAction({ isOpen, title, children, pending, error,
     <div className="text-sm text-ink space-y-3 mb-4">{children}</div>
     <AlertMessage message={error} type="error" />
     <div className="flex flex-wrap justify-end gap-3">
-      <button type="button" disabled={pending} onClick={onClose} className="px-4 py-2 rounded-lg bg-surface-3 disabled:opacity-50">Vazgeç</button>
-      <button type="button" disabled={pending} onClick={onConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50">{pending ? 'İşleniyor…' : confirmLabel}</button>
+      <button type="button" disabled={pending} onClick={onClose} className="btn btn-secondary">Vazgeç</button>
+      <button type="button" disabled={pending} onClick={onConfirm} className="btn btn-danger">{pending ? 'İşleniyor…' : confirmLabel}</button>
     </div>
   </Modal>;
 }

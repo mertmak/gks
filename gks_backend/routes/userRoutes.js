@@ -103,6 +103,12 @@ router.get('/users', verifyToken, validateQuery(usersQuery), async (req, res) =>
     }
 });
 
+// Unique index names from 001_initial.sql, so the message names the clashing field.
+const UNIQUE_FIELDS = { ux_users_rfid: 'Bu kart numarası', ux_users_tc: 'Bu T.C. kimlik numarası', ux_users_sicil: 'Bu sicil numarası' };
+const duplicateMessage = error => UNIQUE_FIELDS[error.constraint]
+    ? `${UNIQUE_FIELDS[error.constraint]} başka bir personele ait.`
+    : 'T.C., sicil veya kart numarası başka personele ait.';
+
 router.post('/users', verifyToken, verifyAdmin, validate(schemas.personelSchema), async (req, res) => {
     const aktifKullanici = req.user?.kullanici_adi || 'Sistem Yetkilisi';
     const { ad_soyad, rfid, tc, sicil, sirket, departman, gorev, ise_giris } = req.body;
@@ -150,7 +156,7 @@ router.post('/users', verifyToken, verifyAdmin, validate(schemas.personelSchema)
         socket.getIO().emit('system_updated');
         res.json({ success: true, message: 'Personel başarıyla eklendi.' });
     } catch (err) {
-        res.status(isUniqueViolation(err) ? 409 : 500).json({ success: false, message: 'Personel kaydedilemedi. Kart, TC ve sicil numarasını kontrol edin.' });
+        res.status(isUniqueViolation(err) ? 409 : 500).json({ success: false, message: isUniqueViolation(err) ? duplicateMessage(err) : 'Personel kaydedilemedi.' });
     }
 });
 
@@ -177,7 +183,7 @@ router.put('/users/:id', verifyToken, verifyAdmin, validate(schemas.personelSche
         for (const event of ['users_updated','system_updated','new_system_log']) socket.getIO().emit(event);
         res.json({ success: true, message: 'Personel bilgileri güncellendi.' });
     } catch (error) {
-        if (isUniqueViolation(error)) return res.status(400).json({success:false,message:'T.C., sicil veya kart numarası başka personele ait.'});
+        if (isUniqueViolation(error)) return res.status(400).json({success:false,message:duplicateMessage(error)});
         next(error);
     }
 });

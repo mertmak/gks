@@ -3,6 +3,7 @@ import { useLiveList } from '../hooks/useLiveList';
 import { usePendingAction } from '../hooks/usePendingAction';
 import ConfirmAction from '../components/ConfirmAction';
 import AdminForm from '../components/AdminForm';
+import PageHeader from '../components/ui/PageHeader';
 import api from '../api/axios';
 
 const UPDATE_EVENTS = ['new_system_log'];
@@ -61,31 +62,30 @@ function HesapEkle() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-ink">Yönetici Hesapları</h1>
+    <div className="max-w-4xl space-y-6">
+      <PageHeader title="Yönetici Hesapları" description="Panele giriş yapan hesaplar. Yönetici değişiklik yapabilir; sınırlı kullanıcı yalnız görüntüler. Bu hesaplar personel kayıtlarından ayrıdır." />
 
-      {/* 1. KISIM: YENİ HESAP EKLEME FORMU */}
-      <div className="bg-surface p-8 rounded-2xl shadow-xl border border-line">
-        <h2 className="text-2xl font-bold text-ink tracking-tight mb-6">Yeni Hesap Oluştur</h2>
+      <section aria-labelledby="account-form-title" className="card">
+        <h2 id="account-form-title" className="text-lg font-semibold text-ink mb-4">Yeni Hesap Oluştur</h2>
 
         <AdminForm onSubmit={handleSubmit} disabled={pending || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-ink mb-2" htmlFor="hesapekle-field-1">Kullanıcı Adı</label>
-            <input id="hesapekle-field-1" type="text" name="username" maxLength={50} autoComplete="off" value={formData.username} onChange={handleChange} required placeholder="Örn: ahmet_guvenlik" className="w-full px-4 py-3 rounded-xl border border-line-strong focus:ring-2 focus:ring-accent outline-none transition-all shadow-sm" />
+            <label className="field-label" htmlFor="hesapekle-field-1">Kullanıcı Adı</label>
+            <input id="hesapekle-field-1" type="text" name="username" maxLength={50} autoComplete="off" value={formData.username} onChange={handleChange} required placeholder="Örn: ahmet_guvenlik" className="field" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-ink mb-2" htmlFor="hesapekle-field-2">Şifre</label>
-            <input id="hesapekle-field-2" type="password" name="password" minLength={10} maxLength={72} autoComplete="new-password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border border-line-strong focus:ring-2 focus:ring-accent outline-none transition-all shadow-sm" />
+            <label className="field-label" htmlFor="hesapekle-field-2">Şifre</label>
+            <input id="hesapekle-field-2" type="password" name="password" minLength={10} maxLength={72} autoComplete="new-password" value={formData.password} onChange={handleChange} required className="field" />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-ink mb-2" htmlFor="hesapekle-field-3">Yetki Seviyesi</label>
-            <select id="hesapekle-field-3" name="rol" value={formData.rol} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-line-strong focus:ring-2 focus:ring-accent outline-none transition-all shadow-sm bg-surface">
+            <label className="field-label" htmlFor="hesapekle-field-3">Yetki Seviyesi</label>
+            <select id="hesapekle-field-3" name="rol" value={formData.rol} onChange={handleChange} className="field">
               <option value="user">Sınırlı Kullanıcı</option>
               <option value="admin">Yönetici</option>
             </select>
           </div>
           <div className="md:col-span-3">
-            <button type="submit" className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md">
+            <button type="submit" className="btn btn-primary w-full">
               {pending ? 'Kaydediliyor…' : 'Hesabı Kaydet'}
             </button>
           </div>
@@ -96,11 +96,10 @@ function HesapEkle() {
             {message}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* 2. KISIM: KAYITLI HESAPLAR TABLOSU */}
-      <div className="bg-surface p-8 rounded-2xl shadow-xl border border-line">
-        <h2 className="text-2xl font-bold text-ink tracking-tight mb-6">Sistemdeki Hesaplar</h2>
+      <section aria-labelledby="account-list-title" className="card">
+        <h2 id="account-list-title" className="text-lg font-semibold text-ink mb-4">Sistemdeki Hesaplar</h2>
 
         {loading && <p role="status">Hesaplar yükleniyor…</p>}
         {listError && <p role="alert" className="text-danger mb-3">{listError} <button type="button" onClick={hesaplariGetir} className="underline">Tekrar dene</button></p>}
@@ -108,26 +107,26 @@ function HesapEkle() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-2 border-b border-line">
-                <th className="py-4 px-6 text-sm font-bold text-muted">ID</th>
-                <th className="py-4 px-6 text-sm font-bold text-muted">Kullanıcı Adı</th>
-                <th className="py-4 px-6 text-sm font-bold text-muted">Rol</th>
-                <th className="py-4 px-6 text-sm font-bold text-muted text-right">İşlem</th>
+                <th scope="col" className="py-3 px-4 text-sm font-semibold text-muted">ID</th>
+                <th scope="col" className="py-3 px-4 text-sm font-semibold text-muted">Kullanıcı Adı</th>
+                <th scope="col" className="py-3 px-4 text-sm font-semibold text-muted">Rol</th>
+                <th scope="col" className="py-3 px-4 text-sm font-semibold text-muted text-right">İşlem</th>
               </tr>
             </thead>
             <tbody>
               {hesaplar.map((hesap) => (
                 <tr key={hesap.ID} className="border-b border-line hover:bg-surface-2 transition-colors">
-                  <td className="py-4 px-6 font-semibold text-ink">#{hesap.ID}</td>
-                  <td className="py-4 px-6 font-medium text-ink">{hesap.Kullanici_Adi}</td>
-                  <td className="py-4 px-6">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${hesap.Rol === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-info-soft text-info'}`}>
-                      {hesap.Rol === 'admin' ? 'YÖNETİCİ' : 'KULLANICI'}
+                  <td className="py-3 px-4 font-semibold text-ink">#{hesap.ID}</td>
+                  <td className="py-3 px-4 font-medium text-ink">{hesap.Kullanici_Adi}</td>
+                  <td className="py-3 px-4">
+                    <span className={`badge ${hesap.Rol === 'admin' ? 'bg-accent-soft text-accent border-accent' : 'bg-info-soft text-info border-info-line'}`}>
+                      {hesap.Rol === 'admin' ? 'Yönetici' : 'Sınırlı kullanıcı'}
                     </span>
                   </td>
-                  <td className="py-4 px-6 text-right">
+                  <td className="py-3 px-4 text-right">
                     <button
                       disabled={pending || Boolean(confirmation)} onClick={() => handleDelete(hesap)}
-                      className="text-danger hover:text-danger font-bold text-sm bg-danger-soft hover:bg-danger-soft px-3 py-2 rounded-lg transition-colors"
+                      className="btn btn-sm bg-danger-soft text-danger"
                     >
                       Sil
                     </button>
@@ -142,7 +141,7 @@ function HesapEkle() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       <ConfirmAction isOpen={Boolean(confirmation)} title="Panel Hesabını Sil" pending={pending} error={!isSuccess ? message : ''} onClose={() => setConfirmation(null)} onConfirm={confirmDelete} confirmLabel="Hesabı Sil">
         <p><strong>{confirmation?.Kullanici_Adi}</strong> hesabı kalıcı olarak silinecek ve panele erişimi sonlandırılacak.</p>

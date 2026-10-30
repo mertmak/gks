@@ -2,6 +2,8 @@ import { useLatestRequest } from '../hooks/useLatestRequest';
 import { useLiveList } from '../hooks/useLiveList';
 import { businessDate } from '../utils/dates';
 import AdminForm from '../components/AdminForm';
+import PageHeader from '../components/ui/PageHeader';
+import { canWrite } from '../utils/session';
 import { useState } from 'react';
 import api from '../api/axios';
 import { listRows } from '../api/lists';
@@ -124,7 +126,7 @@ function Leaves() {
       headerName: 'İzin Türü',
       width: 150,
       cellRenderer: (params) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-bold ${params.value === 'Raporlu' ? 'bg-danger-soft text-danger' : 'bg-info-soft text-info'}`}>
+        <span className={`badge ${params.value === 'Raporlu' ? 'bg-danger-soft text-danger border-danger-line' : 'bg-info-soft text-info border-info-line'}`}>
           {params.value}
         </span>
       )
@@ -144,7 +146,7 @@ function Leaves() {
     {
       headerName: 'İşlemler', width: 100, sortable: false, filter: false,
       cellRenderer: (params) => (
-        <button disabled={loading || Boolean(confirmation)} onClick={() => handleDelete(params.data)} className="px-3 py-1 bg-danger-soft text-danger font-bold rounded text-xs hover:bg-danger-soft transition-colors mt-1">
+        <button disabled={loading || Boolean(confirmation)} onClick={() => handleDelete(params.data)} className="btn btn-sm bg-danger-soft text-danger">
           İptal Et
         </button>
       )
@@ -152,27 +154,20 @@ function Leaves() {
   ];
 
   return (
-    <div className="space-y-8 relative mt-8">
-      <div>
-        <h1 className="text-2xl font-bold text-ink tracking-tight">İzin ve Rapor Girişi</h1>
-        <p className="text-muted text-sm mt-1">Personellerin yıllık izin, sağlık raporu veya mazeret izinlerini buradan yönetebilirsiniz.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="İzin ve Rapor Girişi" description="Yıllık izin, sağlık raporu, mazeret ve ücretsiz izin kayıtları. Onaylı izinler puantajda o günlerin durumunu belirler." />
 
       {leaves.some(row => row.Cakisma_Var) && <p role="alert" className="p-3 bg-warning-soft text-ink rounded-lg">Çakışan onaylı veya bekleyen izinler var. İlgili personelin tarih aralıklarını inceleyip hatalı kaydı kaldırın. Aynı gündeki birden fazla onaylı izin puantajda “İzin Çakışması” olarak gösterilir.</p>}
-      {listLoading && <p role="status">İzinler yükleniyor…</p>}
-      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchLeaves} className="underline">Tekrar dene</button></p>}
       <AlertMessage message={message.text} type={message.type} />
 
-      {/* İZİN EKLEME FORMU */}
-      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-        <h2 className="text-lg font-bold text-ink mb-4">Yeni İzin Girişi</h2>
+      {canWrite() && <section aria-labelledby="leave-form-title" className="card">
+        <h2 id="leave-form-title" className="text-lg font-semibold text-ink mb-4">Yeni İzin Girişi</h2>
         <AdminForm onSubmit={handleSubmit} disabled={loading || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
 
-          <div className="md:col-span-1 relative z-50">
-            {/* YENİ ORTAK ARAMA BİLEŞENİ */}
+          <div className="md:col-span-1 relative z-20">
             <AutocompleteSearch
               label="Personel Ara *"
-              placeholder="İsim veya Sicil yazın..."
+              placeholder="İsim veya sicil yazın…"
               value={arama}
               onChange={handleSearchInputChange}
               suggestions={suggestions}
@@ -185,8 +180,8 @@ function Leaves() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="leaves-field-1">İzin Türü *</label>
-            <select id="leaves-field-1" name="izin_turu" value={formData.izin_turu} onChange={handleChange} className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none bg-surface">
+            <label className="field-label" htmlFor="leaves-field-1">İzin Türü *</label>
+            <select id="leaves-field-1" name="izin_turu" value={formData.izin_turu} onChange={handleChange} className="field">
               <option value="Yıllık İzin">Yıllık İzin</option>
               <option value="Raporlu">Sağlık Raporu</option>
               <option value="Mazeret İzni">Mazeret İzni</option>
@@ -195,44 +190,38 @@ function Leaves() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="leaves-field-2">Başlangıç Tarihi *</label>
-            <input id="leaves-field-2" type="date" name="baslangic" value={formData.baslangic} onChange={handleChange} required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none" />
+            <label className="field-label" htmlFor="leaves-field-2">Başlangıç Tarihi *</label>
+            <input id="leaves-field-2" type="date" name="baslangic" value={formData.baslangic} onChange={handleChange} required className="field" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="leaves-field-3">Bitiş Tarihi *</label>
-            <input id="leaves-field-3" type="date" name="bitis" min={formData.baslangic} value={formData.bitis} onChange={handleChange} required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none" />
+            <label className="field-label" htmlFor="leaves-field-3">Bitiş Tarihi *</label>
+            <input id="leaves-field-3" type="date" name="bitis" min={formData.baslangic} value={formData.bitis} onChange={handleChange} required className="field" />
           </div>
 
           <div className="md:col-span-3">
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="leaves-field-4">Açıklama (Opsiyonel)</label>
-            <input id="leaves-field-4" type="text" name="aciklama" maxLength={255} value={formData.aciklama} onChange={handleChange} placeholder="İzin sebebi, rapor numarası vb." className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none" />
+            <label className="field-label" htmlFor="leaves-field-4">Açıklama (Opsiyonel)</label>
+            <input id="leaves-field-4" type="text" name="aciklama" maxLength={255} value={formData.aciklama} onChange={handleChange} placeholder="İzin sebebi, rapor numarası vb." className="field" />
           </div>
 
           <div className="flex items-end h-full">
-            <button type="submit" disabled={loading} className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors shadow-sm">
-              {loading ? 'İşleniyor...' : 'İzni Kaydet'}
+            <button type="submit" disabled={loading} className="btn btn-primary w-full">
+              {loading ? 'İşleniyor…' : 'İzni Kaydet'}
             </button>
           </div>
         </AdminForm>
-      </div>
+      </section>}
 
-      {/* İZİN TABLOSU */}
-      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[55vh]">
-        <div className="p-2 text-sm font-bold text-ink border-b border-line mb-2">
-          Sistemde Kayıtlı İzinler ({leaves.length})
-        </div>
-
-        {/* YENİ ORTAK TABLO BİLEŞENİ */}
-        <div className="flex-1 w-full h-full">
-          <CustomDataGrid
-            rowData={leaves}
-            columnDefs={colDefs}
-            exportFileName="GKS_Izinler"
-            getRowId={(params) => params.data.ID}
-          />
-        </div>
-      </div>
+      <section aria-labelledby="leave-list-title" className="card p-4 flex flex-col h-[60vh]">
+        <h2 id="leave-list-title" className="p-2 text-sm font-semibold text-ink">{listLoading ? 'İzinler yükleniyor…' : `Kayıtlı izinler (${leaves.length})`}</h2>
+        {listError && <p role="alert" className="text-danger mb-2">{listError} <button type="button" onClick={fetchLeaves} className="underline">Tekrar dene</button></p>}
+        <CustomDataGrid
+          rowData={leaves}
+          columnDefs={colDefs}
+          exportFileName="GKS_Izinler"
+          getRowId={(params) => params.data.ID}
+        />
+      </section>
       <ConfirmAction isOpen={Boolean(confirmation)} title="İzin Kaydını Sil" pending={loading} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmDelete} confirmLabel="İzni Sil">
         <p><strong>{confirmation?.Ad_Soyad}</strong> · {confirmation?.Izin_Turu}</p>
         <p>{confirmation?.Baslangic_Tarihi?.slice(0, 10)} – {confirmation?.Bitis_Tarihi?.slice(0, 10)}</p>

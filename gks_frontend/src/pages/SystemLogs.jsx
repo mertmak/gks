@@ -5,8 +5,8 @@ import { useState, useMemo } from 'react';
 import api from '../api/axios';
 import { listRows } from '../api/lists';
 
-// YENİ ORTAK BİLEŞENLER
 import CustomDataGrid from '../components/CustomDataGrid';
+import PageHeader from '../components/ui/PageHeader';
 import AutocompleteSearch from '../components/AutoCompleteSearch';
 
 function SystemLogs() {
@@ -15,7 +15,8 @@ function SystemLogs() {
   const baslangicTarihi = previousMonthDate(bitisTarihi);
 
   const [filters, setFilters] = useState({ baslangic: baslangicTarihi, bitis: bitisTarihi, arama: '' });
-  const { rows: logs, pagination, error: listError, searched: hasSearched, loading, search, goToPage } = usePagedList('/system-logs', 'new_system_log');
+  const [initialFilters] = useState(filters);
+  const { rows: logs, pagination, error: listError, loading, search, goToPage, refresh } = usePagedList('/system-logs', 'new_system_log', initialFilters);
   
   // ARAMA ÖNERİLERİ İÇİN STATE
   const [suggestions, setSuggestions] = useState([]);
@@ -78,60 +79,49 @@ function SystemLogs() {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-ink">Sistem İşlemleri</h1>
-      {/* FİLTRE MENÜSÜ */}
-      <form onSubmit={handleFetchData} className="bg-surface p-6 rounded-2xl border border-line shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
-        <div>
-          <label className="block text-xs font-bold text-muted mb-1" htmlFor="SystemLogs-start">Başlangıç Tarihi</label>
-          <input id="SystemLogs-start" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-accent" />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-muted mb-1" htmlFor="SystemLogs-end">Bitiş Tarihi</label>
-          <input id="SystemLogs-end" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2 focus:ring-accent" />
-        </div>
-        
-        {/* YENİ ORTAK ARAMA BİLEŞENİ */}
-        <div className="relative z-50">
-           <AutocompleteSearch 
-             label="Ad Soyad / Sicil No"
-             placeholder="Sicil veya isim ara..."
-             value={filters.arama}
-             onChange={handleSearchInputChange}
-             suggestions={suggestions}
-             onSelect={(item) => {
-               suggestionRequest.cancel();
-               setFilters({...filters, arama: item.value});
-               setSuggestions([]);
-             }}
-           />
-        </div>
+    <div className="space-y-6">
+      <PageHeader title="Sistem İşlemleri" description="Personel, vardiya, izin ve mesai işlemlerinin denetim kayıtları. Varsayılan olarak son bir ay listelenir." />
 
-        <div className="flex items-end">
-          <button type="submit" disabled={loading} className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm rounded-lg transition-colors">
-            {loading ? 'Yükleniyor...' : 'Kayıtları Getir'}
-          </button>
+      <form onSubmit={handleFetchData} className="card grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+          <label className="field-label" htmlFor="SystemLogs-start">Başlangıç Tarihi</label>
+          <input id="SystemLogs-start" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="field" />
         </div>
-      </form>
-
-      {/* YENİ ORTAK TABLO BİLEŞENİ */}
-      {listError && <p role="alert" className="text-danger p-2">{listError}</p>}
-      {hasSearched && (
-        <div className="flex-1 overflow-hidden border border-line-strong rounded-2xl bg-surface shadow-sm flex flex-col p-2 h-[60vh]">
-          <div className="p-2 text-sm font-bold text-ink">
-            Arama Sonuçları ({logs.length} Kayıt)
-          </div>
-          
-          <CustomDataGrid
-            exportFileName={`Sistem_Islemleri_${businessDate()}`}
-            rowData={logs}
-            serverPagination={pagination}
-            onPageChange={goToPage}
-            columnDefs={colDefs}
-            getRowId={(params) => params.data.ID}
+        <div>
+          <label className="field-label" htmlFor="SystemLogs-end">Bitiş Tarihi</label>
+          <input id="SystemLogs-end" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="field" />
+        </div>
+        <div className="relative z-20">
+          <AutocompleteSearch
+            label="Ad Soyad / Sicil No"
+            placeholder="Sicil veya isim ara…"
+            value={filters.arama}
+            onChange={handleSearchInputChange}
+            suggestions={suggestions}
+            onSelect={(item) => {
+              suggestionRequest.cancel();
+              setFilters({...filters, arama: item.value});
+              setSuggestions([]);
+            }}
           />
         </div>
-      )}
+        <button type="submit" disabled={loading} className="btn btn-primary">
+          {loading ? 'Yükleniyor…' : 'Kayıtları Getir'}
+        </button>
+      </form>
+
+      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={refresh} className="underline">Tekrar dene</button></p>}
+      <section aria-label="Sonuçlar" className="card p-2 flex flex-col h-[65vh]">
+        <p className="p-2 text-sm font-semibold text-ink">{loading ? 'Yükleniyor…' : `${pagination.total ?? logs.length} kayıt`}</p>
+        <CustomDataGrid
+          exportFileName={`Sistem_Islemleri_${businessDate()}`}
+          rowData={logs}
+          serverPagination={pagination}
+          onPageChange={goToPage}
+          columnDefs={colDefs}
+          getRowId={(params) => params.data.ID}
+        />
+      </section>
     </div>
   );
 }

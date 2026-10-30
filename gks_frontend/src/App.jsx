@@ -25,6 +25,7 @@ const Overtimes = lazy(() => import('./pages/Overtimes'));
 import SandboxBanner from './components/SandboxBanner';
 import AppShell from './components/layout/AppShell';
 import { buildNav } from './utils/nav';
+import Unavailable from './components/ui/Unavailable';
 
 // Fixed texts only; logout events never carry server-provided content.
 const OLD_PATHS = {
@@ -85,7 +86,7 @@ function App() {
     }
     return () => { clearTimeout(timer); disconnectSocket(); window.removeEventListener('gks:logout', logout); window.removeEventListener('storage', onStorage); };
   }, [isAuthenticated, expiresAt]);
-  const adminOnly = element => userRole === 'admin' ? element : <Navigate to="/" replace />;
+  const adminOnly = element => userRole === 'admin' ? element : <Unavailable title="Yetki gerekli" reason={config.demo ? 'Demo salt okunurdur; bu sayfa yalnız kişisel simülasyon alanında açılır.' : 'Bu sayfa yönetici hesabıyla açılır.'} />;
   const simulationEnabled = userRole === 'admin' && (sandbox || import.meta.env.VITE_ENABLE_SIMULATION === 'true');
   if (!config) return <main className="min-h-screen bg-page flex items-center justify-center p-6">
     <section className="max-w-md bg-surface rounded-xl border border-line p-6 space-y-4">
@@ -137,14 +138,14 @@ function App() {
           <Route path="/denetim/sistem" element={<SystemLogs />} />
 
           {/* Admin Rotaları */}
-          <Route path="/simulasyon" element={<Navigate to={simulationEnabled ? '/tesis-tasarimi?sekme=uretici' : '/'} replace />} />
-          <Route path="/hesap-ekle" element={sandbox ? <Navigate to="/" replace /> : adminOnly(<HesapEkle />)} />
+          <Route path="/simulasyon" element={simulationEnabled ? <Navigate to="/tesis-tasarimi?sekme=uretici" replace /> : <Unavailable title="Simülasyon kapalı" reason="Veri üretici yönetici hesabıyla, simülasyon alanında ya da simülasyonu açık kurulumlarda kullanılır." />} />
+          <Route path="/hesap-ekle" element={sandbox || config.demo ? <Unavailable title="Yönetici Hesapları" reason="Demoda ve simülasyon alanında panel hesapları yönetilemez." /> : adminOnly(<HesapEkle />)} />
           
           {/* Ortak Rotalar */}
-          <Route path="/settings" element={config.demo ? <Navigate to="/" replace /> : <Settings />} />
+          <Route path="/settings" element={config.demo ? <Unavailable title="Hesap Ayarları" reason="Demoda hesap ayarları kapalıdır." /> : <Settings />} />
           {/* Eski adresler (yer imleri bozulmasın) */}
           {Object.entries(OLD_PATHS).map(([from, to]) => <Route key={from} path={from} element={<Navigate to={to} replace />} />)}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Unavailable />} />
         </Routes></Suspense>
     </AppShell>
   );

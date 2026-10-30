@@ -1,9 +1,10 @@
 import { useLiveList } from '../hooks/useLiveList';
 import AdminForm from '../components/AdminForm';
+import PageHeader from '../components/ui/PageHeader';
+import { canWrite } from '../utils/session';
 import { useState, useMemo } from 'react';
 import api from '../api/axios';
 
-// YENİ ORTAK BİLEŞENLER
 import CustomDataGrid from '../components/CustomDataGrid';
 import AutocompleteSearch from '../components/AutoCompleteSearch';
 import AlertMessage from '../components/AlertMessage';
@@ -129,7 +130,7 @@ function Shifts() {
       mola_hakki_dk: shift.Mola_Hakki_Dk || 0,
       calisma_gunleri: parsedGunler
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('shifts-field-1')?.focus();
   };
 
   const handleToggleStatus = (shift) => {
@@ -206,10 +207,9 @@ function Shifts() {
       valueFormatter: ({ value }) => (value ?? true) ? 'Aktif' : 'Pasif',
       width: 100,
       cellRenderer: (params) => {
-        const isActive = params.value === undefined || params.value === null ? true : params.value;
-        return isActive
-          ? <span className="px-2 py-1 bg-success-soft text-success text-xs rounded-full font-bold">Aktif</span>
-          : <span className="px-2 py-1 bg-danger-soft text-danger text-xs rounded-full font-bold">Pasif</span>;
+        return params.value !== false
+          ? <span className="badge bg-success-soft text-success border-success-line">Aktif</span>
+          : <span className="badge bg-danger-soft text-danger border-danger-line">Pasif</span>;
       }
     },
     {
@@ -218,11 +218,11 @@ function Shifts() {
       sortable: false,
       filter: false,
       cellRenderer: (params) => {
-        const isActive = params.data.Durum === undefined || params.data.Durum === null ? true : params.data.Durum;
+        const isActive = params.data.Durum !== false;
         return (
-          <div className="space-x-2 mt-1">
-            <button disabled={pending || Boolean(confirmation)} onClick={() => handleEditClick(params.data)} className="px-3 py-1 bg-info-soft text-info font-bold rounded text-xs hover:bg-info-soft transition-colors">Düzenle</button>
-            <button disabled={pending || Boolean(confirmation)} onClick={() => handleToggleStatus(params.data)} className={`px-3 py-1 font-bold rounded text-xs transition-colors ${isActive ? 'bg-danger-soft text-danger hover:bg-danger-soft' : 'bg-success-soft text-success hover:bg-success-soft'}`}>
+          <div className="flex gap-2 h-full items-center">
+            <button disabled={pending || Boolean(confirmation)} onClick={() => handleEditClick(params.data)} className="btn btn-sm bg-info-soft text-info">Düzenle</button>
+            <button disabled={pending || Boolean(confirmation)} onClick={() => handleToggleStatus(params.data)} className={`btn btn-sm ${isActive ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}>
               {isActive ? 'Pasife Al' : 'Aktifleştir'}
             </button>
           </div>
@@ -232,42 +232,33 @@ function Shifts() {
   ];
 
   return (
-    <div className="space-y-8 relative mt-8">
+    <div className="space-y-6">
+      <PageHeader title="Vardiya Yönetimi" description="Çalışma vardiyaları, günleri ve mola süreleri. Düzenlemeler yeni atamalarda kullanılır; mevcut personelin yeni ayarlarla çalışması için vardiyayı yeniden atayın, geçmiş günlerin ayarları korunur." />
 
-      <div>
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Vardiya Yönetimi</h1>
-        <p className="text-muted text-sm mt-1">Sistemdeki çalışma vardiyalarını, günleri ve mola sürelerini yönetebilirsiniz.</p>
-      </div>
-
-      {/* EKLEME / DÜZENLEME FORMU */}
-      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-        <h2 className="text-xl font-bold text-ink mb-4">
-          {isEditing ? 'Vardiyayı Düzenle' : 'Yeni Vardiya Ekle'}
-        </h2>
-
-        {loading && <p role="status">Liste yükleniyor…</p>}
-      <p className="text-sm text-muted">Vardiya düzenlemeleri yeni atamalarda kullanılır. Mevcut personelin yeni ayarlarla çalışması için vardiyayı yeniden atayın; geçmiş günlerin ayarları korunur.</p>
-      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchShifts} className="underline">Tekrar dene</button></p>}
       <AlertMessage message={message.text} type={message.type} />
 
+      {canWrite() && <section aria-labelledby="shift-form-title" className="card">
+        <h2 id="shift-form-title" className="text-lg font-semibold text-ink mb-4">
+          {isEditing ? 'Vardiyayı Düzenle' : 'Yeni Vardiya Ekle'}
+        </h2>
         <AdminForm onSubmit={handleSubmit} disabled={pending || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
 
           <div className="md:col-span-4">
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-1">Vardiya Adı *</label>
-            <input id="shifts-field-1" type="text" name="vardiya_adi" maxLength={100} value={formData.vardiya_adi} onChange={handleChange} placeholder="Örn: Hafta İçi Gündüz Vardiyası" required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" />
+            <label className="field-label" htmlFor="shifts-field-1">Vardiya Adı *</label>
+            <input id="shifts-field-1" type="text" name="vardiya_adi" maxLength={100} value={formData.vardiya_adi} onChange={handleChange} placeholder="Örn: Hafta İçi Gündüz Vardiyası" required className="field" />
           </div>
 
-          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-2">Mesai Başlangıç *</label><input id="shifts-field-2" type="time" name="mesai_baslangic" value={formData.mesai_baslangic} onChange={handleChange} required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-3">Mesai Bitiş *</label><input id="shifts-field-3" type="time" name="mesai_bitis" value={formData.mesai_bitis} onChange={handleChange} required className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-4">Yemek Başlangıç</label><input id="shifts-field-4" type="time" name="yemek_baslangic" value={formData.yemek_baslangic} onChange={handleChange} className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-5">Yemek Bitiş</label><input id="shifts-field-5" type="time" name="yemek_bitis" value={formData.yemek_bitis} onChange={handleChange} className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
+          <div><label className="field-label" htmlFor="shifts-field-2">Mesai Başlangıç *</label><input id="shifts-field-2" type="time" name="mesai_baslangic" value={formData.mesai_baslangic} onChange={handleChange} required className="field" /></div>
+          <div><label className="field-label" htmlFor="shifts-field-3">Mesai Bitiş *</label><input id="shifts-field-3" type="time" name="mesai_bitis" value={formData.mesai_bitis} onChange={handleChange} required className="field" /></div>
+          <div><label className="field-label" htmlFor="shifts-field-4">Yemek Başlangıç</label><input id="shifts-field-4" type="time" name="yemek_baslangic" value={formData.yemek_baslangic} onChange={handleChange} className="field" /></div>
+          <div><label className="field-label" htmlFor="shifts-field-5">Yemek Bitiş</label><input id="shifts-field-5" type="time" name="yemek_bitis" value={formData.yemek_bitis} onChange={handleChange} className="field" /></div>
 
-          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-6">Tolerans (Dakika)</label><input id="shifts-field-6" type="number" name="tolerans_dk" max="120" value={formData.tolerans_dk} onChange={handleChange} min="0" className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
-          <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="shifts-field-7">Günlük Mola Hakkı (Dakika)</label><input id="shifts-field-7" type="number" name="mola_hakki_dk" max="480" value={formData.mola_hakki_dk} onChange={handleChange} min="0" className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all" /></div>
+          <div><label className="field-label" htmlFor="shifts-field-6">Tolerans (Dakika)</label><input id="shifts-field-6" type="number" name="tolerans_dk" max="120" value={formData.tolerans_dk} onChange={handleChange} min="0" className="field" /></div>
+          <div><label className="field-label" htmlFor="shifts-field-7">Günlük Mola Hakkı (Dakika)</label><input id="shifts-field-7" type="number" name="mola_hakki_dk" max="480" value={formData.mola_hakki_dk} onChange={handleChange} min="0" className="field" /></div>
 
           {/* ÇALIŞMA GÜNLERİ SEÇİMİ */}
           <div className="md:col-span-4 mt-2">
-            <label className="block text-xs font-bold text-muted mb-2">Çalışma Günleri Seçimi *</label>
+            <label className="field-label">Çalışma Günleri Seçimi *</label>
             <div className="flex flex-wrap gap-2">
               {GUNLER.map(gun => (
                 <button
@@ -280,9 +271,9 @@ function Shifts() {
                         : [...prev.calisma_gunleri, gun.id].sort()
                     }))
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold border transition-colors ${
+                  className={`btn border min-w-14 ${
                     formData.calisma_gunleri.includes(gun.id)
-                      ? 'bg-blue-600 text-white border-accent shadow-md'
+                      ? 'bg-primary text-white border-primary'
                       : 'bg-surface-2 text-muted border-line hover:bg-surface-3'
                   }`}
                 >
@@ -292,46 +283,40 @@ function Shifts() {
             </div>
           </div>
 
-          <div className="md:col-span-4 flex justify-end space-x-3 mt-4">
-            {isEditing && (
-              <button type="button" onClick={cancelEdit} className="px-6 py-2 bg-surface-3 font-bold text-ink rounded-lg hover:bg-line transition-colors w-full sm:w-auto">İptal Et</button>
-            )}
-            <button type="submit" className={`px-6 py-2 font-bold rounded-lg text-white transition-colors w-full sm:w-auto ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-primary hover:bg-primary-hover'}`}>
+          <div className="md:col-span-4 flex flex-wrap justify-end gap-3">
+            {isEditing && <button type="button" onClick={cancelEdit} className="btn btn-secondary">İptal Et</button>}
+            <button type="submit" className="btn btn-primary">
               {pending ? 'Kaydediliyor…' : isEditing ? 'Vardiyayı Güncelle' : 'Sisteme Kaydet'}
             </button>
           </div>
         </AdminForm>
-      </div>
+      </section>}
 
-      {/* ARAMA VE TABLO BÖLÜMÜ */}
-      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[55vh]">
-        <div className="mb-4 relative w-full md:w-1/3 z-50">
-          <AutocompleteSearch
-            label="Vardiya Ara"
-            placeholder="Vardiya adı yazın..."
-            value={arama}
-            onChange={handleSearchInputChange}
-            suggestions={suggestions}
-            onSelect={(item) => {
-              setArama(item.value);
-              setSuggestions([]);
-            }}
-          />
+      <section aria-label="Kayıtlı vardiyalar" className="card p-4 flex flex-col h-[60vh]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-3">
+          <div className="w-full md:w-1/3 relative z-20">
+            <AutocompleteSearch
+              label="Vardiya Ara"
+              placeholder="Vardiya adı yazın…"
+              value={arama}
+              onChange={handleSearchInputChange}
+              suggestions={suggestions}
+              onSelect={(item) => {
+                setArama(item.value);
+                setSuggestions([]);
+              }}
+            />
+          </div>
+          <p className="text-sm font-semibold text-ink">{loading ? 'Liste yükleniyor…' : `${filteredShifts.length} vardiya`}</p>
         </div>
-
-        <div className="p-2 text-sm font-bold text-ink bg-surface-2 border-t border-x border-line rounded-t-lg">
-          Kayıtlı Vardiyalar ({filteredShifts.length} Kayıt)
-        </div>
-
-        <div className="flex-1 w-full h-full">
-          <CustomDataGrid
-            rowData={filteredShifts}
-            columnDefs={colDefs}
-            exportFileName="GKS_Vardiyalar"
-            getRowId={(params) => params.data.ID}
-          />
-        </div>
-      </div>
+        {listError && <p role="alert" className="text-danger mb-2">{listError} <button type="button" onClick={fetchShifts} className="underline">Tekrar dene</button></p>}
+        <CustomDataGrid
+          rowData={filteredShifts}
+          columnDefs={colDefs}
+          exportFileName="GKS_Vardiyalar"
+          getRowId={(params) => params.data.ID}
+        />
+      </section>
 
       <ConfirmAction isOpen={Boolean(confirmation)} title="Vardiya Durumunu Değiştir" pending={pending} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmStatus}>
         <p><strong>{confirmation?.name}</strong> vardiyası {confirmation?.durum ? 'aktifleştirilecek.' : 'pasife alınacak.'}</p>

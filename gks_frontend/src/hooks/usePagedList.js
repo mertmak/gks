@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../api/axios';
 import { socket } from '../api/socket';
 import { listRows } from '../api/lists';
 import { createPagedLoader } from '../utils/pagedLoader';
 
-export function usePagedList(endpoint, event) {
+// `initial`: filters to load once on open, so the page never starts empty.
+export function usePagedList(endpoint, event, initial) {
+  const first = useRef(initial);
   const [state, setState] = useState({ rows: [], pagination: { page: 1, total: 0, totalPages: 0 }, loading: false, error: '', searched: false });
   const loader = useMemo(() => createPagedLoader(async (params, signal) => {
     const response = await api.get(endpoint, { params, signal });
@@ -13,6 +15,7 @@ export function usePagedList(endpoint, event) {
   useEffect(() => {
     socket.on(event, loader.refresh);
     socket.on('connect', loader.refresh);
+    if (first.current) loader.search(first.current);
     return () => {
       loader.cancel();
       socket.off(event, loader.refresh);
