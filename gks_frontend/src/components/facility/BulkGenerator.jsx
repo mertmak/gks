@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { useLiveList } from '../hooks/useLiveList';
-import { businessDate } from '../utils/dates';
-import Modal from '../components/Modal';
-import api from '../api/axios';
-import AlertMessage from '../components/AlertMessage';
-import { readSession } from '../utils/session';
-import { defaultTemplateShift } from '../utils/shifts';
+import { useLiveList } from '../../hooks/useLiveList';
+import { businessDate } from '../../utils/dates';
+import Modal from '../Modal';
+import api from '../../api/axios';
+import AlertMessage from '../AlertMessage';
+import { readSession } from '../../utils/session';
+import { defaultTemplateShift } from '../../utils/shifts';
 
 const SHIFT_EVENTS = ['shifts_updated'];
 
-function Simulation() {
+// Bulk synthetic data: personnel, doors and reads for a date range, without the plan.
+function BulkGenerator() {
   const shiftList = useLiveList('/shifts', SHIFT_EVENTS);
   const shifts = shiftList.rows.filter(s => s.Durum === 1 || s.Durum === true);
   const [confirmation, setConfirmation] = useState(null);
@@ -78,9 +79,9 @@ function Simulation() {
   };
 
   return (
-    <div className="space-y-8 mt-8 animate-fade-in-up pb-10">
+    <div className="space-y-8 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Simülasyon</h1>
+        <h2 className="text-lg font-bold text-ink">Toplu Veri Üretici</h2>
         <p className="text-muted text-sm mt-1">{readSession()?.sandbox
           ? 'Kişisel simülasyon alanınıza sentetik personel, kapı ve geçiş kayıtları ekleyin (en fazla 50 personel, 10 kapı, 14 gün). Sonuçları Puantaj ve Mesai sayfalarında görebilirsiniz.'
           : 'Ayrı yerel test veritabanına sentetik personel, kapı ve geçiş kayıtları ekleyin. Public demo seed komutundan bağımsızdır.'}</p>
@@ -93,10 +94,10 @@ function Simulation() {
         
         <fieldset disabled={loading || Boolean(confirmation)} className="space-y-6">
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-          <h2 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
+          <h3 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
             <span className="w-8 h-8 rounded-full bg-info-soft text-info flex items-center justify-center mr-3 text-sm">1</span>
             Veritabanı Müdahale Ayarları
-          </h2>
+          </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-surface-2 p-4 rounded-xl border border-line">
@@ -141,10 +142,10 @@ function Simulation() {
         {/* ADIM 2: VERİ KAYNAĞI ÖZELLEŞTİRME */}
         {(formData.userAction !== 'keep' || formData.doorAction !== 'keep') && (
           <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line animate-fade-in-up">
-            <h2 className="text-lg font-black text-ink mb-4 flex items-center border-b border-line pb-4">
+            <h3 className="text-lg font-black text-ink mb-4 flex items-center border-b border-line pb-4">
               <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-3 text-sm">2</span>
               Veri Havuzu Seçimi
-            </h2>
+            </h3>
             
             <div className="mb-6 flex space-x-4 border-b border-line pb-4">
               <label className="flex items-center space-x-2 cursor-pointer">
@@ -190,10 +191,10 @@ function Simulation() {
 
         {/* ZAMAN VE VARDİYA AYARLARI */}
         <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-          <h2 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
+          <h3 className="text-lg font-black text-ink mb-6 flex items-center border-b border-line pb-4">
             <span className="w-8 h-8 rounded-full bg-warning-soft text-warning flex items-center justify-center mr-3 text-sm">{(formData.userAction !== 'keep' || formData.doorAction !== 'keep') ? '3' : '2'}</span>
             Zaman ve Vardiya Ayarları
-          </h2>
+          </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-3">
@@ -237,4 +238,4 @@ function Simulation() {
   );
 }
 
-export default Simulation;
+export default BulkGenerator;

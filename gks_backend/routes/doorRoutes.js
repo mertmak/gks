@@ -14,9 +14,12 @@ router.get('/doors', verifyToken, async (req, res, next) => {
 function changeDoor(kind) {
     return async (req, res, next) => {
         try {
-            await inTransaction(async tx => {
+            // Granting every active person is a shortcut for simulations only.
+            const grant = kind === 'create' && req.body.yetki_ver === true;
+            if (grant && !require('../config/simulation').allowed(req)) throw httpError(403, 'Toplu kapı yetkisi yalnız simülasyon ortamında verilir.');
+            const id = await inTransaction(async tx => {
                 const request = new sql.Request(tx).input('id', sql.Int, req.params.id || null);
-                let current;
+                let current, permitted = 0;
                 if (kind !== 'create') {
                     current = (await request.query('SELECT * FROM Doors WHERE ID=@id FOR UPDATE')).recordset[0];
                     if (!current) throw httpError(404, 'Kapı bulunamadı.');
@@ -28,15 +31,18 @@ function changeDoor(kind) {
                 } else {
                     request.input('ad', sql.NVarChar, req.body.kapi_adi).input('tur', sql.NVarChar, req.body.kapi_turu)
                         .input('departman', sql.NVarChar, req.body.departman).input('konum', sql.NVarChar, req.body.konum);
-                    await request.query(kind === 'create'
-                        ? 'INSERT INTO Doors(Kapi_Adi,Kapi_Turu,Departman,Konum,Durum) VALUES(@ad,@tur,@departman,@konum,true)'
-                        : 'UPDATE Doors SET Kapi_Adi=@ad,Kapi_Turu=@tur,Departman=@departman,Konum=@konum WHERE ID=@id');
+                    if (kind === 'create') {
+                        current = (await request.query('INSERT INTO Doors(Kapi_Adi,Kapi_Turu,Departman,Konum,Durum) VALUES(@ad,@tur,@departman,@konum,true) RETURNING ID')).recordset[0];
+                        if (grant) permitted = (await new sql.Request(tx).input('door', sql.Int, current.ID)
+                            .query('INSERT INTO Permissions(User_ID, Door_ID) SELECT ID, @door FROM Users WHERE Durum=true')).rowsAffected[0];
+                    } else await request.query('UPDATE Doors SET Kapi_Adi=@ad,Kapi_Turu=@tur,Departman=@departman,Konum=@konum WHERE ID=@id');
                 }
                 await addDoorLog(req.user.kullanici_adi, kind === 'create' ? 'YENİ KAPI' : 'KAPI GÜNCELLENDİ', req.body.kapi_adi || current.Kapi_Adi,
-                    kind === 'status' ? `Durum: ${req.body.durum}. Pasife almada yetkiler kaldırılır.` : `Kapı türü: ${req.body.kapi_turu}`, tx);
+                    kind === 'status' ? `Durum: ${req.body.durum}. Pasife almada yetkiler kaldırılır.` : `Kapı türü: ${req.body.kapi_turu}${grant ? `; ${permitted} aktif personele yetki verildi` : ''}`, tx);
+                return current?.ID ?? null;
             });
             for (const event of ['doors_updated', 'system_updated', 'new_door_log']) socket.getIO().emit(event);
-            res.json({ success: true, message: 'Kapı kaydedildi.' });
+            res.json({ success: true, message: 'Kapı kaydedildi.', ...(kind === 'create' ? { id } : {}) });
         } catch (error) { next(error); }
     };
 }

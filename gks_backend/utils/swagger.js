@@ -18,7 +18,7 @@ const doorIds = { ...array(id), maxItems: 1000, uniqueItems: true };
 const target = { hedef_turu: { type: 'string', enum: ['Tumu', 'Sirket', 'Departman'] }, hedef_deger: text(100) };
 const properties = {
   PersonelInput: { ad_soyad: { ...text(100), minLength: 1 }, tc: { type: 'string', pattern: '^\\d{11}$' }, sicil: { type: 'string', pattern: '^\\d{5}$' }, rfid: { type: 'string', pattern: '^(\\d{11})?$' }, sirket: text(100), departman: text(100), gorev: text(100), ise_giris: optionalDate },
-  DoorInput: { kapi_adi: { ...text(100), minLength: 1 }, kapi_turu: { type: 'string', enum: ['Ana Giriş', 'Ana Çıkış', 'İç Geçiş', 'Yemekhane Giriş', 'Yemekhane Çıkış', 'Mola / Sigara Alanı'], default: 'İç Geçiş' }, departman: text(100), konum: text(100) },
+  DoorInput: { kapi_adi: { ...text(100), minLength: 1 }, kapi_turu: { type: 'string', enum: ['Ana Giriş', 'Ana Çıkış', 'İç Geçiş', 'Yemekhane Giriş', 'Yemekhane Çıkış', 'Mola / Sigara Alanı'], default: 'İç Geçiş' }, departman: text(100), konum: text(100), yetki_ver: { type: 'boolean', description: 'Yalnız oluşturmada ve simülasyon ortamında: kapıya tüm aktif personeli yetkilendirir.' } },
   ShiftInput: { vardiya_adi: { ...text(100), minLength: 1 }, mesai_baslangic: time, mesai_bitis: time, yemek_baslangic: { oneOf: [{ ...time, nullable: true }, { type: 'string', enum: [''] }] }, yemek_bitis: { oneOf: [{ ...time, nullable: true }, { type: 'string', enum: [''] }] }, tolerans_dk: { ...integer(0, 120), default: 0 }, mola_hakki_dk: { ...integer(0, 480), default: 0 }, calisma_gunleri: { type: 'string', pattern: '^[0-6](,[0-6])*$', default: '1,2,3,4,5' } },
   LeaveInput: { user_id: id, izin_turu: { ...text(50), minLength: 1 }, baslangic: date, bitis: date, aciklama: text(255), durum: { ...decision, default: 'Onaylandı' } },
   OvertimeItem: { user_id: id, tarih: date, hesaplanan_dk: { ...integer(0, 2880), description: 'Uyumluluk için kabul edilir; karar hesaplamasında sunucu esas alınır.' }, onaylanan_dk: integer(0, 2880) },
@@ -96,7 +96,7 @@ for (const [suffix, fields, required] of [['doors', { doorIds }, ['doorIds']], [
 }
 for (const [path, tag, body] of [['/doors', 'Kapılar', 'DoorInput'], ['/shifts', 'Vardiyalar', 'ShiftInput']]) {
   add('get', path, tag, 'Kayıtları listele', { output: array({ type: 'object' }) });
-  add('post', path, tag, 'Yeni kayıt oluştur', { admin: true, body });
+  add('post', path, tag, 'Yeni kayıt oluştur', { admin: true, body, ...(path === '/doors' ? { output: object({ success: { type: 'boolean' }, message: { type: 'string' }, id }), errors: { 403: 'Toplu yetki simülasyon ortamı dışında istendi.' } } : {}) });
   add('put', path + '/{id}', tag, 'Kaydı düzenle', { admin: true, body, errors: { 404: 'Kayıt bulunamadı.' } });
   add('patch', path + '/{id}/status', tag, 'Aktiflik durumunu değiştir', { admin: true, body: object({ durum: bit }, ['durum']), errors: { 404: 'Kayıt bulunamadı.' }, description: path === '/doors' ? 'Kapı pasife alındığında mevcut yetkileri kaldırılır.' : 'Geçmiş atama tanımları korunur.' });
 }

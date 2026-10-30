@@ -2,6 +2,9 @@
 // loop. The server plans the day and decides every card read; the engine
 // walks people between areas, predicts each read from the same rules so the
 // animation never waits for the network, and queues the reads for sending.
+import { VERTICAL, bounds, partners } from './floorPlan.js';
+import { contains } from './polygon.js';
+
 export const OUTSIDE = 'dis';
 export const SPEEDS = [1, 5, 20]; // simulated minutes per real second
 export const MISREAD_CARD = 'OKUNAMADI';
@@ -34,12 +37,17 @@ export function canPass(door, from, to, typeOf) {
   return fits(a, b) || fits(b, a) ? fits(from, to) : true;
 }
 
+// A one-way door (turnstile) opens only from its A side or only from its B side.
+export const opensFrom = (door, from) => !door.oneWay || door.oneWay === 'Çift' || (door.oneWay === 'A→B') === (from === sides(door)[0]);
+
 // Cheapest door sequence between two nodes. Doors the person cannot use
 // (no permission, passive) are a last resort, so they are tried only when no
 // other way exists and the read is then denied, as in a real building.
+// Stairs and lifts of one vertical group join floors without a read (door null).
 export function route(plan, from, to, usable = () => true) {
   if (from === to) return [];
-  const typeOf = node => plan.areas.find(area => area.ref === node)?.type;
+  const areaOf = node => plan.areas.find(area => area.ref === node);
+  const typeOf = node => areaOf(node)?.type;
   const doors = plan.doors.filter(door => door.placed && (door.a || door.b));
   const best = new Map([[from, { cost: 0, path: [] }]]);
   const open = [from];
@@ -47,44 +55,61 @@ export function route(plan, from, to, usable = () => true) {
     open.sort((x, y) => best.get(x).cost - best.get(y).cost);
     const node = open.shift();
     if (node === to) return best.get(node).path;
-    for (const door of doors) {
-      const [a, b] = sides(door);
-      const next = node === a ? b : node === b ? a : null;
-      if (next == null || !canPass(door, node, next, typeOf)) continue;
-      // Breaks start at a break-area door; prefer it over an inner door.
-      const cost = best.get(node).cost + 1 + (usable(door) ? 0 : 50)
-        + (typeOf(next) === 'Mola' && door.type !== 'Mola / Sigara Alanı' ? 3 : 0);
+    const reach = (next, door, extra) => {
+      const cost = best.get(node).cost + 1 + extra;
       if (!best.has(next) || cost < best.get(next).cost) {
         best.set(next, { cost, path: [...best.get(node).path, { door, from: node, to: next }] });
         if (!open.includes(next)) open.push(next);
       }
+    };
+    for (const door of doors) {
+      const [a, b] = sides(door);
+      const next = node === a ? b : node === b ? a : null;
+      if (next == null || !opensFrom(door, node) || !canPass(door, node, next, typeOf)) continue;
+      // Breaks start at a break-area door; prefer it over an inner door.
+      reach(next, door, (usable(door) ? 0 : 50) + (typeOf(next) === 'Mola' && door.type !== 'Mola / Sigara Alanı' ? 3 : 0));
     }
+    if (typeOf(node) === VERTICAL) partners(plan.areas, areaOf(node)).forEach(other => reach(other.ref, null, 0));
   }
   return null;
 }
 
+// Standing places inside an area, below its label, 22 units apart.
+const slotCache = new WeakMap();
+function slots(area) {
+  if (!slotCache.has(area)) {
+    const box = bounds(area.points), found = [];
+    for (let y = box.y + 67; y < box.y + box.h - 11; y += 22) {
+      for (let x = box.x + 31; x < box.x + box.w - 11; x += 22) if (contains(area.points, [x, y])) found.push({ x, y });
+    }
+    slotCache.set(area, found.length ? found : [{ x: box.x + box.w / 2, y: box.y + box.h / 2 }]);
+  }
+  return slotCache.get(area);
+}
+
 // Each person stands at their own spot so dots in one area do not overlap.
+// Outside, they stand in front of the door, on the side away from the area.
 function spot(plan, node, person, via) {
   const area = plan.areas.find(item => item.ref === node);
   if (!area) {
     if (!via) return { x: -100, y: -100 };
     const inside = plan.areas.find(item => item.ref === (via.a ?? via.b));
-    const normal = !inside ? [0, 0] : via.x === inside.x ? [-1, 0] : via.x === inside.x + inside.w ? [1, 0] : via.y === inside.y ? [0, -1] : [0, 1];
-    return { x: via.x + normal[0] * 40, y: via.y + normal[1] * 40 };
+    const out = [[-40, 0], [40, 0], [0, -40], [0, 40]].find(([dx, dy]) => inside && !contains(inside.points, [via.x + dx, via.y + dy])) || [0, 0];
+    return { x: via.x + out[0], y: via.y + out[1] };
   }
-  const columns = Math.max(1, Math.floor((area.w - 40) / 22));
-  const rows = Math.max(1, Math.floor((area.h - 70) / 22));
-  const slot = person.index % (columns * rows);
-  return { x: area.x + 20 + (slot % columns) * 22 + 11, y: area.y + 56 + Math.floor(slot / columns) * 22 + 11 };
+  const places = slots(area);
+  return places[person.index % places.length];
 }
 
 export function workAreas(areas) {
-  for (const type of ['Ofis', 'Diğer', 'Lobi']) {
-    const found = areas.filter(area => area.type === type);
+  for (const types of [['Ofis', 'Üretim'], ['Diğer', 'Depo'], ['Lobi']]) {
+    const found = areas.filter(area => types.includes(area.type));
     if (found.length) return found;
   }
   return areas.slice(0, 1);
 }
+
+const floorOf = (plan, node) => plan.areas.find(area => area.ref === node)?.floor ?? null;
 
 export function createSimulation(plan, dayPlan, { misread = 0, random = Math.random } = {}) {
   const homes = workAreas(plan.areas);
@@ -94,7 +119,7 @@ export function createSimulation(plan, dayPlan, { misread = 0, random = Math.ran
   const people = planned.map((person, index) => ({
     id: person.id, name: person.ad_soyad, card: person.kart, late: person.gec, index,
     permitted: new Set(person.kapilar), home: homes[index % homes.length]?.ref ?? null,
-    node: OUTSIDE, x: -100, y: -100, legs: [], next: 0,
+    node: OUTSIDE, floor: null, x: -100, y: -100, legs: [], next: 0,
     events: person.olaylar.map(event => ({ type: event.tur, at: toMs(event.zaman) })),
   }));
   return {
@@ -109,10 +134,18 @@ export function createSimulation(plan, dayPlan, { misread = 0, random = Math.ran
 // Builds the timed legs of a trip: walk to each door, read, walk through.
 function startTrip(sim, person, steps, label) {
   // People outside are not drawn; they appear in front of the first door.
-  if (person.node === OUTSIDE && steps.length) Object.assign(person, spot(sim.plan, OUTSIDE, person, steps[0].door));
+  if (person.node === OUTSIDE && steps.length) Object.assign(person, spot(sim.plan, OUTSIDE, person, steps[0].door), { floor: steps[0].door.floor });
   let at = sim.clock, from = { x: person.x, y: person.y };
   const legs = [];
   for (const step of steps) {
+    if (!step.door) {
+      // Stairs or lift: a minute later the person is on the other floor.
+      const target = spot(sim.plan, step.to, person);
+      at += MINUTE;
+      legs.push({ x: target.x, y: target.y, at, node: step.to, jump: true });
+      from = target;
+      continue;
+    }
     const door = { x: step.door.x, y: step.door.y };
     at += Math.max(0.2 * MINUTE, Math.hypot(door.x - from.x, door.y - from.y) / WALK * MINUTE);
     legs.push({ x: door.x, y: door.y, at, read: step });
@@ -145,7 +178,8 @@ function read(sim, person, leg) {
   const { door, from } = leg.read;
   const misread = sim.misread && sim.random() < sim.misread;
   const card = misread ? MISREAD_CARD : person.card;
-  const reason = !door.active ? 'Kapı pasif' : misread ? 'Tanımsız kart' : !person.permitted.has(door.id) ? 'Kapı yetkisi yok' : null;
+  const reason = !door.active ? 'Kapı pasif' : misread ? 'Tanımsız kart' : !person.permitted.has(door.id) ? 'Kapı yetkisi yok'
+    : !opensFrom(door, from) ? 'Bu yönde geçiş kapalı' : null;
   const entry = record(sim, { card, door, from, at: leg.at, person, ok: !reason, reason: reason || 'Geçiş onaylandı' });
   if (!reason) return;
   // Denied: a misread card is tried again; otherwise the person turns back.
@@ -177,10 +211,10 @@ function advance(sim, person) {
     const leg = person.legs.shift();
     person.legStart = { x: leg.x, y: leg.y, at: leg.at };
     Object.assign(person, { x: leg.x, y: leg.y });
-    if (leg.node) person.node = leg.node;
+    if (leg.node) Object.assign(person, { node: leg.node, floor: floorOf(sim.plan, leg.node) ?? person.floor });
     if (leg.read) read(sim, person, leg);
   }
-  if (person.legs.length) {
+  if (person.legs.length && !person.legs[0].jump) {
     const leg = person.legs[0], start = person.legStart;
     const share = Math.min(1, Math.max(0, (sim.clock - start.at) / Math.max(1, leg.at - start.at)));
     person.x = start.x + (leg.x - start.x) * share;
@@ -225,7 +259,7 @@ export function manualPass(sim, personId, doorId) {
   if (person.legs.length) return `${person.name} şu an yürüyor; biraz sonra tekrar deneyin.`;
   const [a, b] = sides(door);
   const options = [[a, b], [b, a]].map(([near, far]) => ({ near, far, path: route(sim.plan, person.node, near, usableBy(person)) }))
-    .filter(option => option.path).sort((x, y) => x.path.length - y.path.length);
+    .filter(option => option.path).sort((x, y) => x.path.length - y.path.length || !opensFrom(door, x.near) - !opensFrom(door, y.near));
   if (!options.length) return `${person.name} bu kapıya ulaşamıyor.`;
   const { near, far, path } = options[0];
   startTrip(sim, person, [...path, { door, from: near, to: far }], `${door.name} kapısına gidiyor`);

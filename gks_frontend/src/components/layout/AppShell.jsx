@@ -13,7 +13,6 @@ const ICONS = {
   table: 'M3 5h18v14H3zM3 10h18M9 10v9',
   arrows: 'M7 7h13l-4-4M17 17H4l4 4',
   shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z M9 12l2 2 4-4',
-  play: 'M8 5v14l11-7z',
   menu: 'M4 6h16M4 12h16M4 18h16',
   close: 'M6 6l12 12M6 18L18 6',
   collapse: 'M15 6l-6 6 6 6',

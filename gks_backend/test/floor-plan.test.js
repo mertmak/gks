@@ -160,10 +160,23 @@ test('floor plan template, bulk save and validation', { skip: process.env.RUN_DB
             const result = await call('POST', '/kat-plani/sablon');
             assert.equal(result.status, 200, JSON.stringify(result.data));
             assert.equal(result.data.created, 7);
+            const refused = await call('POST', '/doors', { kapi_adi: 'Plan Kapısı', yetki_ver: true });
+            assert.equal(refused.status, 403);
         } finally { process.env.DB_NAME = dbName; }
         const added = (await plan()).kapilar.filter(door => door.ID > lastDoor);
         assert.equal(added.length, 7);
         assert.ok(added.every(door => door.Yetkili_Sayisi === 0));
+    });
+
+    await t.test('a door drawn on the plan is created with its id; a simulation may permit every active person', async () => {
+        const plain = await call('POST', '/doors', { kapi_adi: 'Çizilen Kapı', kapi_turu: 'Ana Giriş' });
+        assert.equal(plain.status, 200, JSON.stringify(plain.data));
+        const granted = await call('POST', '/doors', { kapi_adi: 'Yetkili Kapı', yetki_ver: true });
+        assert.ok(Number.isInteger(plain.data.id) && granted.data.id > plain.data.id);
+        const doors = (await plan()).kapilar;
+        const active = (await sql.query('SELECT COUNT(*) AS n FROM Users WHERE Durum=true')).recordset[0].n;
+        assert.deepEqual([doors.find(door => door.ID === plain.data.id).Yetkili_Sayisi, doors.find(door => door.ID === granted.data.id).Yetkili_Sayisi], [0, active]);
+        assert.equal((await call('POST', '/doors', { kapi_adi: 'Yetkisiz', yetki_ver: true }, viewer)).status, 403);
     });
 
     await t.test('the factory template builds two floors joined by a staircase', async () => {

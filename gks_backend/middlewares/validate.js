@@ -72,7 +72,7 @@ const schemas = {
     ilkKurulumSchema: z.object({ username, password }),
     hesapEkleSchema: z.object({ username, password, rol: z.enum(['admin', 'user']).default('user') }),
     sifreDegistirSchema: z.object({ username: username.optional(), eskiSifre: z.string().min(1), yeniSifre: password }),
-    kapiEkleSchema: z.object({ kapi_adi: text(100).min(1), departman: text(100).default(''), konum: text(100).default(''), kapi_turu: z.enum(['Ana Giriş','Ana Çıkış','İç Geçiş','Yemekhane Giriş','Yemekhane Çıkış','Mola / Sigara Alanı']).default('İç Geçiş') }),
+    kapiEkleSchema: z.object({ kapi_adi: text(100).min(1), departman: text(100).default(''), konum: text(100).default(''), kapi_turu: z.enum(['Ana Giriş','Ana Çıkış','İç Geçiş','Yemekhane Giriş','Yemekhane Çıkış','Mola / Sigara Alanı']).default('İç Geçiş'), yetki_ver: z.boolean().optional() }),
     kapiDurumSchema: z.object({ durum: bit, kapi_adi: text(100).optional() }),
     vardiyaSchema: z.object({ vardiya_adi: text(100).min(1), mesai_baslangic: time, mesai_bitis: time, yemek_baslangic: optionalTime, yemek_bitis: optionalTime, tolerans_dk: number(0,120).default(0), mola_hakki_dk: number(0,480).default(0), calisma_gunleri: z.string().regex(/^[0-6](,[0-6])*$/).default('1,2,3,4,5') }).refine(v => v.mesai_baslangic !== v.mesai_bitis, 'Vardiya başlangıç ve bitişi aynı olamaz.').refine(v => !!v.yemek_baslangic === !!v.yemek_bitis, 'Yemek başlangıç ve bitişi birlikte girilmelidir.'),
     vardiyaDurumSchema: z.object({ durum: bit }),
