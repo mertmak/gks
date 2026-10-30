@@ -69,6 +69,7 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
     assert.equal((await call('POST','/login',{username,password:'New-Fixture-Password-123'},null)).status,200);
     assert.equal((await call('POST','/login',{username:'fixture-admin',password:fixturePassword},null)).status,200);
   });
+  await t.test('duplicate personnel names the clashing field',async()=>{const r=await call('POST','/users',{ad_soyad:'GKS DUP '+stamp,tc:'66'+stamp,sicil});assert.equal(r.status,409);assert.match(r.data.message,/sicil numarası/);});
   await t.test('zero approval survives storage and history includes exited staff',async()=>{assert.equal((await call('POST','/overtimes/approve',{user_id:uid,tarih:'2026-08-03',hesaplanan_dk:60,onaylanan_dk:0,durum:'Onaylandı'})).status,200);assert.equal((await call('PATCH',`/users/${uid}/status`,{durum:0,cikis_tarihi:'2026-08-04'})).status,200);const report=await call('GET','/reports/daily-attendance?tarih=2026-08-03');assert.equal(report.status,200);assert.equal(report.data.find(r=>r.User_ID===uid).Fazla_Mesai_Dk,0);const later=await call('GET','/reports/daily-attendance?tarih=2026-08-05');assert.equal(later.data.some(r=>r.User_ID===uid),false);});
   await t.test('profile updates preserve omitted fields and cannot overlap archived employment',async()=>{
     assert.equal((await call('PATCH',`/users/${uid}/status`,{durum:1})).status,200);

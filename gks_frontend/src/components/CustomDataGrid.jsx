@@ -88,7 +88,7 @@ const CustomDataGrid = forwardRef(({
     <div className={`${dark ? 'ag-theme-quartz-dark' : 'ag-theme-quartz'} flex-1 w-full h-full flex flex-col min-h-0`}>
       <div className="flex flex-wrap items-center justify-end gap-3 p-2 border-b text-sm">
         <span className="text-xs text-muted">{serverPagination ? 'İndirme: mevcut sayfanın filtrelenen satırları' : 'İndirme: tüm sayfalardaki filtrelenen satırlar'}</span>
-        <button type="button" onClick={handleExport} disabled={!gridReady || exporting || !rowData?.length} className="px-3 py-2 bg-green-700 text-white rounded-lg disabled:opacity-50">
+        <button type="button" onClick={handleExport} disabled={!gridReady || exporting || !rowData?.length} className="btn btn-success">
           {exporting ? 'Excel hazırlanıyor…' : 'Excel İndir (.xlsx)'}
         </button>
         {download && <span role="status" className="text-xs text-muted">

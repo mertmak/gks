@@ -7,7 +7,8 @@ import api from '../api/axios';
 import AutocompleteSearch   from '../components/AutoCompleteSearch';
 import Modal                from '../components/Modal';
 import AlertMessage         from '../components/AlertMessage';
-import PersonnelFormFields  from '../components/personnel/PersonnelFormFields';
+import PersonnelFormFields from '../components/personnel/PersonnelFormFields';
+import PageHeader from '../components/ui/PageHeader';
 
 const DOOR_EVENTS = ['doors_updated'];
 const SHIFT_EVENTS = ['shifts_updated'];
@@ -35,8 +36,8 @@ function PersonnelOperations() {
 
   const doors = useLiveList('/doors', DOOR_EVENTS);
   const shifts = useLiveList('/shifts', SHIFT_EVENTS);
-  const allDoors = doors.rows.filter(d => d.Durum === 1 || d.Durum === true || d.Durum === null);
-  const allShifts = shifts.rows.filter(s => s.Durum === 1 || s.Durum === true);
+  const allDoors = doors.rows.filter(d => d.Durum !== false);
+  const allShifts = shifts.rows.filter(s => s.Durum);
 
   // AKTİF İŞLEM MODALI STATE'İ (add, edit, auth, shift, status)
   const [activeModal, setActiveModal] = useState(null);
@@ -189,13 +190,8 @@ function PersonnelOperations() {
   };
 
   return (
-    <div className="space-y-6 mt-8 relative">
-      
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Personel Düzenleme</h1>
-          <p className="text-muted text-sm mt-1">Personeli arayın veya sisteme yeni personel kaydı gerçekleştirin.</p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader title="Personel Düzenleme" description="Bir personeli seçip kimlik, kapı yetkisi, vardiya ve çalışma durumu işlemlerini yapın ya da yeni personel kaydedin.">
         <button 
           onClick={() => {
             detailRequest.cancel();
@@ -204,31 +200,31 @@ function PersonnelOperations() {
             setFormData({ ad_soyad: '', rfid: '', tc: '', sicil: '', sirket: '', departman: '', gorev: '', ise_giris: '' });
             openModal('add');
           }}
-          className="px-5 py-2.5 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-primary-hover transition-colors flex items-center space-x-2 whitespace-nowrap"
+          className="btn btn-primary"
         >
-           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-           <span>Yeni Personel Ekle</span>
+           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+           Yeni Personel Ekle
         </button>
-      </div>
+      </PageHeader>
 
       <AlertMessage message={message.text} type={message.type} />
 
-      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line relative z-20">
+      <div className="card relative z-20">
         <AutocompleteSearch 
            label="İşlem Yapılacak Personeli Ara (Ad Soyad veya Sicil)"
-           placeholder="Örn: Demo Personel..."
+           placeholder="Ad soyad veya sicil"
            value={arama}
            onChange={handleSearchChange}
            suggestions={suggestions}
            onSelect={(item) => handleSelectUser(item.originalData)}
         />
-        {loading && <div className="text-sm font-bold text-info mt-2 animate-pulse">Personel verileri yükleniyor...</div>}
+        {loading && <p role="status" className="text-sm text-muted mt-2">Personel verileri yükleniyor…</p>}
       </div>
 
       {selectedUser && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
-          <div className="md:col-span-1 bg-surface p-6 rounded-2xl shadow-sm border border-line flex flex-col items-center text-center">
-            <div className="w-24 h-24 bg-surface-3 text-muted rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-lg">
+          <div className="md:col-span-1 card flex flex-col items-center text-center">
+            <div className="w-24 h-24 bg-surface-3 text-muted rounded-full flex items-center justify-center mb-4 border-4 border-surface shadow-lg">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             </div>
             <h2 className="text-2xl font-black text-ink">{selectedUser.Ad_Soyad}</h2>
@@ -244,7 +240,7 @@ function PersonnelOperations() {
           </div>
 
           <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button type="button" onClick={() => { setFormData(userForm(selectedUser)); openModal('edit'); }} className="text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:border-info-line hover:shadow-md cursor-pointer transition-all group">
+            <button type="button" onClick={() => { setFormData(userForm(selectedUser)); openModal('edit'); }} className="text-left bg-surface p-6 rounded-xl shadow-sm border border-line hover:border-info-line hover:shadow-md cursor-pointer transition-all group">
               <div className="w-12 h-12 bg-info-soft text-info rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
               </div>
@@ -252,15 +248,15 @@ function PersonnelOperations() {
               <p className="text-sm text-muted mt-1">Personelin departman, görev, kart numarası veya TC bilgilerini güncelleyin.</p>
             </button>
 
-            <button type="button" onClick={() => openModal('auth')} className="text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:border-purple-400 hover:shadow-md cursor-pointer transition-all group">
-              <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <button type="button" onClick={() => openModal('auth')} className="text-left bg-surface p-6 rounded-xl shadow-sm border border-line hover:border-accent hover:shadow-md cursor-pointer transition-all group">
+              <div className="w-12 h-12 bg-accent-soft text-accent rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
               </div>
               <h3 className="text-lg font-bold text-ink">Kapı Geçiş Yetkileri</h3>
               <p className="text-sm text-muted mt-1">Giriş yapabileceği kapıları ve alanları yönetin.</p>
             </button>
 
-            <button type="button" onClick={() => openModal('shift')} className="text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:border-warning-line hover:shadow-md cursor-pointer transition-all group">
+            <button type="button" onClick={() => openModal('shift')} className="text-left bg-surface p-6 rounded-xl shadow-sm border border-line hover:border-warning-line hover:shadow-md cursor-pointer transition-all group">
               <div className="w-12 h-12 bg-warning-soft text-warning rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
@@ -268,7 +264,7 @@ function PersonnelOperations() {
               <p className="text-sm text-muted mt-1">Personelin bağlı olduğu vardiyayı atayın veya değiştirin.</p>
             </button>
 
-            <button type="button" onClick={() => openModal('status')} className={`text-left bg-surface p-6 rounded-2xl shadow-sm border border-line hover:shadow-md cursor-pointer transition-all group ${selectedUser.Durum ? 'hover:border-danger-line' : 'hover:border-success-line'}`}>
+            <button type="button" onClick={() => openModal('status')} className={`text-left bg-surface p-6 rounded-xl shadow-sm border border-line hover:shadow-md cursor-pointer transition-all group ${selectedUser.Durum ? 'hover:border-danger-line' : 'hover:border-success-line'}`}>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ${selectedUser.Durum ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path></svg>
               </div>
@@ -289,9 +285,9 @@ function PersonnelOperations() {
             onChange={(e) => setFormData({ ...formData, [e.target.name]: e.target.value })}
             onNumericChange={handleNumericChange}
           />
-          <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-6 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
-            <button type="submit" disabled={saving} className="px-6 py-2 font-bold rounded-lg bg-primary text-white hover:bg-primary-hover">Personeli Kaydet</button>
+          <div className="md:col-span-2 flex flex-wrap justify-end gap-3 mt-4">
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="btn btn-secondary">İptal</button>
+            <button type="submit" disabled={saving} className="btn btn-primary">Personeli Kaydet</button>
           </div>
         </form>
       </Modal>
@@ -304,9 +300,9 @@ function PersonnelOperations() {
             onChange={(e) => setFormData({ ...formData, [e.target.name]: e.target.value })}
             onNumericChange={handleNumericChange}
           />
-          <div className="md:col-span-2 flex justify-end space-x-3 mt-4">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-6 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
-            <button type="submit" disabled={saving} className="px-6 py-2 font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700">Değişiklikleri Kaydet</button>
+          <div className="md:col-span-2 flex flex-wrap justify-end gap-3 mt-4">
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="btn btn-secondary">İptal</button>
+            <button type="submit" disabled={saving} className="btn btn-primary">Değişiklikleri Kaydet</button>
           </div>
         </form>
       </Modal>
@@ -314,12 +310,12 @@ function PersonnelOperations() {
       <Modal isOpen={activeModal === 'auth'} onClose={() => { if (!savingRef.current) setActiveModal(null); }} title="Geçiş İzinleri" maxWidth="max-w-md">
         <form onSubmit={handleAuthSubmit}>
           <AlertMessage message={message.text} type={message.type} />
-          {doors.loading && <p role="status">Kapılar yükleniyor...</p>}
+          {doors.loading && <p role="status">Kapılar yükleniyor…</p>}
           {doors.error && <div role="alert">{doors.error} <button type="button" className="underline" onClick={doors.refresh}>Tekrar dene</button></div>}
           <div className="max-h-64 overflow-y-auto border border-line rounded-lg p-2 mb-4 bg-surface-2">
             {allDoors.map(door => (
               <label key={door.ID} className="flex items-center p-3 hover:bg-surface cursor-pointer border-b border-line last:border-0 rounded transition-colors">
-                <input type="checkbox" className="w-5 h-5 text-purple-600 rounded border-line-strong focus:ring-purple-500" 
+                <input type="checkbox" className="w-5 h-5 accent-[var(--color-accent)]" 
                   checked={authData.includes(door.ID)} 
                   onChange={() => {
                     setAuthData(prev => prev.includes(door.ID) ? prev.filter(id => id !== door.ID) : [...prev, door.ID]);
@@ -328,9 +324,9 @@ function PersonnelOperations() {
               </label>
             ))}
           </div>
-          <div className="flex justify-end space-x-3">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
-            <button type="submit" disabled={saving || doors.loading || Boolean(doors.error)} className="disabled:opacity-50 px-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700">Yetkileri Kaydet</button>
+          <div className="flex flex-wrap justify-end gap-3 mt-4">
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="btn btn-secondary">İptal</button>
+            <button type="submit" disabled={saving || doors.loading || Boolean(doors.error)} className="btn btn-primary">Yetkileri Kaydet</button>
           </div>
         </form>
       </Modal>
@@ -338,17 +334,17 @@ function PersonnelOperations() {
       <Modal isOpen={activeModal === 'shift'} onClose={() => { if (!savingRef.current) setActiveModal(null); }} title="Vardiya Ataması" maxWidth="max-w-md">
         <form onSubmit={handleShiftSubmit}>
           <AlertMessage message={message.text} type={message.type} />
-          {shifts.loading && <p role="status">Vardiyalar yükleniyor...</p>}
+          {shifts.loading && <p role="status">Vardiyalar yükleniyor…</p>}
           {shifts.error && <div role="alert">{shifts.error} <button type="button" className="underline" onClick={shifts.refresh}>Tekrar dene</button></div>}
-          <label htmlFor="personnel-shift" className="block text-sm font-bold mb-2">Atanacak Vardiya</label>
-          <select id="personnel-shift" className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none mb-6"
+          <label htmlFor="personnel-shift" className="field-label">Atanacak Vardiya</label>
+          <select id="personnel-shift" className="field"
             value={shiftData} onChange={(e) => setShiftData(e.target.value)}>
             <option value="">-- Vardiya Atanmamış --</option>
             {allShifts.map(shift => <option key={shift.ID} value={shift.ID}>{shift.Vardiya_Adi}</option>)}
           </select>
-          <div className="flex justify-end space-x-3">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-line">İptal</button>
-            <button type="submit" disabled={saving || shifts.loading || Boolean(shifts.error)} className="disabled:opacity-50 px-4 py-2 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600">Vardiyayı Kaydet</button>
+          <div className="flex flex-wrap justify-end gap-3 mt-4">
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="btn btn-secondary">İptal</button>
+            <button type="submit" disabled={saving || shifts.loading || Boolean(shifts.error)} className="btn btn-primary">Vardiyayı Kaydet</button>
           </div>
         </form>
       </Modal>
@@ -358,15 +354,15 @@ function PersonnelOperations() {
           <AlertMessage message={message.text} type={message.type} />
           {selectedUser?.Durum ? (
             <>
-              <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="personneloperations-field-1">Çıkış Tarihi *</label><input id="personneloperations-field-1" type="date" value={exitData.cikis_tarihi} onChange={(e) => setExitData({...exitData, cikis_tarihi: e.target.value})} required className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500" /></div>
-              <div><label className="block text-xs font-bold text-muted mb-1" htmlFor="personneloperations-field-2">Çıkış Nedeni</label><textarea id="personneloperations-field-2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} rows="3" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea></div>
+              <div><label className="field-label" htmlFor="personneloperations-field-1">Çıkış Tarihi *</label><input id="personneloperations-field-1" type="date" value={exitData.cikis_tarihi} onChange={(e) => setExitData({...exitData, cikis_tarihi: e.target.value})} required className="field" /></div>
+              <div><label className="field-label" htmlFor="personneloperations-field-2">Çıkış Nedeni</label><textarea id="personneloperations-field-2" value={exitData.cikis_nedeni} onChange={(e) => setExitData({...exitData, cikis_nedeni: e.target.value})} rows="3" className="field resize-none"></textarea></div>
             </>
           ) : (
             <p className="text-sm font-medium text-muted mb-4">Bu personeli tekrar sisteme dahil etmek istediğinize emin misiniz? (Geçmiş kayıtları korunacaktır).</p>
           )}
-          <div className="flex justify-end space-x-3 mt-6">
-            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-surface-3">İptal</button>
-            <button type="submit" disabled={saving} className={`px-4 py-2 text-white font-bold rounded-lg ${selectedUser?.Durum ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
+          <div className="flex flex-wrap justify-end gap-3 mt-4">
+            <button type="button" disabled={saving} onClick={() => setActiveModal(null)} className="btn btn-secondary">İptal</button>
+            <button type="submit" disabled={saving} className={`btn ${selectedUser?.Durum ? 'btn-danger' : 'btn-success'}`}>
               {selectedUser?.Durum ? 'İlişiği Kes' : 'İşe Al'}
             </button>
           </div>

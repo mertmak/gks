@@ -1,5 +1,7 @@
 import { useLiveList } from '../hooks/useLiveList';
 import AdminForm from '../components/AdminForm';
+import PageHeader from '../components/ui/PageHeader';
+import { canWrite } from '../utils/session';
 import { useState, useMemo } from 'react';
 import api from '../api/axios';
 import CustomDataGrid from '../components/CustomDataGrid';
@@ -94,12 +96,12 @@ function Doors() {
       konum: door.Konum || '',
       kapi_turu: door.Kapi_Turu || 'İç Geçiş'
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('doors-field-1')?.focus();
   };
 
   const handleToggleStatus = (door) => {
     if (pending || confirmation) return;
-    const isActive = door.Durum == null ? true : door.Durum;
+    const isActive = door.Durum !== false;
     setMessage({ text: '', type: '' });
     setConfirmation({ id: door.ID, name: door.Kapi_Adi, durum: isActive ? 0 : 1 });
   };
@@ -138,7 +140,7 @@ function Doors() {
       cellRenderer: (params) => {
         const val = params.value || 'İç Geçiş';
         const color = val.includes('Giriş') ? 'text-info' : val.includes('Çıkış') ? 'text-warning' : 'text-muted';
-        return <span className={`font-bold ${color}`}>{val}</span>;
+        return <span className={`font-semibold ${color}`}>{val}</span>;
       }
     },
     { field: 'Departman', headerName: 'Departman', flex: 1, minWidth: 150 },
@@ -149,10 +151,9 @@ function Doors() {
       valueFormatter: ({ value }) => (value ?? true) ? 'Aktif' : 'Pasif',
       width: 100,
       cellRenderer: (params) => {
-        const isActive = params.value === undefined || params.value === null ? true : params.value;
-        return isActive
-          ? <span className="px-2 py-1 bg-success-soft text-success text-xs rounded-full font-bold">Aktif</span>
-          : <span className="px-2 py-1 bg-danger-soft text-danger text-xs rounded-full font-bold">Pasif</span>;
+        return params.value !== false
+          ? <span className="badge bg-success-soft text-success border-success-line">Aktif</span>
+          : <span className="badge bg-danger-soft text-danger border-danger-line">Pasif</span>;
       }
     },
     {
@@ -161,19 +162,19 @@ function Doors() {
       sortable: false,
       filter: false,
       cellRenderer: (params) => {
-        const isActive = params.data.Durum === undefined || params.data.Durum === null ? true : params.data.Durum;
+        const isActive = params.data.Durum !== false;
 
         return (
-          <div className="space-x-2 mt-1">
+          <div className="flex gap-2 h-full items-center">
             <button
               disabled={pending || Boolean(confirmation)} onClick={() => handleEditClick(params.data)}
-              className="px-3 py-1 bg-info-soft text-info font-bold rounded text-xs hover:bg-info-soft transition-colors"
+              className="btn btn-sm bg-info-soft text-info"
             >
               Düzenle
             </button>
             <button
               disabled={pending || Boolean(confirmation)} onClick={() => handleToggleStatus(params.data)}
-              className={`px-3 py-1 font-bold rounded text-xs transition-colors ${isActive ? 'bg-danger-soft text-danger hover:bg-danger-soft' : 'bg-success-soft text-success hover:bg-success-soft'}`}
+              className={`btn btn-sm ${isActive ? 'bg-danger-soft text-danger' : 'bg-success-soft text-success'}`}
             >
               {isActive ? 'Pasife Al' : 'Aktifleştir'}
             </button>
@@ -184,45 +185,23 @@ function Doors() {
   ];
 
   return (
-    <div className="space-y-8 relative mt-8">
+    <div className="space-y-6">
+      <PageHeader title="Geçiş Noktaları" description={canWrite() ? 'Kapıları ekleyin, düzenleyin ve durumlarını değiştirin. Planda yerleştirme Tesis Tasarımı sayfasındadır.' : 'Sistemdeki kapılar, türleri ve durumları.'} />
 
-      <div>
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Geçiş Noktaları</h1>
-        <p className="text-muted text-sm mt-1">Sistemdeki geçiş noktalarını (kapıları) buradan ekleyebilir, düzenleyebilir veya durumlarını değiştirebilirsiniz.</p>
-      </div>
-
-      {/* EKLEME / DÜZENLEME FORMU */}
-      <div className="bg-surface p-6 rounded-2xl shadow-sm border border-line">
-        <h2 className="text-xl font-bold text-ink mb-4">
-          {isEditing ? 'Kapı Bilgilerini Düzenle' : 'Yeni Kapı Ekle'}
-        </h2>
-
-      {loading && <p role="status">Liste yükleniyor…</p>}
-      {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchDoors} className="underline">Tekrar dene</button></p>}
       <AlertMessage message={message.text} type={message.type} />
 
+      {canWrite() && <section aria-labelledby="door-form-title" className="card">
+        <h2 id="door-form-title" className="text-lg font-semibold text-ink mb-4">
+          {isEditing ? 'Kapı Bilgilerini Düzenle' : 'Yeni Kapı Ekle'}
+        </h2>
         <AdminForm onSubmit={handleSubmit} disabled={pending || Boolean(confirmation)} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-1">Kapı Adı *</label>
-            <input id="doors-field-1"
-              type="text"
-              name="kapi_adi" maxLength={100}
-              value={formData.kapi_adi}
-              onChange={handleChange}
-              placeholder="Örn: Ana Giriş Turnikesi"
-              required
-              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
-            />
+            <label className="field-label" htmlFor="doors-field-1">Kapı Adı *</label>
+            <input id="doors-field-1" type="text" name="kapi_adi" maxLength={100} value={formData.kapi_adi} onChange={handleChange} placeholder="Örn: Ana Giriş Turnikesi" required className="field" />
           </div>
-
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-2">Kapı Türü (İşlevi) *</label>
-            <select id="doors-field-2"
-              name="kapi_turu"
-              value={formData.kapi_turu}
-              onChange={handleChange}
-              className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
-            >
+            <label className="field-label" htmlFor="doors-field-2">Kapı Türü (İşlevi) *</label>
+            <select id="doors-field-2" name="kapi_turu" value={formData.kapi_turu} onChange={handleChange} className="field">
               <option value="İç Geçiş">İç Geçiş (Standart Kapı)</option>
               <option value="Ana Giriş">Ana Giriş (Mesai Başlar)</option>
               <option value="Ana Çıkış">Ana Çıkış (Mesai Biter)</option>
@@ -231,83 +210,45 @@ function Doors() {
               <option value="Mola / Sigara Alanı">Mola / Sigara Alanı</option>
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-3">Bağlı Olduğu Departman *</label>
-            <input id="doors-field-3"
-              type="text"
-              name="departman" maxLength={100}
-              value={formData.departman}
-              onChange={handleChange}
-              placeholder="Örn: Bilgi İşlem"
-              required
-              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
-            />
+            <label className="field-label" htmlFor="doors-field-3">Bağlı Olduğu Departman *</label>
+            <input id="doors-field-3" type="text" name="departman" maxLength={100} value={formData.departman} onChange={handleChange} placeholder="Örn: Bilgi İşlem" required className="field" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="doors-field-4">Fiziksel Konum *</label>
-            <input id="doors-field-4"
-              type="text"
-              name="konum" maxLength={100}
-              value={formData.konum}
-              onChange={handleChange}
-              placeholder="Örn: A Blok Zemin Kat"
-              required
-              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all"
-            />
+            <label className="field-label" htmlFor="doors-field-4">Fiziksel Konum *</label>
+            <input id="doors-field-4" type="text" name="konum" maxLength={100} value={formData.konum} onChange={handleChange} placeholder="Örn: A Blok Zemin Kat" required className="field" />
           </div>
-
-          <div className="md:col-span-4 flex justify-end space-x-3 mt-2">
-            {isEditing && (
-              <button
-                type="button"
-                onClick={cancelEdit}
-                className="px-6 py-2 bg-surface-3 font-bold text-ink rounded-lg hover:bg-line transition-colors"
-              >
-                İptal Et
-              </button>
-            )}
-            <button
-              type="submit"
-              className={`px-6 py-2 font-bold rounded-lg text-white transition-colors ${isEditing ? 'bg-orange-500 hover:bg-orange-600' : 'bg-primary hover:bg-primary-hover'}`}
-            >
+          <div className="md:col-span-4 flex flex-wrap justify-end gap-3">
+            {isEditing && <button type="button" onClick={cancelEdit} className="btn btn-secondary">İptal Et</button>}
+            <button type="submit" className="btn btn-primary">
               {pending ? 'Kaydediliyor…' : isEditing ? 'Bilgileri Güncelle' : 'Sisteme Kaydet'}
             </button>
           </div>
         </AdminForm>
-      </div>
+      </section>}
 
-      {/* ARAMA VE TABLO BÖLÜMÜ */}
-      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[60vh]">
-
-        {/* YENİ ORTAK ARAMA KUTUSU */}
-        <div className="mb-4 relative w-full md:w-1/3 z-50">
-          <AutocompleteSearch
-            label="Kapı Ara"
-            placeholder="Kapı adı yazın..."
-            value={arama}
-            onChange={handleSearchInputChange}
-            suggestions={suggestions}
-            onSelect={(item) => {
-              handleSuggestionClick(item.originalData);
-            }}
-          />
+      <section aria-label="Kayıtlı kapılar" className="card p-4 flex flex-col h-[60vh]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-3">
+          <div className="w-full md:w-1/3 relative z-20">
+            <AutocompleteSearch
+              label="Kapı Ara"
+              placeholder="Kapı adı yazın…"
+              value={arama}
+              onChange={handleSearchInputChange}
+              suggestions={suggestions}
+              onSelect={(item) => handleSuggestionClick(item.originalData)}
+            />
+          </div>
+          <p className="text-sm font-semibold text-ink">{loading ? 'Liste yükleniyor…' : `${filteredDoors.length} kapı`}</p>
         </div>
-
-        <div className="p-2 text-sm font-bold text-ink bg-surface-2 border-t border-x border-line rounded-t-lg">
-          Kayıtlı Kapılar ({filteredDoors.length} Kayıt)
-        </div>
-
-        {/* YENİ ORTAK TABLO BİLEŞENİ */}
-        <div className="flex-1 w-full h-full">
-          <CustomDataGrid
-            rowData={filteredDoors}
-            columnDefs={colDefs}
-            exportFileName="GKS_Gecis_Noktalari"
-            getRowId={(params) => params.data.ID}
-          />
-        </div>
-      </div>
+        {listError && <p role="alert" className="text-danger mb-2">{listError} <button type="button" onClick={fetchDoors} className="underline">Tekrar dene</button></p>}
+        <CustomDataGrid
+          rowData={filteredDoors}
+          columnDefs={colDefs}
+          exportFileName="GKS_Gecis_Noktalari"
+          getRowId={(params) => params.data.ID}
+        />
+      </section>
 
       <ConfirmAction isOpen={Boolean(confirmation)} title="Kapı Durumunu Değiştir" pending={pending} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmStatus}>
         <p><strong>{confirmation?.name}</strong> kapısı {confirmation?.durum ? 'aktifleştirilecek.' : 'pasife alınacak.'}</p>

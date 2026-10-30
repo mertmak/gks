@@ -1,6 +1,7 @@
 import { useLiveList } from '../hooks/useLiveList';
 import { businessDate, shiftDateDays } from '../utils/dates';
 import AdminForm from '../components/AdminForm';
+import PageHeader from '../components/ui/PageHeader';
 import { usePendingAction } from '../hooks/usePendingAction';
 import { readSession } from '../utils/session';
 import { useState, useMemo, useRef } from 'react';
@@ -174,7 +175,7 @@ function Overtimes() {
   };
 
   const colDefs = useMemo(() => [
-    { field: 'TarihStr', headerName: 'Tarih', width: 110, pinned: 'left', cellRenderer: (params) => <span className="text-muted font-bold">{params.value.split('-').reverse().join('.')}</span> },
+    { field: 'TarihStr', headerName: 'Tarih', width: 125, pinned: 'left', cellRenderer: (params) => <span className="text-muted font-bold">{params.value.split('-').reverse().join('.')}</span> },
     { field: 'Sicil_No', headerName: 'Sicil No', width: 100 },
     { field: 'Ad_Soyad', headerName: 'Ad Soyad', flex: 1, minWidth: 160, cellClass: 'font-bold text-ink' },
     { field: 'Departman', headerName: 'Departman / Şirket', flex: 1, minWidth: 150, valueGetter: params => `${params.data.Departman} ${params.data.Sirket ? `(${params.data.Sirket})` : ''}` },
@@ -189,9 +190,9 @@ function Overtimes() {
       field: 'Mesai_Durumu', headerName: 'Onay Durumu', width: 140,
       cellRenderer: (params) => {
         const durum = params.value; const onaylanan = params.data.Onaylanan_Dk;
-        if (durum === 'Onaylandı') return <span className="px-2 py-1 bg-success-soft text-success text-xs rounded-full font-bold">Onay: {onaylanan}dk</span>;
-        if (durum === 'Reddedildi') return <span className="px-2 py-1 bg-danger-soft text-danger text-xs rounded-full font-bold">Reddedildi</span>;
-        return <span className="px-2 py-1 bg-warning-soft text-warning text-xs rounded-full font-bold">Bekliyor</span>;
+        if (durum === 'Onaylandı') return <span className="badge bg-success-soft text-success border-success-line">Onay: {onaylanan}dk</span>;
+        if (durum === 'Reddedildi') return <span className="badge bg-danger-soft text-danger border-danger-line">Reddedildi</span>;
+        return <span className="badge bg-warning-soft text-warning border-warning-line">Bekliyor</span>;
       }
     },
     { field: 'Durum', headerName: 'Puantaj Durumu', width: 175 },
@@ -202,7 +203,7 @@ function Overtimes() {
     {
       headerName: 'İşlem', width: 95, sortable: false, filter: false, pinned: 'right',
       cellRenderer: (params) => (
-        <button disabled={params.data.Izin_Cakismasi} title={params.data.Izin_Cakismasi ? 'Önce çakışan izinleri düzeltin.' : undefined} onClick={() => handleOpenApproval(params.data)} className="px-3 py-1.5 bg-primary text-white text-[11px] font-bold rounded hover:bg-primary-hover transition-colors">
+        <button disabled={params.data.Izin_Cakismasi} title={params.data.Izin_Cakismasi ? 'Önce çakışan izinleri düzeltin.' : undefined} onClick={() => handleOpenApproval(params.data)} className="btn btn-sm btn-primary">
           İncele
         </button>
       )
@@ -210,40 +211,32 @@ function Overtimes() {
   ].filter(column => isAdmin || column.headerName !== ''), [isAdmin]);
 
   return (
-    <div className="space-y-6 relative mt-8">
-
-      <div className="flex flex-col md:flex-row justify-between items-end gap-4 bg-surface p-6 rounded-2xl shadow-sm border border-line">
+    <div className="space-y-6">
+      <PageHeader title="Mesai Onay İşlemleri" description="Puantajın hesapladığı fazla mesailer. Seçilen aralıktaki kayıtlar listelenir; kararlar sunucuda yeniden hesaplanarak kaydedilir.">
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Mesai Onay İşlemleri</h1>
-          <p className="text-muted text-sm mt-1">Personellerin fazla mesailerini inceleyin ve karara bağlayın.</p>
+          <label className="field-label" htmlFor="overtimes-field-1">Başlangıç Tarihi</label>
+          <input id="overtimes-field-1" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="field" />
         </div>
-
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-1">Başlangıç Tarihi</label>
-            <input id="overtimes-field-1" type="date" value={filters.baslangic} onChange={(e) => setFilters({...filters, baslangic: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-2">Bitiş Tarihi</label>
-            <input id="overtimes-field-2" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
-          </div>
-          <button onClick={searchOvertimes} disabled={loading} className="px-5 py-2 bg-primary text-white font-bold text-sm rounded-lg hover:bg-primary-hover">
-            {loading ? 'Yükleniyor...' : 'Kayıtları Getir'}
-          </button>
+        <div>
+          <label className="field-label" htmlFor="overtimes-field-2">Bitiş Tarihi</label>
+          <input id="overtimes-field-2" type="date" value={filters.bitis} onChange={(e) => setFilters({...filters, bitis: e.target.value})} className="field" />
         </div>
-      </div>
+        <button onClick={searchOvertimes} disabled={loading} className="btn btn-primary">
+          {loading ? 'Yükleniyor…' : 'Kayıtları Getir'}
+        </button>
+      </PageHeader>
 
       {overtimes.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-warning-soft text-ink rounded-lg">İzin çakışması bulunan günlerde yeni mesai kararı verilemez. Önce İzinler ekranındaki kayıtları düzeltin. Bu satırları içeren toplu işlemin tamamı reddedilir.</p>}
       {listError && <p role="alert" className="text-danger">{listError} <button type="button" onClick={fetchOvertimes} className="underline">Tekrar dene</button></p>}
       {!loading && !listError && overtimes.length === 0 && <p role="status">Seçili tarih aralığında mesai kaydı bulunmuyor.</p>}
       <AlertMessage message={message.text} type={message.type} />
-      <div className="bg-surface-2 p-5 rounded-2xl border border-line shadow-inner">
-        <h2 className="text-sm font-black text-ink mb-3 uppercase tracking-wider">Hedefe Yönelik Toplu İşlem</h2>
+      {isAdmin && <section aria-labelledby="overtime-bulk-title" className="card bg-surface-2">
+        <h2 id="overtime-bulk-title" className="text-lg font-semibold text-ink mb-4">Hedefe Yönelik Toplu İşlem</h2>
         <AdminForm disabled={pending || loading || Boolean(listError) || Boolean(bulkConfirmation)} onSubmit={handleAdvancedBulkSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-3">Hedef Türü</label>
+            <label className="field-label" htmlFor="overtimes-field-3">Hedef Türü</label>
             <select id="overtimes-field-3"
-              className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent bg-surface"
+              className="field"
               value={bulkData.hedef_turu}
               onChange={(e) => {
                 setBulkData({...bulkData, hedef_turu: e.target.value, hedef_deger: ''});
@@ -257,10 +250,10 @@ function Overtimes() {
             </select>
           </div>
 
-          <div className="relative z-50">
+          <div className="relative z-20">
             <AutocompleteSearch
               label="Hedef Adı"
-              placeholder={bulkData.hedef_turu === 'Tumu' ? 'Tümü Seçili' : 'Aramak için yazın...'}
+              placeholder={bulkData.hedef_turu === 'Tumu' ? 'Tümü seçili' : 'Aramak için yazın…'}
               value={bulkData.hedef_deger}
               onChange={handleBulkSearchChange}
               suggestions={bulkSuggestions}
@@ -274,44 +267,44 @@ function Overtimes() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-4">Kararınız</label>
-            <select id="overtimes-field-4" value={bulkData.durum} onChange={(e) => setBulkData({...bulkData, durum: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg font-bold text-ink outline-none focus:ring-2 focus:ring-accent bg-surface">
+            <label className="field-label" htmlFor="overtimes-field-4">Kararınız</label>
+            <select id="overtimes-field-4" value={bulkData.durum} onChange={(e) => setBulkData({...bulkData, durum: e.target.value})} className="field font-bold text-ink">
               <option value="Onaylandı">Tümünü Onayla</option>
               <option value="Reddedildi">Tümünü Reddet</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-5">Açıklama (Opsiyonel)</label>
-            <input id="overtimes-field-5" maxLength={255} type="text" placeholder="Yönetici Notu" value={bulkData.aciklama} onChange={(e) => setBulkData({...bulkData, aciklama: e.target.value})} className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
+            <label className="field-label" htmlFor="overtimes-field-5">Açıklama (Opsiyonel)</label>
+            <input id="overtimes-field-5" maxLength={255} type="text" placeholder="Yönetici Notu" value={bulkData.aciklama} onChange={(e) => setBulkData({...bulkData, aciklama: e.target.value})} className="field" />
           </div>
 
           <div>
-             <button type="submit" disabled={overtimes.length === 0} className={`w-full py-2 text-white font-bold rounded-lg text-sm transition-colors shadow-sm disabled:opacity-50 ${bulkData.durum === 'Onaylandı' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}>
+             <button type="submit" disabled={overtimes.length === 0} className={`btn w-full ${bulkData.durum === 'Onaylandı' ? 'btn-primary' : 'btn-danger'}`}>
                İşlemi Uygula
              </button>
           </div>
         </AdminForm>
-      </div>
+      </section>}
 
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-surface p-4 rounded-xl border border-line shadow-sm">
+      <section aria-label="Mesai kayıtları" className="card p-4 flex flex-col h-[65vh]">
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-4 mb-3">
         <div className="w-full md:w-1/2">
-           <input
-              type="text"
-              placeholder="Tabloda personel, departman veya durum ara..."
+           <label className="field-label" htmlFor="overtimes-quick">Tabloda ara</label>
+           <input id="overtimes-quick"
+              type="search"
+              placeholder="Personel, departman veya durum"
               value={quickFilterText}
               onChange={(e) => setQuickFilterText(e.target.value)}
-              className="w-full px-4 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent bg-surface-2"
+              className="field"
            />
         </div>
         {isAdmin && selectedRows.some(row => overtimes.includes(row)) && (
-           <button disabled={pending || loading || Boolean(listError)} onClick={handleGridBulkSubmit} className="w-full md:w-auto px-6 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors shadow-md">
+           <button disabled={pending || loading || Boolean(listError)} onClick={handleGridBulkSubmit} className="btn btn-success w-full md:w-auto">
              Seçili {selectedRows.filter(row => overtimes.includes(row)).length} Mesai Kaydını Onayla
            </button>
         )}
       </div>
-
-      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[55vh]">
         <CustomDataGrid
           ref={gridRef}
           rowData={overtimes}
@@ -323,7 +316,7 @@ function Overtimes() {
           quickFilterText={quickFilterText}
           rowHeight={60}
         />
-      </div>
+      </section>
 
       <ConfirmAction isOpen={Boolean(bulkConfirmation)} title="Toplu Mesai Kararı"
         pending={pending} error={message.type === 'error' ? message.text : ''}
@@ -352,25 +345,25 @@ function Overtimes() {
             <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
             <AdminForm disabled={pending} onSubmit={handleApprovalSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-6">Kararınız</label>
-                <select id="overtimes-field-6" value={approvalData.durum} onChange={(e) => setApprovalData({...approvalData, durum: e.target.value})} className="w-full px-3 py-2 border rounded-lg font-bold text-ink outline-none focus:ring-2 focus:ring-accent">
+                <label className="field-label" htmlFor="overtimes-field-6">Kararınız</label>
+                <select id="overtimes-field-6" value={approvalData.durum} onChange={(e) => setApprovalData({...approvalData, durum: e.target.value})} className="field font-bold text-ink">
                   <option value="Onaylandı">Mesaiyi Onayla</option>
                   <option value="Reddedildi">Mesaiyi Reddet</option>
                 </select>
               </div>
               {approvalData.durum === 'Onaylandı' && (
                 <div>
-                  <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-7">Onaylanan Süre (Dakika)</label>
-                  <input id="overtimes-field-7" type="number" value={approvalData.onaylanan_dk} onChange={(e) => setApprovalData({...approvalData, onaylanan_dk: Number(e.target.value)})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent" required min="0" step="1" max={Math.min(2880, selectedRow.Hesaplanan_Dk + 120)} />
+                  <label className="field-label" htmlFor="overtimes-field-7">Onaylanan Süre (Dakika)</label>
+                  <input id="overtimes-field-7" type="number" value={approvalData.onaylanan_dk} onChange={(e) => setApprovalData({...approvalData, onaylanan_dk: Number(e.target.value)})} className="field" required min="0" step="1" max={Math.min(2880, selectedRow.Hesaplanan_Dk + 120)} />
                 </div>
               )}
               <div>
-                <label className="block text-xs font-bold text-muted mb-1" htmlFor="overtimes-field-8">Açıklama (Opsiyonel)</label>
-                <input id="overtimes-field-8" maxLength={255} type="text" value={approvalData.aciklama} onChange={(e) => setApprovalData({...approvalData, aciklama: e.target.value})} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent" />
+                <label className="field-label" htmlFor="overtimes-field-8">Açıklama (Opsiyonel)</label>
+                <input id="overtimes-field-8" maxLength={255} type="text" value={approvalData.aciklama} onChange={(e) => setApprovalData({...approvalData, aciklama: e.target.value})} className="field" />
               </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowApprovalModal(false)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-surface-3 text-sm">İptal</button>
-                <button type="submit" className={`px-4 py-2 text-white font-bold rounded-lg text-sm ${approvalData.durum === 'Onaylandı' ? 'bg-green-600' : 'bg-red-600'}`}>{pending ? 'Kaydediliyor…' : 'Kaydet'}</button>
+              <div className="flex flex-wrap justify-end gap-3 mt-4">
+                <button type="button" onClick={() => setShowApprovalModal(false)} className="btn btn-secondary">İptal</button>
+                <button type="submit" className={`btn ${approvalData.durum === 'Onaylandı' ? 'btn-success' : 'btn-danger'}`}>{pending ? 'Kaydediliyor…' : 'Kaydet'}</button>
               </div>
             </AdminForm>
           </>

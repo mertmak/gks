@@ -37,5 +37,5 @@ export const AG_GRID_LOCALE_TR = {
   first: 'İlk',
   previous: 'Geri',
   loadingOoo: 'Yükleniyor...',
-  noRowsToShow: 'Gösterilecek kayıt bulunamadı.'
+  noRowsToShow: 'Gösterilecek kayıt yok'
 };

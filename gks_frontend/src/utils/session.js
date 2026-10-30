@@ -11,3 +11,5 @@ export function readSession() {
     return payload.sandbox ? {...payload, role: 'admin', demo: true} : {...payload, role: 'user', demo: true};
   } catch { return null; }
 }
+// Forms that change data are shown only to accounts that can save them.
+export const canWrite = () => readSession()?.role === 'admin';

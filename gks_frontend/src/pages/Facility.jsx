@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import PageHeader from '../components/ui/PageHeader';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { socket } from '../api/socket';
@@ -185,14 +186,11 @@ function Facility() {
   const floorName = key => plan.floors.find(item => item.ref === key)?.kat_adi || '?';
   const input = 'w-full border border-line-strong rounded-lg px-3 py-2 text-sm disabled:bg-surface-2';
   const button = 'px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50';
-  const card = 'bg-surface rounded-2xl shadow-sm border border-line p-5';
+  const card = 'card';
 
   return (
-    <div className="space-y-6 mt-8">
-      <div>
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Tesis Tasarımı</h1>
-        <p className="text-muted text-sm mt-1">Katları ve bölgeleri çizin, kapıları bölge sınırlarına yerleştirin. Bir kapı aynı kattaki iki bölgeyi ya da bir bölgeyi bina dışıyla bağlar; puantaj, geçişin hangi bölgeden hangisine olduğuna bakar.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="Tesis Tasarımı" description="Katları ve bölgeleri çizin, kapıları bölge sınırlarına yerleştirin. Bir kapı aynı kattaki iki bölgeyi ya da bir bölgeyi bina dışıyla bağlar; puantaj, geçişin hangi bölgeden hangisine olduğuna bakar." />
 
       {simulation && <div role="tablist" aria-label="Tesis Tasarımı bölümleri" className="flex flex-wrap gap-2">
         {TABS.map(([value, label]) => {

@@ -1,6 +1,7 @@
 import { socket } from '../api/socket';
 import { businessDate } from '../utils/dates';
 import AdminForm from '../components/AdminForm';
+import PageHeader from '../components/ui/PageHeader';
 import { usePendingAction } from '../hooks/usePendingAction';
 import AlertMessage from '../components/AlertMessage';
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -112,22 +113,22 @@ function Reports() {
     {
       headerName: 'Tarih',
       valueGetter: () => { return selectedDate.split('-').reverse().join('.'); },
-      width: 110, cellClass: 'text-muted font-medium'
+      width: 125, cellClass: 'text-muted font-medium'
     },
-    { field: 'Departman', headerName: 'Departman', width: 130 },
+    { field: 'Departman', headerName: 'Departman', width: 150, tooltipField: 'Departman' },
     {
-      field: 'Vardiya_Adi', headerName: 'Vardiya', width: 150,
+      field: 'Vardiya_Adi', headerName: 'Vardiya', width: 170, tooltipField: 'Vardiya_Adi',
       cellRenderer: (params) => params.value ? <span className="font-bold text-ink">{params.value}</span> : <span className="text-muted italic">Atanmamış</span>
     },
     {
-      headerName: 'Vardiya Saatleri',
+      headerName: 'Vardiya Saati',
       valueGetter: (params) => {
         if (!params.data.Vardiya_Adi) return '-';
         const bas = extractTime(params.data.Mesai_Baslangic);
         const bit = extractTime(params.data.Mesai_Bitis);
         return `${bas} - ${bit}`;
       },
-      width: 140, cellClass: 'font-mono text-muted font-bold'
+      width: 160, cellClass: 'font-mono text-muted font-bold'
     },
     {
       headerName: 'Gerçekleşen',
@@ -136,7 +137,7 @@ function Reports() {
         const cikis = extractTime(params.data.Son_Cikis);
         return `${giris} / ${cikis}`;
       },
-      width: 140, cellClass: 'font-mono text-ink font-bold'
+      width: 170, cellClass: 'font-mono text-ink font-bold'
     },
     {
       field: 'Gec_Kalma_Dk', headerName: 'Geç', width: 90,
@@ -202,11 +203,11 @@ function Reports() {
         else if (text.includes('Erken Çıktı')) colorClass = 'bg-warning-soft text-warning border border-warning-line';
         else if (text.includes('Çıkış Yok') || text.includes('Çıkış Okutulmadı')) colorClass = 'bg-warning-soft text-warning border border-warning-line';
         else if (text === 'Hafta Tatili') colorClass = 'bg-surface-3 text-muted border border-line';
-        else if (text === 'Tatil Mesaisi') colorClass = 'bg-teal-100 text-teal-700 border border-teal-200';
+        else if (text === 'Tatil Mesaisi') colorClass = 'bg-accent-soft text-accent border border-accent';
         else if (text === 'Yıllık İzin' || text === 'Mazeret İzni' || text === 'Ücretsiz İzin') colorClass = 'bg-info-soft text-info border border-info-line';
-        else if (text === 'Raporlu') colorClass = 'bg-purple-100 text-purple-700 border border-purple-200';
+        else if (text === 'Raporlu') colorClass = 'bg-surface-3 text-ink border border-line-strong';
 
-        return <span className={`px-2 py-1 rounded-full text-[11px] font-bold ${colorClass}`}>{text}</span>;
+        return <span className={`badge ${colorClass}`}>{text}</span>;
       }
     },
     {
@@ -215,7 +216,7 @@ function Reports() {
         if (params.data.Izin_Cakismasi) return <span className="text-xs text-danger">İzinleri düzeltin</span>;
         if(params.data.Hesaplanan_Dk > 0 || params.data.Mesai_Durumu === 'Onaylandı') {
            return (
-             <button onClick={() => handleOpenApproval(params.data)} className="px-3 py-1 bg-primary text-white text-[11px] font-bold rounded hover:bg-primary-hover transition-colors mt-1">
+             <button onClick={() => handleOpenApproval(params.data)} className="btn btn-sm btn-primary">
                İncele
              </button>
            );
@@ -226,30 +227,19 @@ function Reports() {
   ], [selectedDate]);
 
   return (
-    <div className="space-y-6 relative mt-8">
-
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-surface p-6 rounded-2xl shadow-sm border border-line">
+    <div className="space-y-6">
+      <PageHeader title="Puantaj" description="Seçilen günde personelin giriş-çıkış, yemek ve mola süreleri, geç kalma ve hak edilen mesai.">
         <div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">Puantaj</h1>
-          <p className="text-muted text-sm mt-1">Personellerin giriş-çıkış hareketlerini, yemek sürelerini ve mola uyumlarını inceleyin.</p>
+          <label className="field-label" htmlFor="reports-field-1">Rapor Tarihi</label>
+          <input id="reports-field-1" type="date" value={selectedDate} onChange={(e) => changeReportDate(e.target.value)} className="field" />
         </div>
-
-        <div className="flex items-end space-x-3">
-          <div>
-            <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-1">Rapor Tarihi</label>
-            <input id="reports-field-1" type="date" value={selectedDate} onChange={(e) => changeReportDate(e.target.value)} className="px-4 py-2 text-sm border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-accent" />
-          </div>
-
-          <button onClick={fetchReport} disabled={loading} className="px-6 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-sm rounded-lg transition-colors">
-            {loading ? 'Hesaplanıyor...' : 'Yenile'}
-          </button>
-
-
-        </div>
-      </div>
+        <button onClick={fetchReport} disabled={loading} className="btn btn-primary">
+          {loading ? 'Hesaplanıyor…' : 'Yenile'}
+        </button>
+      </PageHeader>
 
       {reportData.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-warning-soft text-ink rounded-lg">Aynı gün için birden fazla onaylı izin var. Bu satırlarda hesaplama ve yeni mesai kararı bekletilir. Önce İzinler ekranındaki çakışan kayıtları düzeltin; önceki mesai kararları korunur.</p>}
-      {reportError && <p role="alert" className="p-3 bg-danger-soft text-danger rounded-lg">{reportError}</p>}
+      {reportError && <p role="alert" className="p-3 bg-danger-soft text-danger rounded-lg">{reportError} <button type="button" onClick={fetchReport} className="underline">Tekrar dene</button></p>}
       {loading && <p role="status" className="text-sm text-muted">Rapor yükleniyor…</p>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -258,11 +248,11 @@ function Reports() {
           <div className="text-2xl font-black text-ink">{reportData.length}</div>
         </div>
         <div className="bg-surface p-4 rounded-xl border border-success-line shadow-sm">
-          <div className="text-xs font-bold text-success mb-1">Kurallara Uyanlar</div>
+          <div className="text-xs font-bold text-muted mb-1">Kurallara Uyanlar</div>
           <div className="text-2xl font-black text-success">{reportData.filter(r => r.Durum === 'Normal').length}</div>
         </div>
         <div className="bg-surface p-4 rounded-xl border border-danger-line shadow-sm">
-          <div className="text-xs font-bold text-danger mb-1">Geç Kalan / Mola Aşan</div>
+          <div className="text-xs font-bold text-muted mb-1">Geç Kalan / Mola Aşan</div>
           <div className="text-2xl font-black text-danger">{reportData.filter(r => r.Durum.includes('Geç Kaldı') || r.Durum.includes('Mola Aşımı')).length}</div>
         </div>
         <div className="bg-surface p-4 rounded-xl border border-line shadow-sm">
@@ -272,7 +262,7 @@ function Reports() {
       </div>
 
       <AlertMessage message={message.text} type={message.type} />
-      <div className="bg-surface rounded-2xl shadow-sm border border-line overflow-hidden flex flex-col p-4 h-[60vh]">
+      <section aria-label="Günlük puantaj" className="card p-4 flex flex-col h-[65vh]">
         <CustomDataGrid
           ref={gridRef}
           exportFileName={`PDKS_Raporu_${selectedDate}`}
@@ -281,7 +271,7 @@ function Reports() {
           getRowId={(params) => params.data.User_ID}
           rowHeight={60}
         />
-      </div>
+      </section>
 
       {/* --- MESAİ ONAY MODALI (YENİ YAPI) --- */}
       <Modal isOpen={showApprovalModal} onClose={() => { if (!pending) setShowApprovalModal(false); }} title="Mesai İnceleme" maxWidth="max-w-sm">
@@ -296,11 +286,11 @@ function Reports() {
             <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
             <AdminForm disabled={pending} onSubmit={handleApprovalSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-2">Kararınız</label>
+                <label className="field-label" htmlFor="reports-field-2">Kararınız</label>
                 <select id="reports-field-2"
                   value={approvalData.durum}
                   onChange={(e) => setApprovalData({...approvalData, durum: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg outline-none font-bold text-ink focus:ring-2 focus:ring-accent"
+                  className="field font-bold text-ink"
                 >
                   <option value="Onaylandı">Mesaiyi Onayla</option>
                   <option value="Reddedildi">Mesaiyi Reddet (Ödenmeyecek)</option>
@@ -309,35 +299,35 @@ function Reports() {
 
               {approvalData.durum === 'Onaylandı' && (
                 <div>
-                  <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-3">Onaylanan Süre (Dakika)</label>
+                  <label className="field-label" htmlFor="reports-field-3">Onaylanan Süre (Dakika)</label>
                   <input id="reports-field-3"
                     type="number"
                     value={approvalData.onaylanan_dk}
                     onChange={(e) => setApprovalData({...approvalData, onaylanan_dk: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                    className="field"
                     required
                     min="0"
                     step="1"
                     max={Math.min(2880, selectedRow.Hesaplanan_Dk + 120)}
                   />
-                  <p className="text-[10px] text-muted mt-1">Sıfır dakika onaylanabilir. Üst sınır hesaplanan sürenin 120 dakika fazlasıdır.</p>
+                  <p className="field-hint">Sıfır dakika onaylanabilir. Üst sınır hesaplanan sürenin 120 dakika fazlasıdır.</p>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-muted mb-1" htmlFor="reports-field-4">Yönetici Notu (Opsiyonel)</label>
+                <label className="field-label" htmlFor="reports-field-4">Yönetici Notu (Opsiyonel)</label>
                 <input id="reports-field-4" maxLength={255}
                   type="text"
                   value={approvalData.aciklama}
                   onChange={(e) => setApprovalData({...approvalData, aciklama: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-accent"
+                  className="field"
                   placeholder="Örn: Proje yetiştirildi..."
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 mt-6">
-                <button type="button" onClick={() => setShowApprovalModal(false)} className="px-4 py-2 bg-surface-3 font-bold rounded-lg hover:bg-surface-3 text-sm">İptal</button>
-                <button type="submit" className={`px-4 py-2 text-white font-bold rounded-lg text-sm ${approvalData.durum === 'Onaylandı' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}>
+              <div className="flex flex-wrap justify-end gap-3 mt-4">
+                <button type="button" onClick={() => setShowApprovalModal(false)} className="btn btn-secondary">İptal</button>
+                <button type="submit" className={`btn ${approvalData.durum === 'Onaylandı' ? 'btn-success' : 'btn-danger'}`}>
                   {pending ? 'Kaydediliyor…' : 'Kaydet'}
                 </button>
               </div>
