@@ -10,6 +10,7 @@ import { useSearchParams } from 'react-router-dom';
 
 // ORTAK BİLEŞENLER
 import CustomDataGrid from '../components/CustomDataGrid';
+import PeriodReport from '../components/reports/PeriodReport';
 import Modal from '../components/Modal'; // YENİ: Modal bileşeni
 
 const extractTime = (val) => {
@@ -20,7 +21,7 @@ const extractTime = (val) => {
   return val.substring(0, 5);
 };
 
-function Reports() {
+function DailyReport() {
   const gridRef = useRef();
   const { pending, run } = usePendingAction();
   const [message, setMessage] = useState({ text: '', type: '' });
@@ -228,7 +229,7 @@ function Reports() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Puantaj" description="Seçilen günde personelin giriş-çıkış, yemek ve mola süreleri, geç kalma ve hak edilen mesai.">
+      <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="field-label" htmlFor="reports-field-1">Rapor Tarihi</label>
           <input id="reports-field-1" type="date" value={selectedDate} onChange={(e) => changeReportDate(e.target.value)} className="field" />
@@ -236,7 +237,7 @@ function Reports() {
         <button onClick={fetchReport} disabled={loading} className="btn btn-primary">
           {loading ? 'Hesaplanıyor…' : 'Yenile'}
         </button>
-      </PageHeader>
+      </div>
 
       {reportData.some(row => row.Izin_Cakismasi) && <p role="alert" className="p-3 bg-warning-soft text-ink rounded-lg">Aynı gün için birden fazla onaylı izin var. Bu satırlarda hesaplama ve yeni mesai kararı bekletilir. Önce İzinler ekranındaki çakışan kayıtları düzeltin; önceki mesai kararları korunur.</p>}
       {reportError && <p role="alert" className="p-3 bg-danger-soft text-danger rounded-lg">{reportError} <button type="button" onClick={fetchReport} className="underline">Tekrar dene</button></p>}
@@ -335,6 +336,29 @@ function Reports() {
           </>
         )}
       </Modal>
+    </div>
+  );
+}
+
+const VIEWS = [['Günlük', false], ['Dönemsel Rapor', true]];
+
+function Reports() {
+  const [params, setParams] = useSearchParams();
+  // A period report is identified by its ?donem= parameter, so links reopen the same view.
+  const period = params.has('donem');
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Puantaj" description={period
+        ? 'Hafta, ay veya seçilen aralık için kişi, departman ya da seçili kişilerin toplamları ve günlük dökümü.'
+        : 'Seçilen günde personelin giriş-çıkış, yemek ve mola süreleri, geç kalma ve hak edilen mesai.'} />
+      <nav aria-label="Puantaj görünümü" className="flex gap-1 border-b border-line print:hidden">
+        {VIEWS.map(([label, value]) => (
+          <button key={label} type="button" aria-pressed={period === value}
+            onClick={() => { if (period !== value) setParams(value ? { donem: 'ay', baslangic: businessDate(), kapsam: 'tumu' } : {}); }}
+            className={`px-4 py-2 -mb-px border-b-2 text-sm font-semibold ${period === value ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}>{label}</button>
+        ))}
+      </nav>
+      {period ? <PeriodReport /> : <DailyReport />}
     </div>
   );
 }

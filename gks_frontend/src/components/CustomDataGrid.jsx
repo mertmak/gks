@@ -8,7 +8,7 @@ import {
   ModuleRegistry, ValidationModule, ClientSideRowModelModule, ClientSideRowModelApiModule,
   TextFilterModule, NumberFilterModule, DateFilterModule, QuickFilterModule, PaginationModule,
   RowSelectionModule, CellStyleModule, TooltipModule, LocaleModule, RowAutoHeightModule,
-  CellApiModule, ColumnApiModule,
+  CellApiModule, ColumnApiModule, PinnedRowModule,
 } from 'ag-grid-community';
 
 import 'ag-grid-community/styles/ag-grid.css';
@@ -21,7 +21,7 @@ import { AG_GRID_LOCALE_TR } from '../utils/constants';
 ModuleRegistry.registerModules([
   ClientSideRowModelModule, ClientSideRowModelApiModule, TextFilterModule, NumberFilterModule,
   DateFilterModule, QuickFilterModule, PaginationModule, RowSelectionModule, CellStyleModule,
-  TooltipModule, LocaleModule, RowAutoHeightModule, CellApiModule, ColumnApiModule,
+  TooltipModule, LocaleModule, RowAutoHeightModule, CellApiModule, ColumnApiModule, PinnedRowModule,
   ...(import.meta.env.DEV ? [ValidationModule] : []),
 ]);
 
@@ -38,6 +38,9 @@ const CustomDataGrid = forwardRef(({
   serverPagination,
   onPageChange,
   exportFileName = `GKS_Tablo_${businessDate()}`,
+  // (gridApi) => Promise<{url, fileName}>; replaces the one-sheet grid export.
+  prepareExport,
+  pinnedBottomRowData,
 }, ref) => {
 
   const { dark } = useTheme();
@@ -60,7 +63,7 @@ const CustomDataGrid = forwardRef(({
     setExportError('');
     setDownload(null);
     try {
-      const prepared = await prepareGridExcel(apiRef.current, exportFileName);
+      const prepared = await (prepareExport ? prepareExport(apiRef.current) : prepareGridExcel(apiRef.current, exportFileName));
       if (mounted.current) setDownload(prepared);
       else URL.revokeObjectURL(prepared.url);
     }
@@ -116,6 +119,7 @@ const CustomDataGrid = forwardRef(({
         selectionColumnDef={selectionColumnDef}
         onSelectionChanged={onSelectionChanged}
         quickFilterText={quickFilterText}
+        pinnedBottomRowData={pinnedBottomRowData}
       /></div>
       {serverPagination && <div className="flex justify-between items-center gap-3 p-3 border-t text-sm">
         <span>{serverPagination.total} kayıt · Sayfa {serverPagination.page} / {Math.max(1, serverPagination.totalPages)}</span>

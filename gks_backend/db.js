@@ -25,7 +25,7 @@ const type = (name, pgCast) => {
 const types = {
     Int: type('Int', 'integer'), BigInt: type('BigInt', 'bigint'), Bit: type('Bit', 'boolean'),
     Date: type('Date', 'date'), DateTime: type('DateTime', 'timestamp'), DateTime2: type('DateTime2', 'timestamp'),
-    Time: type('Time', 'time'), NVarChar: type('NVarChar'), VarChar: type('VarChar'),
+    Time: type('Time', 'time'), IntArray: type('IntArray', 'integer[]'), NVarChar: type('NVarChar'), VarChar: type('VarChar'),
 };
 const ISOLATION_LEVEL = Object.freeze({ READ_COMMITTED: 'READ COMMITTED', REPEATABLE_READ: 'REPEATABLE READ', SERIALIZABLE: 'SERIALIZABLE' });
 
