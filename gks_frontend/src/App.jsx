@@ -40,7 +40,7 @@ const OLD_PATHS = {
 const LOGOUT_NOTICES = {
   'password-changed': { text: 'Şifreniz değiştirildi. Yeni şifrenizle yeniden giriş yapın.', tone: 'success' },
   'session-expired': { text: 'Oturumunuzun süresi doldu. Devam etmek için yeniden giriş yapın.', tone: 'warning' },
-  'sandbox-expired': { text: 'Simülasyon alanınızın süresi doldu ve kopya silindi. Yeni bir alan başlatabilirsiniz.', tone: 'warning' },
+  'sandbox-expired': { text: 'Simülasyon alanınız kapatıldı (süresi doldu veya sunucu yeni sürüme güncellendi). Yeni bir alan başlatabilirsiniz.', tone: 'warning' },
 };
 
 function App() {

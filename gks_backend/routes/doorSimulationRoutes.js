@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { verifyToken, verifyAdmin } = require('../middlewares/auth');
 const { validate, schemas } = require('../middlewares/validate');
-const { validateQuery, simPlanQuery } = require('../middlewares/query');
+const { validateQuery, simPlanQuery, simDayQuery } = require('../middlewares/query');
 const { inTransaction } = require('../utils/transaction');
 const { allowed } = require('../config/simulation');
 const socket = require('../utils/socket');
@@ -18,6 +18,14 @@ router.get('/simulasyon/plan', verifyToken, verifyAdmin, guard, validateQuery(si
     const { tarih, gec, devamsiz } = req.validatedQuery;
     try { res.json(await simulation.dayPlan(tarih, { late: gec, absent: devamsiz })); }
     catch (error) { next(error); }
+});
+
+router.delete('/simulasyon/gun', verifyToken, verifyAdmin, guard, validateQuery(simDayQuery), async (req, res, next) => {
+    try {
+        const silinen = await inTransaction(tx => simulation.clearDay(tx, req.validatedQuery.tarih));
+        socket.getIO().emit('new_rfid_log');
+        res.json({ success: true, silinen });
+    } catch (error) { next(error); }
 });
 
 router.post('/simulasyon/okutma', verifyToken, verifyAdmin, guard, readLimit, validate(schemas.simReadSchema), async (req, res, next) => {

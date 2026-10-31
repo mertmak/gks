@@ -24,7 +24,7 @@ function BulkGenerator() {
   const [formData, setFormData] = useState({
     userAction: 'keep',    
     doorAction: 'keep',    
-    logAction: 'append',
+    logAction: 'replace',
     kapiSayisi: 5,
     personelSayisi: 20,
     vardiyaId: '',
@@ -132,9 +132,10 @@ function BulkGenerator() {
             <div className="md:col-span-2 bg-info-soft p-4 rounded-xl border border-info-line">
               <label className="block text-sm font-bold text-info mb-2" htmlFor="simulation-logAction">Geçiş Logları İşlemi</label>
               <select id="simulation-logAction" name="logAction" value={formData.logAction} onChange={handleChange} className="w-full px-4 py-3 border border-info-line rounded-xl outline-none focus:ring-2 focus:ring-accent bg-surface disabled:opacity-50">
-                <option value="append">Seçili Tarihte Eski Loglara İlave Et</option>
+                <option value="replace">Aralıktaki geçişleri silip yeniden üret</option>
+                <option value="append">Mevcut geçişlere ekle</option>
               </select>
-              <p className="text-[10px] text-info mt-2 font-bold">* Geç kalma, erken çıkış, fazla mesai ve örnek başarısız okutmalar rastgele üretilir. Tekrar çalıştırmak ek kayıt oluşturur.</p>
+              <p className="text-[10px] text-info mt-2 font-bold">* Geç kalma, erken çıkış, fazla mesai ve örnek başarısız okutmalar rastgele üretilir. "Mevcut geçişlere ekle" aynı aralıkta tekrar çalıştırılırsa kayıtlar çoğalır ve puantaj bozulur.</p>
             </div>
           </div>
         </div>
@@ -227,7 +228,8 @@ function BulkGenerator() {
       </form>
       <Modal isOpen={Boolean(confirmation)} onClose={() => { if (!loading) setConfirmation(null); }} title="Simülasyonu Onayla">
         <p className="text-sm mb-3">{confirmation?.payload.startDateStr}–{confirmation?.payload.endDateStr} tarihleri için {confirmation?.shiftName} saatleriyle sentetik geçişler eklenecek.</p>
-        <p className="text-sm mb-4">Yeni personel: {confirmation?.payload.userAction === 'append' ? confirmation.payload.personelSayisi : 0}. Yeni kapı: {confirmation?.payload.doorAction === 'append' ? confirmation.payload.kapiSayisi : 0}. Mevcut kayıtlar silinmez.</p>
+        <p className="text-sm mb-3">Yeni personel: {confirmation?.payload.userAction === 'append' ? confirmation.payload.personelSayisi : 0}. Yeni kapı: {confirmation?.payload.doorAction === 'append' ? confirmation.payload.kapiSayisi : 0}.</p>
+        <p className="text-sm mb-4">{confirmation?.payload.logAction === 'replace' ? 'Aktif personelin bu günlerin puantajına sayılan mevcut geçişleri önce silinir. Personel ve kapılar silinmez.' : 'Mevcut kayıtlar silinmez; aralıkta zaten geçiş varsa kayıtlar çoğalır.'}</p>
         <AlertMessage message={message.type === 'error' ? message.text : ''} type="error" />
         <div className="flex justify-end gap-3">
           <button type="button" disabled={loading} onClick={() => setConfirmation(null)} className="px-4 py-2 bg-surface-3 rounded-lg">Vazgeç</button>

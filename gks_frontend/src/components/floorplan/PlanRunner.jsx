@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
+import ConfirmAction from '../ConfirmAction';
 import PlanCanvas from './PlanCanvas';
 import { businessDate, shiftDateDays } from '../../utils/dates';
 import { demoSettings } from '../../utils/demo';
@@ -25,6 +26,10 @@ export default function PlanRunner({ plan, floor: initialFloor, onUnsentChange }
   const [speed, setSpeed] = useState(SPEEDS[1]);
   const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState('');
+  // The chosen day already has logs: { count } until the user clears them or cancels.
+  const [existing, setExisting] = useState(null);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState('');
   // A failed send stops sending until the user retries.
   const [failed, setFailed] = useState(false);
   const [hint, setHint] = useState('');
@@ -33,16 +38,27 @@ export default function PlanRunner({ plan, floor: initialFloor, onUnsentChange }
   const sending = useRef(false);
   const redraw = useCallback(() => setFrame(value => value + 1), []);
 
-  const start = async event => {
-    event.preventDefault();
+  const begin = async () => {
     setPreparing(true); setError(''); setHint('');
     try {
       const { data } = await api.get('/simulasyon/plan', { params: { tarih: form.tarih, gec: form.gec, devamsiz: form.devamsiz } });
+      // Running a day twice would count its passages twice in attendance.
+      if (data.mevcut_kayit > 0) { setClearError(''); setExisting({ count: data.mevcut_kayit }); return; }
       setCurrent(createSimulation(plan, data, { misread: form.hatali / 100 }));
       setPerson(null); setDoor(null); setFailed(false);
       setRunning(true); redraw();
     } catch (err) { setError(err.response?.data?.message || 'Simülasyon planı alınamadı.'); }
     finally { setPreparing(false); }
+  };
+  const start = event => { event.preventDefault(); begin(); };
+  const clearAndBegin = async () => {
+    setClearing(true); setClearError('');
+    try {
+      await api.delete('/simulasyon/gun', { params: { tarih: form.tarih } });
+      setExisting(null);
+      await begin();
+    } catch (err) { setClearError(err.response?.data?.message || 'Günün kayıtları silinemedi.'); }
+    finally { setClearing(false); }
   };
 
   // Animation: the clock advances by real time × speed, redrawn ~15 times a second.
@@ -148,7 +164,7 @@ export default function PlanRunner({ plan, floor: initialFloor, onUnsentChange }
           </div>
           <button type="submit" disabled={preparing || !plan.areas.length || unsent} className={`${button} w-full bg-blue-600 text-white`}>{preparing ? 'Plan hazırlanıyor…' : current ? 'Bu günü başlat' : 'Simülasyonu başlat'}</button>
           {unsent && <p className="text-xs text-warning">Bekleyen okutmalar gönderilince yeni gün başlatılabilir.</p>}
-          <p className="text-xs text-muted">Okutmalar seçilen güne gerçek geçiş kaydı olarak yazılır ve puantaja yansır. Aynı günü tekrar çalıştırmak kayıtları çoğaltır.</p>
+          <p className="text-xs text-muted">Okutmalar seçilen güne gerçek geçiş kaydı olarak yazılır ve puantaja yansır. Günde zaten kayıt varsa önce silinmesi için onay istenir.</p>
         </form>
 
         {current && <section className="bg-surface rounded-2xl shadow-sm border border-line p-5 space-y-2 text-sm" aria-label="Simülasyon durumu">
@@ -195,6 +211,11 @@ export default function PlanRunner({ plan, floor: initialFloor, onUnsentChange }
             <ul className="mt-1 space-y-0.5 max-h-48 overflow-auto">{current.notes.map((text, i) => <li key={i}>{text}</li>)}</ul></details>}
         </section>}
       </aside>
+      <ConfirmAction isOpen={Boolean(existing)} title="Bu günde geçiş kaydı var" pending={clearing} error={clearError}
+        onClose={() => setExisting(null)} onConfirm={clearAndBegin} confirmLabel="Sil ve başlat">
+        <p>{form.tarih} için o günün puantajına sayılan {existing?.count} geçiş kaydı var. Simülasyon bunların üzerine yazılırsa geçişler iki kez sayılır.</p>
+        <p>Devam ederseniz bu kayıtlar silinir ve gün yeniden simüle edilir. Personel, kapı ve diğer günler etkilenmez.</p>
+      </ConfirmAction>
     </div>
   );
 }

@@ -8,6 +8,7 @@ const dashboardQuery = z.object({ filter: z.enum(['gunluk', 'haftalik', 'aylik']
 const reportQuery = z.object({ tarih: date.optional() });
 const percent = z.string().regex(/^\d{1,2}$/).transform(Number).pipe(z.number().int().max(50)).optional().transform(v => (v ?? 0) / 100);
 const simPlanQuery = z.object({ tarih: date, gec: percent, devamsiz: percent });
+const simDayQuery = z.object({ tarih: date });
 const overtimeQuery = z.object({ baslangic: date, bitis: date }).refine(v => validDateRange(v.baslangic, v.bitis), 'En fazla 366 günlük geçerli bir aralık seçiniz.');
 const days = (a, b) => (Date.parse(b) - Date.parse(a)) / 86400000 + 1;
 const personIds = z.string().regex(/^\d{1,10}(,\d{1,10}){0,99}$/).transform(v => [...new Set(v.split(',').map(Number))]).refine(ids => ids.every(id => id >= 1 && id <= 2147483647));
@@ -22,4 +23,4 @@ const validateQuery = schema => (req, res, next) => {
     req.validatedQuery = result.data;
     next();
 };
-module.exports = { validateQuery, usersQuery, logsQuery, dashboardQuery, reportQuery, overtimeQuery, simPlanQuery, periodReportQuery };
+module.exports = { validateQuery, usersQuery, logsQuery, dashboardQuery, reportQuery, overtimeQuery, simPlanQuery, simDayQuery, periodReportQuery };

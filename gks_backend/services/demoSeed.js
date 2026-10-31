@@ -2,7 +2,40 @@ const { sql } = require('../db');
 const { inTransaction, advisoryLock } = require('../utils/transaction');
 const locks = require('../db/locks');
 const { referenceDate, accountName } = require('../config/demo');
+const { templates, savePlan } = require('./floorPlan');
 const version = 'v1-2026-09-07';
+// Added later as its own step, so `seed:demo` also adds it to a demo seeded before.
+const planVersion = 'v2-kat-plani';
+
+const seeded = async (tx, value) => (await new sql.Request(tx).input('version', sql.NVarChar, value)
+    .query('SELECT Version FROM GksSeedState WHERE Version=@version')).recordset.length > 0;
+
+// The Office template's areas with the six demo doors, plus a lobby turnstile
+// every demo person may use. Demo Kapı 6 (inner door, even-numbered people
+// only) is the way back from the break area, as in the seeded logs.
+async function seedPlan(tx) {
+    const request = () => new sql.Request(tx);
+    if (await seeded(tx, planVersion) || (await request().query('SELECT ID FROM Bolgeler LIMIT 1')).recordset.length) return false;
+    const doors = Object.fromEntries((await request().query("SELECT ID, Kapi_Adi FROM Doors WHERE Kapi_Adi LIKE 'Demo Kapı _'")).recordset.map(door => [door.Kapi_Adi, door.ID]));
+    if (Object.keys(doors).length !== 6) return false;
+    const turnstile = (await request().query("INSERT INTO Doors(Kapi_Adi,Kapi_Turu,Departman,Konum) VALUES('Demo Kapı 7','İç Geçiş','Demo Birim','Lobi Turnikesi') RETURNING ID")).recordset[0].ID;
+    await request().input('door', sql.Int, turnstile).query('INSERT INTO Permissions(User_ID,Door_ID) SELECT ID,@door FROM Users');
+    const { katlar, bolgeler } = templates.ofis;
+    const place = (id, bolge_a, bolge_b, plan_x, plan_y, yon_kisiti) => ({ id, bolge_a, bolge_b, plan_x, plan_y, yon_kisiti });
+    await savePlan(tx, { katlar, bolgeler, kapilar: [
+        place(doors['Demo Kapı 1'], null, 'lobi', 40, 280, 'A→B'),
+        place(doors['Demo Kapı 2'], null, 'lobi', 40, 360, 'B→A'),
+        place(turnstile, 'lobi', 'ofis', 240, 320),
+        place(doors['Demo Kapı 3'], 'ofis', 'yemekhane', 300, 440),
+        place(doors['Demo Kapı 4'], 'ofis', 'yemekhane', 440, 440),
+        place(doors['Demo Kapı 5'], 'ofis', 'mola', 720, 80),
+        place(doors['Demo Kapı 6'], 'ofis', 'mola', 720, 200),
+    ] });
+    // Dated like the rest of the demo history, not on the day the step runs.
+    await request().query("INSERT INTO DoorLogs(Islem_Tipi,Kapi_Adi,Detay,Islemi_Yapan,Tarih) VALUES('KAT PLANI GÜNCELLENDİ','Kat Planı','Sentetik kat planı hazırlandı: 1 kat, 5 bölge, 7 yerleşik kapı.','Demo Senaryosu','2026-09-07T08:00:00')");
+    await request().input('version', sql.NVarChar, planVersion).query('INSERT INTO GksSeedState(Version) VALUES(@version)');
+    return true;
+}
 
 async function seedDemo() {
     const name = process.env.DB_NAME || '';
@@ -14,7 +47,7 @@ async function seedDemo() {
         // Concurrent seed runs wait here; the loser then sees the version row.
         await advisoryLock(tx, locks.demoSeed);
         await request().query('CREATE TABLE IF NOT EXISTS GksSeedState(Version varchar(100) PRIMARY KEY)');
-        if ((await request().input('version', sql.NVarChar, version).query('SELECT Version FROM GksSeedState WHERE Version=@version')).recordset.length) return { alreadySeeded: true };
+        if (await seeded(tx, version)) return { alreadySeeded: true, plan: await seedPlan(tx) };
         for (const table of ['Users','Doors','Vardiyalar','Logs','Izinler','Mesai_Onaylari','DoorLogs']) {
             if ((await request().query(`SELECT ID FROM ${table} LIMIT 1`)).recordset.length) throw new Error('Demo seed boş iş tabloları gerektirir; mevcut veriler silinmedi.');
         }
@@ -65,7 +98,7 @@ async function seedDemo() {
         await event(1,'İç Geçiş','10:00',false);
         await request().query("INSERT INTO SystemLogs(Islem_Tipi,Personel_Ad,Detay,Islemi_Yapan,Tarih) VALUES('DEMO HAZIRLIK','Demo Personel 01','Sentetik vardiya ve izin senaryoları hazırlandı.','Demo Senaryosu','2026-09-07T08:00:00'); INSERT INTO DoorLogs(Islem_Tipi,Kapi_Adi,Detay,Islemi_Yapan,Tarih) VALUES('DEMO YETKİ','Demo Kapı 1','Sentetik kapı yetkileri hazırlandı.','Demo Senaryosu','2026-09-07T08:00:00')");
         await request().input('version',sql.NVarChar,version).query('INSERT INTO GksSeedState(Version) VALUES(@version)');
-        return {alreadySeeded:false,referenceDate,personnel:users.length};
+        return {alreadySeeded:false,referenceDate,personnel:users.length,plan:await seedPlan(tx)};
     });
 }
 module.exports={seedDemo};

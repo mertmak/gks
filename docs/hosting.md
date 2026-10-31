@@ -85,7 +85,7 @@ RUNTIME_DB_USER=gks_app
 RUNTIME_DB_CONFIRM=gksdemo_v1
 ```
 
-`SANDBOX_MODE=true` demoda "Kendi Simülasyon Alanını Başlat" düğmesini açar: her ziyaretçi için demo verisinin kopyası olan ayrı bir PostgreSQL şeması (`sbx_…`) kurulur, `SANDBOX_TTL_MIN` (varsayılan 120) dakika sonra silinir; aynı anda en fazla `SANDBOX_MAX` (varsayılan 30) alan açılır. Uygulama hesabının şema oluşturabilmesi için `db:runtime-role` bu ayar `backend.env` içindeyken çalıştırılmalıdır (rol veritabanında `CREATE` alır; ayar kapalıyken yeniden çalıştırmak bu izni geri alır). Backend her açılışta eski alanları siler; sürüm güncellemesi açık alanları kapatır.
+`SANDBOX_MODE=true` demoda "Kendi Simülasyon Alanını Başlat" düğmesini açar: her ziyaretçi için demo verisinin kopyası olan ayrı bir PostgreSQL şeması (`sbx_…`) kurulur, `SANDBOX_TTL_MIN` (varsayılan 120) dakika sonra silinir; aynı anda en fazla `SANDBOX_MAX` (varsayılan 30) alan açılır. Uygulama hesabının şema oluşturabilmesi için `db:runtime-role` bu ayar `backend.env` içindeyken çalıştırılmalıdır (rol veritabanında `CREATE` alır; ayar kapalıyken yeniden çalıştırmak bu izni geri alır). Süresi dolan alanlar beş dakikada bir silinir. Her alan kurulduğu son migration'ı bilir; yeni migration getiren bir güncellemeden sonra backend açılışta eski alanları kapatır, yalnız yeniden başlatmak açık alanları silmez.
 
 `DB_SERVER`, `DB_PORT`, `DB_SSL`, `DB_SSL_CA`, `NODE_ENV=production`, `TRUST_PROXY_HOPS=1` ve kapalı kurulum/simülasyon ayarları Compose dosyasında sabittir. Salt okunur public demoda ilk yönetici zorunlu değildir; `BOOTSTRAP_*` satırları atlanırsa `admin:create` adımı da atlanır.
 
@@ -167,7 +167,7 @@ cd /opt/gks/app && git pull --ff-only
 gks --profile install build
 ```
 
-Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın; migration yeni tablo ekliyorsa (ör. `003_kat_plani.sql` → `Bolgeler`, `004_tesis.sql` → `Katlar`) uygulama rolünün yetkileri için `db:runtime-role` komutunu da yeniden çalıştırın ve dosyayı tekrar silin. Sonra:
+Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın; migration yeni tablo ekliyorsa (ör. `003_kat_plani.sql` → `Bolgeler`, `004_tesis.sql` → `Katlar`) uygulama rolünün yetkileri için `db:runtime-role` komutunu da yeniden çalıştırın ve dosyayı tekrar silin. Demo daha önce seed edildiyse `seed:demo` yeniden çalıştırıldığında yalnız sonradan eklenen adımları uygular (ör. boş kat planına hazır demo planı); mevcut demo verisine dokunmaz. Sonra:
 
 ```sh
 gks up -d --wait

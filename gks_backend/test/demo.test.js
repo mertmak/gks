@@ -28,7 +28,17 @@ test('demo denies every business mutation even with an admin token', { skip: pro
         const preserved = (await new sql.Request().input('id', sql.Int, setup[0].ID).query('SELECT * FROM SystemLogs WHERE ID=@id')).recordset;
         assert.deepEqual(preserved, setup);
     });
-    assert.equal((await seedDemo()).alreadySeeded,true);
+    assert.deepEqual(await seedDemo(),{alreadySeeded:true,plan:false});
+    assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Bolgeler')).recordset[0].n,5);
+    assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Doors WHERE Plan_X IS NOT NULL')).recordset[0].n,7,'every demo door is on the plan');
+    assert.equal((await sql.query("SELECT COUNT(*) AS n FROM Permissions P JOIN Doors D ON D.ID=P.Door_ID WHERE D.Kapi_Adi='Demo Kapı 7'")).recordset[0].n,12);
+    await t.test('a demo seeded before the plan step gets the plan on the next run', async () => {
+        await sql.query("DELETE FROM GksSeedState WHERE Version='v2-kat-plani'; DELETE FROM Katlar; DELETE FROM Doors WHERE Kapi_Adi='Demo Kapı 7'; DELETE FROM DoorLogs WHERE Islem_Tipi='KAT PLANI GÜNCELLENDİ'");
+        assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Bolgeler')).recordset[0].n,0);
+        assert.deepEqual(await seedDemo(),{alreadySeeded:true,plan:true});
+        assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Doors WHERE Plan_X IS NOT NULL')).recordset[0].n,7);
+        assert.deepEqual((await sql.query("SELECT Tarih FROM DoorLogs WHERE Islem_Tipi='KAT PLANI GÜNCELLENDİ'")).recordset.map(r=>r.Tarih.toISOString()),['2026-09-07T08:00:00.000Z']);
+    });
     assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Users')).recordset[0].n,12);
     const report=await require('../services/attendance').attendance('2026-09-07','2026-09-07');
     const row=n=>report.find(r=>r.Sicil_No===String(10000+n));

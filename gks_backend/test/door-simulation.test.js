@@ -143,4 +143,14 @@ test('door simulation plans a day and decides card reads on the server', { skip:
         await new sql.Request().input('id', sql.Int, fromLobby).query('UPDATE Doors SET Plan_X=NULL, Plan_Y=NULL, Bolge_A_ID=NULL, Bolge_B_ID=NULL WHERE ID=@id');
         assert.deepEqual(await report(), row);
     });
+
+    await t.test('a re-run day reports its existing logs and can clear them first', async () => {
+        const plan = async () => (await call('GET', '/simulasyon/plan?tarih=2026-09-10')).data.mevcut_kayit;
+        assert.equal(await plan(), 1);
+        assert.equal((await call('DELETE', '/simulasyon/gun?tarih=2026-09-10', undefined, token('user'))).status, 403);
+        assert.equal((await call('DELETE', '/simulasyon/gun?tarih=2026-09-31')).status, 400);
+        assert.deepEqual((await call('DELETE', '/simulasyon/gun?tarih=2026-09-10')).data, { success: true, silinen: 1 });
+        assert.equal(await plan(), 0);
+        assert.equal((await call('GET', '/simulasyon/plan?tarih=2026-09-09')).data.mevcut_kayit > 0, true, 'other days keep their logs');
+    });
 });
