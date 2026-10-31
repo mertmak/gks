@@ -28,7 +28,7 @@ async function seedPlan(tx) {
         place(turnstile, 'lobi', 'ofis', 240, 320),
         place(doors['Demo Kapı 3'], 'ofis', 'yemekhane', 300, 440),
         place(doors['Demo Kapı 4'], 'ofis', 'yemekhane', 440, 440),
-        place(doors['Demo Kapı 5'], 'ofis', 'mola', 720, 80),
+        place(doors['Demo Kapı 5'], 'ofis', 'mola', 720, 120),
         place(doors['Demo Kapı 6'], 'ofis', 'mola', 720, 200),
     ] });
     // Dated like the rest of the demo history, not on the day the step runs.

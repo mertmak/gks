@@ -60,6 +60,13 @@ test('period attendance report', { skip: process.env.RUN_DB_TESTS !== 'true' }, 
         assert.equal(one.gunler.every(row => row.User_ID === ids['Yeni']), true);
         assert.equal(one.gunler.length, 7);
     });
+    await t.test('days after today are not counted', async () => {
+        const today = require('../utils/attendance').businessToday();
+        const current = (await get({ donem: 'ay', baslangic: today, kapsam: 'tumu' })).data;
+        assert.ok(current.gunler.every(r => r.TarihStr <= today));
+        const future = (await get({ donem: 'hafta', baslangic: '2099-06-10', kapsam: 'tumu' })).data;
+        assert.deepEqual([future.baslangic, future.bitis, future.gunler.length, future.toplam.Gun], ['2099-06-08', '2099-06-14', 0, 0]);
+    });
     await t.test('invalid ranges and scopes are 400', async () => {
         assert.equal((await get({ donem: 'ozel', baslangic: '2026-09-01', bitis: '2026-12-02', kapsam: 'tumu' })).status, 400);
         assert.equal((await get({ donem: 'ozel', baslangic: '2026-09-02', bitis: '2026-09-01', kapsam: 'tumu' })).status, 400);

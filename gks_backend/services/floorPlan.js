@@ -26,7 +26,7 @@ const templates = {
             'İç Geçiş': [['lobi', 'ofis', 240, 280], ['ofis', 'mola', 720, 200], ['ofis', 'toplanti', 620, 440], ['lobi', 'ofis', 240, 360]],
             'Yemekhane Giriş': [['ofis', 'yemekhane', 300, 440], ['ofis', 'yemekhane', 360, 440]],
             'Yemekhane Çıkış': [['ofis', 'yemekhane', 440, 440], ['ofis', 'yemekhane', 500, 440]],
-            'Mola / Sigara Alanı': [['ofis', 'mola', 720, 80], ['ofis', 'mola', 720, 140]],
+            'Mola / Sigara Alanı': [['ofis', 'mola', 720, 120], ['ofis', 'mola', 720, 150]],
         },
         minimum: { 'İç Geçiş': 2 },
     },

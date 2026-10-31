@@ -2,7 +2,7 @@
 
 GKS; personel, kapı yetkisi, vardiya, izin ve devam/mesai akışlarını bir araya getiren bağımsız, kişisel bir full-stack portföy projesidir. Fiziksel cihaz katmanı sentetik geçiş kayıtlarıyla temsil edilir; uygulama ticari bir erişim kontrol ürünü değildir.
 
-V1 yayında. Salt okunur demo: **https://gksdemo.com** ("Demoyu İncele" ile giriş; veriler sentetik, değişiklik işlemleri kapalı). Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
+V2 yayında. Salt okunur demo: **https://gksdemo.com** ("Demoyu İncele" ile giriş; veriler sentetik, değişiklik işlemleri kapalı). Tam yönetim işlemleri için aşağıdaki yerel kurulum kullanılabilir.
 
 React/Vite arayüzü, Express API, PostgreSQL ve Socket.IO kullanır. Puantaj/gece vardiyası hesabı, transaction ile audit tutarlılığı, rol denetimi, geçmiş kayıtların korunması ve tekrar üretilebilir sentetik veri projenin temel teknik konularıdır.
 
@@ -12,11 +12,15 @@ GKS, **PolyForm Internal Use 1.0.0 + kişisel öğrenme ek izni** ile sunulur. �
 
 ## Demo görselleri
 
-Yerel salt okunur demodan alınmıştır; bütün kişi, kapı ve hareket kayıtları sentetiktir. Referans gün 7 Eylül 2026’dır.
+Yerel demodan alınmıştır; bütün kişi, kapı ve hareket kayıtları sentetiktir. Referans gün 7 Eylül 2026’dır.
 
-![Kontrol paneli ve son 28 gün özeti](docs/images/demo-dashboard.png)
+![Ana sayfa, açık tema](docs/images/v2-ana-sayfa-acik.png)
 
-![Günlük puantaj ve Excel indirme](docs/images/demo-puantaj.png)
+![Dönemsel puantaj: ay, tüm personel, açık tema](docs/images/v2-donemsel-puantaj-acik.png)
+
+![Tesis Tasarımı: demo ofis planı, koyu tema](docs/images/v2-tesis-tasarimi-koyu.png)
+
+![Canlı Simülasyon: kişisel simülasyon alanında bir gün, koyu tema](docs/images/v2-canli-simulasyon-koyu.png)
 
 ## Mimari
 
@@ -96,7 +100,7 @@ GitHub Actions yapılandırması birim testlerini, kod kontrolünü, derlemeyi v
 - Tesis tasarımı (Tesis Tasarımı menüsü): yönetici kat ekler, bölgeleri çokgen olarak çizer (köşe sürükleme, ekleme, silme; kendini kesen bölge kaydedilmez) ve kapıları bölge sınırlarına yerleştirir ya da plandan yeni kapı oluşturur. Kapı aynı kattaki iki bölgeyi ya da bir bölgeyi bina dışıyla bağlar ve tek yönlü (turnike) olabilir; panelde her yönün puantajdaki anlamı görünür. Aynı dikey gruptaki merdiven/asansör bölgeleri katları bağlar. Boş plana Ofis (tek kat) veya Fabrika (iki kat) şablonu uygulanabilir (eksik kapı türleri eklenir; simülasyon ortamında eklenen kapılara aktif personelin tamamı yetkilendirilir). Plan tek istekte bütün olarak kaydedilir ve kapı işlem loguna yazılır; düzenleme geniş ekranda yapılır, telefonda plan görüntülenir.
 - Simülasyon varsayılan kapalıdır, üretimde çalışmaz. Açılması için backend `ENABLE_SIMULATION=true`, frontend `VITE_ENABLE_SIMULATION=true` ve ayrı `gksreview_`/`gkstest_` veritabanı gerekir. Personel ve kapıları yalnız ekler; geçişlerde varsayılan olarak seçilen aralığın mevcut geçişlerini silip yeniden üretir.
 
-Yayın kapsamı ve geri dönüş adımları: [V1 sürüm notları](docs/V1-surum-notlari.md).
+Yayın kapsamı, güncelleme ve geri dönüş adımları: [V2 sürüm notları](docs/V2-surum-notlari.md), [V1 sürüm notları](docs/V1-surum-notlari.md).
 
 
 ## Mesai karar sözleşmesi (V1)
@@ -113,7 +117,7 @@ Mesai listesi pozitif hesaplanan süreleri ve daha önce karara bağlanmış kay
 
 Ortak veri tablolarındaki **Excel İndir (.xlsx)** düğmesi gerçek bir Office Open XML çalışma kitabı indirir. Görünen veri kolonlarının sırası, etkin kolon filtreleri ve sıralama korunur; işlem düğmeleri dosyaya alınmaz. Puantaj dosyası seçili rapor tarihini adında taşır.
 
-Puantaj sayfasının **Dönemsel Rapor** sekmesi bir hafta (Pazartesi–Pazar), takvim ayı veya en fazla 92 günlük özel aralık için günlük puantajın aynı hesabını çalıştırır. Kapsam tek kişi, departman, en fazla 100 seçili kişi veya tüm personeldir. Özet tablosu kişi başı çalışılan, devamsız, izinli ve hafta tatili günlerini; geç kalma sayısı ve dakikasını, erken çıkışı, çalışma süresini (ilk giriş–son çıkış arasından yemek ve mola düşülür), onaylı fazla mesaiyi, yemek, mola ve mola aşımını toplar; kişinin adı günlük dökümünü açar. Excel dosyası "Özet" ve "Günlük" iki sayfa içerir (`puantaj_<kapsam>_<başlangıç>_<bitiş>.xlsx`). Seçimler adres çubuğunda tutulur, bağlantı aynı raporu yeniden açar. API: `GET /api/reports/attendance`.
+Puantaj sayfasının **Dönemsel Rapor** sekmesi bir hafta (Pazartesi–Pazar), takvim ayı veya en fazla 92 günlük özel aralık için günlük puantajın aynı hesabını çalıştırır; bugünden (demoda referans günden) sonraki günler henüz yaşanmadığı için sayılmaz. Kapsam tek kişi, departman, en fazla 100 seçili kişi veya tüm personeldir. Özet tablosu kişi başı çalışılan, devamsız, izinli ve hafta tatili günlerini; geç kalma sayısı ve dakikasını, erken çıkışı, çalışma süresini (ilk giriş–son çıkış arasından yemek ve mola düşülür), onaylı fazla mesaiyi, yemek, mola ve mola aşımını toplar; kişinin adı günlük dökümünü açar. Excel dosyası "Özet" ve "Günlük" iki sayfa içerir (`puantaj_<kapsam>_<başlangıç>_<bitiş>.xlsx`). Seçimler adres çubuğunda tutulur, bağlantı aynı raporu yeniden açar. API: `GET /api/reports/attendance`.
 
 Tarayıcıda sayfalanan tablolarda filtreye uyan bütün sayfalar; sunucu tarafından sayfalanan listelerde yalnız yüklenmiş sayfanın filtrelenen satırları indirilir. Kapsam düğmenin yanında belirtilir. Seçili satırlar ayrıca bir indirme filtresi değildir. Kullanıcı metinleri Excel formülü olarak yorumlanmaz; metin sicillerin baştaki sıfırları ve sayısal süreler korunur. Başlık satırı sabitlenir ve Excel otomatik filtresi eklenir. ExcelJS yalnız indirme sırasında yüklenir.
 

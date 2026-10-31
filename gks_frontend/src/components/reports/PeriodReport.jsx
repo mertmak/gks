@@ -33,7 +33,8 @@ const columns = spec => spec.map(([headerName, get], i) => ({ headerName, valueG
 const sheet = (name, spec, rows) => ({ name, headers: spec.map(([h]) => h), rows: rows.map(r => spec.map(([, get]) => get(r))) });
 
 function periodQuery(params) {
-  return Object.fromEntries(KEYS.map(k => [k, params.get(k) || '']).filter(([, v]) => v));
+  // Hand-typed links like ?donem=ay fall back to the tab's defaults instead of a 400.
+  return { baslangic: businessDate(), kapsam: 'tumu', ...Object.fromEntries(KEYS.map(k => [k, params.get(k) || '']).filter(([, v]) => v)) };
 }
 
 function PeriodReport() {
