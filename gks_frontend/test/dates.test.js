@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import process from 'node:process';
-import { businessDate, previousMonthDate, shiftDateDays } from '../src/utils/dates.js';
+import { businessDate, previousMonthDate, shiftDateDays, shiftPeriod } from '../src/utils/dates.js';
 import { configureDemo } from '../src/utils/demo.js';
 
 test('calendar filter defaults preserve month ends and leap days in every host timezone', () => {
@@ -37,4 +37,11 @@ test('local browser dates use the server business timezone instead of a fixed Is
   try {
     assert.equal(businessDate(new Date('2026-09-22T21:30:00Z')), '2026-09-22');
   } finally { configureDemo({ demo: false, referenceDate: null }); }
+});
+
+test('shiftPeriod moves a week, a calendar month or the same custom length', () => {
+  assert.deepEqual(shiftPeriod({ donem: 'hafta', baslangic: '2026-09-30' }, 1), { baslangic: '2026-10-07' });
+  assert.deepEqual(shiftPeriod({ donem: 'ay', baslangic: '2026-01-31' }, 1), { baslangic: '2026-02-01' });
+  assert.deepEqual(shiftPeriod({ donem: 'ay', baslangic: '2026-01-15' }, -1), { baslangic: '2025-12-01' });
+  assert.deepEqual(shiftPeriod({ donem: 'ozel', baslangic: '2026-09-01', bitis: '2026-09-10' }, -1), { baslangic: '2026-08-22', bitis: '2026-08-31' });
 });

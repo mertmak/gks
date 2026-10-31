@@ -40,3 +40,15 @@ test('Grid export respects displayed columns and filtered/sorted rows, excludes 
   };
   assert.deepEqual(gridExcelData(api), { headers: ['Ad', 'Tarih'], rows: [['İkinci', '14.09.2026'], ['İlk', '13.09.2026']] });
 });
+
+test('a list of named sheets becomes one workbook', async () => {
+  const buffer = await createExcelBuffer([
+    { name: 'Özet', headers: ['Ad Soyad', 'Gün'], rows: [['A', 30]] },
+    { name: 'Günlük', headers: ['Tarih'], rows: [['01.09.2026'], ['02.09.2026']] },
+  ]);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  assert.deepEqual(workbook.worksheets.map(sheet => sheet.name), ['Özet', 'Günlük']);
+  assert.equal(workbook.getWorksheet('Özet').getCell('B2').value, 30);
+  assert.equal(workbook.getWorksheet('Günlük').rowCount, 3);
+});

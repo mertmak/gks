@@ -100,7 +100,7 @@ export default function AppShell({ nav, banner, account, children }) {
     <div className="min-h-screen bg-page text-ink lg:flex">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[60] focus:bg-surface focus:text-ink focus:px-4 focus:py-2 focus:rounded-md">İçeriğe geç</a>
 
-      <aside className={`hidden lg:flex flex-col shrink-0 bg-rail sticky top-0 h-screen ${collapsed ? 'w-[4.5rem]' : 'w-60'}`}>
+      <aside className={`hidden lg:flex print:hidden flex-col shrink-0 bg-rail sticky top-0 h-screen ${collapsed ? 'w-[4.5rem]' : 'w-60'}`}>
         <div className={`flex items-center h-14 px-4 ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {!collapsed && brand}
           <button type="button" onClick={toggleCollapsed} aria-label={collapsed ? 'Menüyü genişlet' : 'Menüyü daralt'} aria-expanded={!collapsed}
@@ -126,7 +126,7 @@ export default function AppShell({ nav, banner, account, children }) {
 
       <div className="flex-1 min-w-0 flex flex-col">
         {banner}
-        <header className="sticky top-0 z-40 h-14 bg-surface border-b border-line flex items-center gap-2 px-3 sm:px-4">
+        <header className="print:hidden sticky top-0 z-40 h-14 bg-surface border-b border-line flex items-center gap-2 px-3 sm:px-4">
           <button type="button" onClick={() => setDrawer(true)} aria-label="Menüyü aç" className="lg:hidden p-3 rounded-md text-ink hover:bg-surface-3"><Icon name="menu" /></button>
           <span className="lg:hidden font-bold">GKS</span>
           <div className="ml-auto flex items-center gap-1 sm:gap-2">

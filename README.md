@@ -113,6 +113,8 @@ Mesai listesi pozitif hesaplanan süreleri ve daha önce karara bağlanmış kay
 
 Ortak veri tablolarındaki **Excel İndir (.xlsx)** düğmesi gerçek bir Office Open XML çalışma kitabı indirir. Görünen veri kolonlarının sırası, etkin kolon filtreleri ve sıralama korunur; işlem düğmeleri dosyaya alınmaz. Puantaj dosyası seçili rapor tarihini adında taşır.
 
+Puantaj sayfasının **Dönemsel Rapor** sekmesi bir hafta (Pazartesi–Pazar), takvim ayı veya en fazla 92 günlük özel aralık için günlük puantajın aynı hesabını çalıştırır. Kapsam tek kişi, departman, en fazla 100 seçili kişi veya tüm personeldir. Özet tablosu kişi başı çalışılan, devamsız, izinli ve hafta tatili günlerini; geç kalma sayısı ve dakikasını, erken çıkışı, çalışma süresini (ilk giriş–son çıkış arasından yemek ve mola düşülür), onaylı fazla mesaiyi, yemek, mola ve mola aşımını toplar; kişinin adı günlük dökümünü açar. Excel dosyası "Özet" ve "Günlük" iki sayfa içerir (`puantaj_<kapsam>_<başlangıç>_<bitiş>.xlsx`). Seçimler adres çubuğunda tutulur, bağlantı aynı raporu yeniden açar. API: `GET /api/reports/attendance`.
+
 Tarayıcıda sayfalanan tablolarda filtreye uyan bütün sayfalar; sunucu tarafından sayfalanan listelerde yalnız yüklenmiş sayfanın filtrelenen satırları indirilir. Kapsam düğmenin yanında belirtilir. Seçili satırlar ayrıca bir indirme filtresi değildir. Kullanıcı metinleri Excel formülü olarak yorumlanmaz; metin sicillerin baştaki sıfırları ve sayısal süreler korunur. Başlık satırı sabitlenir ve Excel otomatik filtresi eklenir. ExcelJS yalnız indirme sırasında yüklenir.
 
 `npm test --prefix gks_frontend` çalışma kitabını yeniden okuyarak hücre türleri, Türkçe karakterler, sicil, tarih ve formül güvenliğini denetler; CI bu testleri de çalıştırır.

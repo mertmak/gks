@@ -20,3 +20,15 @@ export function previousMonthDate(value) {
   date.setUTCDate(Math.min(day, lastDay));
   return date.toISOString().slice(0, 10);
 }
+
+// Previous (-1) or next (+1) report period; the server widens hafta/ay around baslangic.
+export function shiftPeriod({ donem, baslangic, bitis }, dir) {
+  if (donem === 'hafta') return { baslangic: shiftDateDays(baslangic, 7 * dir) };
+  if (donem === 'ay') {
+    const date = new Date(`${baslangic.slice(0, 7)}-01T00:00:00Z`);
+    date.setUTCMonth(date.getUTCMonth() + dir);
+    return { baslangic: date.toISOString().slice(0, 10) };
+  }
+  const length = (Date.parse(bitis) - Date.parse(baslangic)) / 86400000 + 1;
+  return { baslangic: shiftDateDays(baslangic, length * dir), bitis: shiftDateDays(bitis, length * dir) };
+}
