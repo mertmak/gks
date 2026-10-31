@@ -63,7 +63,7 @@ npm start --prefix gks_backend
 npm run dev --prefix gks_frontend
 ```
 
-Arayüz: http://localhost:5173. Vite `/api` ve `/socket.io` isteklerini backend'e yönlendirir. Uygulama varsayılan olarak yalnızca yerel bilgisayardan erişilir.
+Arayüz: http://127.0.0.1:5173. Vite `/api` ve `/socket.io` isteklerini backend'e yönlendirir. Uygulama varsayılan olarak yalnızca yerel bilgisayardan erişilir.
 
 Docker ile tam yerel kurulum için [boş DB → migration → ilk yönetici → isteğe bağlı seed → nginx](docs/local-docker.md) adımlarını izleyin. Yerel kullanım `compose.local.yaml` ekini açıkça seçer; ayrı yönetilen PostgreSQL'e bağlanan üretim kurulumu yalnız `compose.yaml` kullanır. PostgreSQL ve HTTPS dahil tek sunuculu kurulum için [hosting kılavuzunu](docs/hosting.md) izleyin.
 
@@ -74,9 +74,12 @@ npm test --prefix gks_backend
 npm test --prefix gks_frontend
 npm run lint --prefix gks_frontend
 npm run build --prefix gks_frontend
-npm audit --prefix gks_backend
-npm audit --prefix gks_frontend
+npm audit --prefix gks_backend --audit-level=high
+npm audit --prefix gks_frontend --audit-level=high
+node --test scripts/test/*.test.js && node scripts/prepare-release.js
 ```
+
+Bu liste CI'daki checks işiyle aynıdır; son satır yayın dışa aktarım araçlarını denetler.
 
 Veritabanı testleri varsayılan olarak atlanır. Yerel PostgreSQL bağlantısını backend `.env` dosyasında hazırlayıp proje kökünden çalıştırın:
 
