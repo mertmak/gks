@@ -10,7 +10,9 @@ router.get('/reports/daily-attendance',verifyToken,validateQuery(reportQuery),as
 router.get('/reports/attendance',verifyToken,validateQuery(periodReportQuery),async(req,res,next)=>{
     try {
         const q=req.validatedQuery;const range=periodRange(q);
-        const gunler=await attendance(range.baslangic,range.bitis,{userIds:['kisi','secili'].includes(q.kapsam)?q.personel:undefined,departman:q.kapsam==='departman'?q.departman:undefined});
+        // Days after today have not happened yet; counting them would report them as absent.
+        const today=businessToday();const end=range.bitis<today?range.bitis:today;
+        const gunler=end<range.baslangic?[]:await attendance(range.baslangic,end,{userIds:['kisi','secili'].includes(q.kapsam)?q.personel:undefined,departman:q.kapsam==='departman'?q.departman:undefined});
         res.json({...range,gunler,...summarize(gunler)});
     } catch(e){next(e);}
 });
