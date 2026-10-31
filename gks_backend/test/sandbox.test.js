@@ -29,9 +29,7 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         .query('SELECT COUNT(*) AS n FROM pg_namespace WHERE nspname=@name')).recordset[0].n === 1;
     const schemaOf = token => jwt.decode(token).sandbox;
 
-    await sql.query("INSERT INTO Katlar(Kat_Adi,Sira) VALUES('Zemin Kat',0)");
-    await sql.query(`INSERT INTO Bolgeler(Kat_ID,Bolge_Adi,Bolge_Turu,Noktalar) SELECT ID,'Demo Lobi','Lobi','[[40,40],[240,40],[240,240],[40,240]]' FROM Katlar`);
-    await sql.query('UPDATE Doors SET Plan_X=40, Plan_Y=100, Bolge_B_ID=(SELECT min(ID) FROM Bolgeler) WHERE ID=(SELECT min(ID) FROM Doors)');
+    assert.equal(await count('Bolgeler'), 5, 'the demo seed draws the plan the copies start from');
     assert.equal((await call('GET', '/public-config')).data.sandbox, true);
     const first = await call('POST', '/sandbox');
     assert.equal(first.status, 200, JSON.stringify(first.data));
@@ -46,7 +44,7 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         for (const query of ['SELECT ID, User_ID FROM Logs ORDER BY ID', 'SELECT ID, Plan_X, Plan_Y, Bolge_A_ID, Bolge_B_ID FROM Doors ORDER BY ID']) {
             assert.deepEqual((await runInSchema(schemaOf(a), () => sql.query(query))).recordset, (await sql.query(query)).recordset);
         }
-        assert.equal(await count('Bolgeler', schemaOf(a)), 1);
+        assert.equal(await count('Bolgeler', schemaOf(a)), 5);
         assert.equal(await count('Katlar', schemaOf(a)), 1);
         const viewer = (await call('POST', '/demo-login')).data.token;
         const expected = (await call('GET', '/reports/daily-attendance?tarih=2026-09-07', viewer)).data;
@@ -99,12 +97,12 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         const saved = await call('PUT', '/kat-plani', a, { katlar, bolgeler: [area, { ...area, ref: 'y', kat: 'u' }], kapilar: [] });
         assert.equal(saved.status, 200, JSON.stringify(saved.data));
         assert.equal(await count('Bolgeler', schemaOf(a)), 2);
-        assert.equal(await count('Bolgeler', schemaOf(b)), 1);
-        assert.equal(await count('Bolgeler'), 1);
+        assert.equal(await count('Bolgeler', schemaOf(b)), 5);
+        assert.equal(await count('Bolgeler'), 5);
         assert.deepEqual([await count('Katlar', schemaOf(a)), await count('Katlar', schemaOf(b)), await count('Katlar')], [2, 1, 1]);
         const viewer = (await call('POST', '/demo-login')).data.token;
         assert.equal((await call('PUT', '/kat-plani', viewer, { katlar: [], bolgeler: [], kapilar: [] })).status, 403);
-        assert.equal((await call('GET', '/kat-plani', viewer)).data.bolgeler.length, 1);
+        assert.equal((await call('GET', '/kat-plani', viewer)).data.bolgeler.length, 5);
     });
 
     await t.test('socket events reach only the copy that changed', async () => {
@@ -150,7 +148,9 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         assert.equal(reset.status, 200);
         assert.equal(await schemaExists(schemaOf(c)), false);
         assert.equal(await count('Users', schemaOf(reset.data.token)), 12);
-        assert.equal(await sandbox.purge({ all: true }), 1);
+        assert.equal(await sandbox.purge(), 0, 'a restart keeps open copies of the current version');
+        await sql.query(`COMMENT ON SCHEMA ${schemaOf(reset.data.token)} IS '000_eski.sql'`);
+        assert.equal(await sandbox.purge(), 1, 'copies built by older migrations are dropped');
         assert.equal((await sql.query("SELECT COUNT(*) AS n FROM pg_namespace WHERE nspname LIKE 'sbx\\_%'")).recordset[0].n, 0);
         assert.equal(await count('GksSandboxes'), 0);
     });

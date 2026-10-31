@@ -51,9 +51,8 @@ async function start() {
     if(production) await assertProductionDatabase();
     socket.init(server);
     if(sandbox.enabled) {
-        // Copies built by an earlier release may not match the current migrations.
         const services=require('./services/sandbox');
-        logger.info(`${await services.purge({all:true})} simülasyon alanı temizlendi.`);
+        logger.info(`${await services.purge()} simülasyon alanı temizlendi.`);
         setInterval(()=>services.purge().catch(e=>logger.error('Simülasyon temizliği başarısız: '+e.message)),5*60000).unref();
     }
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(process.env.PORT||3000,process.env.HOST||'127.0.0.1',resolve);});

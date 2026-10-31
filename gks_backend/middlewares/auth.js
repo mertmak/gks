@@ -19,7 +19,7 @@ const verifyToken = (req, res, next) => {
                     if (authData.sandbox) {
                         // A personal simulation copy: full rights inside its own schema only.
                         if (!await require('../services/sandbox').isActive(authData.sandbox)) {
-                            return res.status(401).json({ success: false, code: 'SANDBOX_EXPIRED', message: 'Simülasyon alanının süresi doldu.' });
+                            return res.status(401).json({ success: false, code: 'SANDBOX_EXPIRED', message: 'Simülasyon alanı kapatıldı (süresi doldu veya sunucu güncellendi).' });
                         }
                         req.user = { role: 'admin', sandbox: authData.sandbox, demo: true, kullanici_adi: require('../config/sandbox').visitorName, exp: authData.exp };
                         return require('../db/context').runInSchema(authData.sandbox, next);

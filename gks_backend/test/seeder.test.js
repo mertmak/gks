@@ -51,6 +51,16 @@ test('simulation is atomic and accepts quoted names', {skip: process.env.RUN_SIM
       assert.ok(exit.every(row => row.Zaman >= new Date('2026-09-08T06:00:00Z') && row.Zaman <= new Date('2026-09-08T07:44:00Z')));
       assert.ok(meals.every(row => row.Zaman >= new Date('2026-09-08T02:35:00Z') && row.Zaman <= new Date('2026-09-08T03:43:00Z')));
     });
+    await t.test('replace drops the range before writing, including the night shift\'s morning exit', async () => {
+      const lastId = (await sql.query('SELECT MAX(ID) AS ID FROM Logs')).recordset[0].ID;
+      const result = await call({ ...body, userAction:'keep', doorAction:'keep', logAction:'replace' });
+      assert.equal(result.status, 200, JSON.stringify(result.data));
+      // 22:45–06:15 shift: its 24h window is 14:30 → 14:30 next day.
+      const old = window => sql.query(`SELECT COUNT(*) AS n FROM Logs WHERE ID<=${lastId} AND Zaman${window}`).then(r => r.recordset[0].n);
+      assert.equal(await old(">='2026-09-07T14:30:00'"), 0);
+      assert.ok(await old("<'2026-09-07T14:30:00'") > 0, 'logs outside the window stay');
+      assert.ok((await sql.query('SELECT COUNT(*) AS n FROM Logs')).recordset[0].n > 0);
+    });
   } finally {
     await new Promise(resolve => io.close(resolve)); await sql.close();
   }

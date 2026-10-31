@@ -3,6 +3,7 @@ const router = express.Router();
 const { sql } = require('../db');
 const { verifyToken, verifyAdmin } = require('../middlewares/auth');
 const { simulationTimes } = require('../utils/simulationTimes');
+const { shiftWindow } = require('../utils/attendance');
 const { httpError } = require('../utils/transaction');
 const socket = require('../utils/socket');
 
@@ -25,12 +26,12 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
     const { z } = require('zod');
     const { date, id, number, validDateRange } = require('../middlewares/validate');
     const parsed = z.object({
-      userAction:z.enum(['keep','append']),doorAction:z.enum(['keep','append']),logAction:z.literal('append'),
+      userAction:z.enum(['keep','append']),doorAction:z.enum(['keep','append']),logAction:z.enum(['append','replace']),
       personelSayisi:number(1,100),kapiSayisi:number(1,50),vardiyaId:id,
       startDateStr:date,endDateStr:date,
       customIsimler:z.string().max(2000).default(''),customSoyisimler:z.string().max(2000).default(''),customDepartmanlar:z.string().max(2000).default(''),customKapilar:z.string().max(2000).default('')
     }).refine(v=>validDateRange(v.startDateStr,v.endDateStr,31)).safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({success:false,message:'En fazla 31 günlük, yalnızca ekleme yapan bir simülasyon seçiniz.'});
+    if (!parsed.success) return res.status(400).json({success:false,message:'En fazla 31 günlük geçerli bir simülasyon seçiniz.'});
     if (sandbox && (parsed.data.personelSayisi > 50 || parsed.data.kapiSayisi > 10 || !validDateRange(parsed.data.startDateStr, parsed.data.endDateStr, 14))) {
         return res.status(400).json({success:false,message:'Simülasyon alanında en fazla 50 personel, 10 kapı ve 14 gün üretilebilir.'});
     }
@@ -39,7 +40,7 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
     const query = (strings, ...values) => new sql.Request(transaction).query(strings, ...values);
 
     const { 
-        userAction, doorAction, kapiSayisi, personelSayisi,
+        userAction, doorAction, logAction, kapiSayisi, personelSayisi,
         vardiyaId, startDateStr, endDateStr,
         customIsimler, customSoyisimler, customDepartmanlar, customKapilar
     } = req.body;
@@ -104,6 +105,12 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
         await query`INSERT INTO Permissions(User_ID,Door_ID) SELECT U.ID,D.ID FROM Users U CROSS JOIN Doors D
           WHERE U.Durum=true AND D.Durum=true AND D.Kapi_Turu IN('Ana Giriş','Ana Çıkış')
           AND NOT EXISTS(SELECT 1 FROM Permissions P WHERE P.User_ID=U.ID AND P.Door_ID=D.ID)`;
+        // replace: drop what attendance counts on those days (the shift's 24h windows, so a night
+        // shift's morning exit goes too) for active people, so a re-run does not double the logs.
+        if (logAction === 'replace') {
+            const from = shiftWindow({ ...hedefVardiya, Tarih: startDateStr }).from, to = shiftWindow({ ...hedefVardiya, Tarih: endDateStr }).to;
+            await query`DELETE FROM Logs WHERE User_ID IN (SELECT ID FROM Users WHERE Durum=true) AND Zaman>=${from} AND Zaman<${to}`;
+        }
         let logValues = [];
         for (let dt = new Date(startDate); dt <= endDate; dt.setUTCDate(dt.getUTCDate() + 1)) {
             const islemTarihi = new Date(dt);

@@ -158,4 +158,4 @@ async function applyTemplate(tx, user, { grant = false, template = 'ofis' } = {}
     return { created, placed: kapilar.length };
 }
 
-module.exports = { readPlan, updatePlan, applyTemplate, templates };
+module.exports = { readPlan, savePlan, updatePlan, applyTemplate, templates };

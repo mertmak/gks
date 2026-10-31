@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
-const { escapeIdentifier } = require('pg');
+const { escapeIdentifier, escapeLiteral } = require('pg');
 const { sql, searchPath } = require('../db');
 const { schemaPattern } = require('../db/context');
 const locks = require('../db/locks');
@@ -19,6 +19,9 @@ const quotas = Object.freeze({
 });
 const QUOTA_ERROR = 'GKSQ1';
 const migrations = path.resolve(__dirname, '../../database/migrations');
+const migrationFiles = fs.readdirSync(migrations).filter(name => name.endsWith('.sql')).sort();
+// Each copy is labelled with the last migration it was built from.
+const version = migrationFiles.at(-1);
 
 const quotaFunction = `
 CREATE FUNCTION gks_sandbox_quota() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -62,9 +65,8 @@ async function create() {
         }
         await client.query(`CREATE SCHEMA ${escapeIdentifier(schema)}`);
         await client.query(searchPath(schema));
-        for (const name of fs.readdirSync(migrations).filter(name => name.endsWith('.sql')).sort()) {
-            await client.query(fs.readFileSync(path.join(migrations, name), 'utf8'));
-        }
+        for (const name of migrationFiles) await client.query(fs.readFileSync(path.join(migrations, name), 'utf8'));
+        await client.query(`COMMENT ON SCHEMA ${escapeIdentifier(schema)} IS ${escapeLiteral(version)}`);
         await client.query('DROP TABLE gkssandboxes');
         for (const table of copied) {
             // Logs.User_ID was frozen at capture time; the copy must not recompute it.
@@ -99,14 +101,15 @@ async function drop(schema) {
     });
 }
 
-// Expired copies, and with `all` every copy (startup: schemas built by older
-// migrations must not outlive a deploy). Orphan sbx_ schemas are removed too.
-async function purge({ all = false } = {}) {
-    const result = await sql.query(`
+// Expired copies and copies built by an older set of migrations (after a
+// deploy); a plain restart keeps open copies. Orphan sbx_ schemas go too.
+async function purge() {
+    const result = await new sql.Request().input('version', sql.VarChar, version).query(`
         SELECT nspname AS name FROM pg_namespace N
         WHERE nspname ~ '^sbx_[0-9a-f]{16}$' AND pg_has_role(nspowner, 'USAGE')
-          AND (${all ? 'true' : 'false'} OR NOT EXISTS (SELECT 1 FROM public.GksSandboxes S WHERE S.Schema_Adi=N.nspname AND S.Bitis > LOCALTIMESTAMP))
-        UNION SELECT Schema_Adi FROM public.GksSandboxes WHERE ${all ? 'true' : 'Bitis <= LOCALTIMESTAMP'}`);
+          AND (obj_description(N.oid, 'pg_namespace') IS DISTINCT FROM @version
+               OR NOT EXISTS (SELECT 1 FROM public.GksSandboxes S WHERE S.Schema_Adi=N.nspname AND S.Bitis > LOCALTIMESTAMP))
+        UNION SELECT Schema_Adi FROM public.GksSandboxes WHERE Bitis <= LOCALTIMESTAMP`);
     for (const { name } of result.recordset) {
         try { await drop(name); } catch (error) { logger.error('Simülasyon alanı silinemedi: ' + error.message); }
     }
