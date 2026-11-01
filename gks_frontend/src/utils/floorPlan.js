@@ -18,7 +18,7 @@ export const AREA_COLORS = {
   Ofis: { fill: '#e0e7ff', stroke: '#4f46e5' },
   Yemekhane: { fill: '#fef3c7', stroke: '#d97706' },
   Mola: { fill: '#d1fae5', stroke: '#059669' },
-  'Merdiven/Asansör': { fill: '#ede9fe', stroke: '#7c3aed' },
+  'Merdiven/Asansör': { fill: '#ecfccb', stroke: '#65a30d' },
   Üretim: { fill: '#ffedd5', stroke: '#ea580c' },
   Depo: { fill: '#e7e5e4', stroke: '#57534e' },
   Soyunma: { fill: '#fce7f3', stroke: '#db2777' },
