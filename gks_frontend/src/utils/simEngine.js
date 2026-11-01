@@ -116,12 +116,22 @@ export function createSimulation(plan, dayPlan, { misread = 0, random = Math.ran
   const planned = dayPlan.kisiler.filter(person => person.olaylar.length);
   const times = planned.flatMap(person => person.olaylar.map(event => toMs(event.zaman)));
   const day = toMs(dayPlan.tarih + 'T00:00:00');
-  const people = planned.map((person, index) => ({
-    id: person.id, name: person.ad_soyad, card: person.kart, late: person.gec, index,
-    permitted: new Set(person.kapilar), home: homes[index % homes.length]?.ref ?? null,
-    node: OUTSIDE, floor: null, x: -100, y: -100, legs: [], next: 0,
-    events: person.olaylar.map(event => ({ type: event.tur, at: toMs(event.zaman) })),
-  }));
+  const breakArea = plan.areas.find(area => area.type === 'Mola')?.ref;
+  const people = planned.map((person, index) => {
+    const permitted = new Set(person.kapilar);
+    const reachable = ref => !!route(plan, OUTSIDE, ref, door => permitted.has(door.id))?.every(leg => !leg.door || permitted.has(leg.door.id));
+    // People work where their own doors lead and skip a break area they may not
+    // enter; someone whose doors reach no work area still gets one in turn.
+    const own = homes.filter(area => reachable(area.ref));
+    const restsOutside = breakArea != null && !reachable(breakArea);
+    return {
+      id: person.id, name: person.ad_soyad, card: person.kart, late: person.gec, index,
+      permitted, home: (own.length ? own : homes)[index % (own.length || homes.length)]?.ref ?? null,
+      node: OUTSIDE, floor: null, x: -100, y: -100, legs: [], next: 0,
+      events: person.olaylar.filter(event => !restsOutside || !['mola', 'moladan_don'].includes(event.tur))
+        .map(event => ({ type: event.tur, at: toMs(event.zaman) })),
+    };
+  });
   return {
     plan, day, misread, random, people, nextRead: 1,
     clock: times.length ? Math.min(...times) - 30 * MINUTE : day + 8 * 60 * MINUTE,

@@ -140,3 +140,18 @@ test('people take the stairs between floors, without a read on the stairs', () =
   assert.deepEqual(sim.feed.map(entry => entry.doorId).reverse(), [1, 2, 3]);
   assert.deepEqual([sim.people[0].node, sim.people[0].floor], ['ust', 'u']);
 });
+
+test('people work where their own doors lead and skip a break area they may not enter', () => {
+  const factory = {
+    areas: [...plan.areas, area('uretim', 'Üretim', 40, 440, 200, 200)],
+    doors: [...plan.doors, door(8, 'İç Geçiş', 140, 440, 'lobi', 'uretim')],
+  };
+  const events = [{ tur: 'giris', zaman: '2026-09-08T09:00:00' }, { tur: 'mola', zaman: '2026-09-08T10:30:00' }, { tur: 'moladan_don', zaman: '2026-09-08T10:45:00' }];
+  const person = (id, kapilar) => ({ id, ad_soyad: `Kişi ${id}`, kart: `3000000001${id}`, kapilar, gec: false, durum: 'Planlı', olaylar: events });
+  // Index order alone would send the second worker to the office.
+  const sim = createSimulation(factory, { tarih: '2026-09-08', kisiler: [person(1, [1, 2, 8]), person(2, [1, 2, 8]), person(3, all)] });
+  assert.deepEqual(sim.people.map(item => item.home), ['uretim', 'uretim', 'ofis']);
+  assert.deepEqual(sim.people.map(item => item.events.length), [1, 1, 3]);
+  while (!finished(sim)) step(sim, 10 * 60000);
+  assert.ok(sim.feed.every(entry => entry.ok), 'nobody walks into a door they may not use');
+});

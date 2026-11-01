@@ -12,15 +12,15 @@ GKS, **PolyForm Internal Use 1.0.0 + kişisel öğrenme ek izni** ile sunulur. �
 
 ## Demo görselleri
 
-Yerel demodan alınmıştır; bütün kişi, kapı ve hareket kayıtları sentetiktir. Görseller önceki küçük demo verisindendir (referans gün 7 Eylül 2026); güncel demo aşağıda anlatılan fabrika verisini kullanır.
+Yerel demodan alınmıştır; bütün şirket, kişi, kapı ve hareket kayıtları uydurmadır. Referans gün 30 Ekim 2026'dır.
 
 ![Ana sayfa, açık tema](docs/images/v2-ana-sayfa-acik.png)
 
-![Dönemsel puantaj: ay, tüm personel, açık tema](docs/images/v2-donemsel-puantaj-acik.png)
+![Dönemsel puantaj: Ekim 2026, tüm personel, açık tema](docs/images/v2-donemsel-puantaj-acik.png)
 
-![Tesis Tasarımı: demo ofis planı, koyu tema](docs/images/v2-tesis-tasarimi-koyu.png)
+![Tesis Tasarımı: iki katlı demo fabrika planı, koyu tema](docs/images/v2-tesis-tasarimi-koyu.png)
 
-![Canlı Simülasyon: kişisel simülasyon alanında bir gün, koyu tema](docs/images/v2-canli-simulasyon-koyu.png)
+![Canlı Simülasyon: kişisel simülasyon alanında bir cumartesi sabah vardiyası, koyu tema](docs/images/v2-canli-simulasyon-koyu.png)
 
 ## Mimari
 
