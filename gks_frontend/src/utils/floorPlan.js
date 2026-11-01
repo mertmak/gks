@@ -228,6 +228,19 @@ export function passages(areas, door) {
   }));
 }
 
+// Unit vector of the allowed way through a one-way door (null for two-way doors); the outside has no centre, so it uses the door itself.
+export function doorArrow(areas, door) {
+  if (door.oneWay === 'Çift') return null;
+  const [from, to] = door.oneWay === 'A→B' ? [door.a, door.b] : [door.b, door.a];
+  const centre = ref => {
+    const area = areas.find(item => item.ref === ref);
+    return area ? { x: area.points.reduce((sum, p) => sum + p[0], 0) / area.points.length, y: area.points.reduce((sum, p) => sum + p[1], 0) / area.points.length } : { x: door.x, y: door.y };
+  };
+  const a = centre(from), b = centre(to);
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  return length ? { dx: (b.x - a.x) / length, dy: (b.y - a.y) / length } : null;
+}
+
 // Stairs and lifts of the same group on other floors.
 export const partners = (areas, area) => area.type === VERTICAL && area.group.trim()
   ? areas.filter(other => other.ref !== area.ref && other.type === VERTICAL && other.group.trim() === area.group.trim()) : [];

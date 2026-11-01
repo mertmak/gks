@@ -1,13 +1,15 @@
 import { demoSettings } from '../utils/demo';
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import api from '../api/axios';
 import { socket } from '../api/socket';
 
 import StatCard        from '../components/dashboard/StatCard';
-import TrendChart      from '../components/dashboard/TrendChart';
-import DeptChart       from '../components/dashboard/DeptChart';
 import RecentLogsTable from '../components/dashboard/RecentLogsTable';
 import QuickLinks      from '../components/dashboard/QuickLinks';
+
+// Recharts ayrı parçada: kartlar ve tablo grafikleri beklemeden çizilir.
+const TrendChart = lazy(() => import('../components/dashboard/TrendChart'));
+const DeptChart  = lazy(() => import('../components/dashboard/DeptChart'));
 
 const TIME_FILTERS = [
   { key: 'gunluk',   label: 'Günlük' },
@@ -159,8 +161,12 @@ function Dashboard() {
 
       {/* GRAFİKLER */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        <TrendChart data={trendData} timeFilter={timeFilter} />
-        <DeptChart  data={deptData} />
+        <Suspense fallback={<div className="card h-80" aria-busy="true" />}>
+          <TrendChart data={trendData} timeFilter={timeFilter} />
+        </Suspense>
+        <Suspense fallback={<div className="card h-80" aria-busy="true" />}>
+          <DeptChart  data={deptData} />
+        </Suspense>
       </div>
 
       {/* SON HAREKETLER + HIZLI ERİŞİM */}

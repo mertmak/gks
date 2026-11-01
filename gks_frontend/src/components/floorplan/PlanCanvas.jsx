@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { AREA_COLORS, GRID, areaProblem, insertVertex, labelAt, midpoints, moveArea, moveVertex, placeDoor, removeVertex, snapPoint, viewBox } from '../../utils/floorPlan';
+import { AREA_COLORS, GRID, areaProblem, doorArrow, insertVertex, labelAt, midpoints, moveArea, moveVertex, placeDoor, removeVertex, snapPoint, viewBox } from '../../utils/floorPlan';
 
 const SELECT = '#0891b2';
 const INVALID = '#dc2626';
@@ -135,13 +135,15 @@ export default function PlanCanvas({ areas, doors, selected, editable, tool = 's
       })}
       {doors.filter(door => door.placed).map(door => {
         const active = selected?.kind === 'door' && selected.key === door.id;
+        const arrow = doorArrow(areas, door);
         const fill = !(door.a || door.b) ? INVALID : door.active ? '#0f172a' : '#94a3b8';
         return (
           <g key={door.id} className={selecting ? 'cursor-grab' : ''}
             onPointerDown={event => { if (tool !== 'select' || placing) return; onSelect({ kind: 'door', key: door.id }); start(event, { kind: 'door', id: door.id }); }}>
             {active && <circle cx={door.x} cy={door.y} r="17" fill="none" stroke={SELECT} strokeWidth="4" />}
             <circle cx={door.x} cy={door.y} r="11" fill={fill} stroke="#fff" strokeWidth="3" strokeDasharray={door.active ? undefined : '4 3'} />
-            {door.oneWay !== 'Çift' && <text x={door.x} y={door.y + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff" pointerEvents="none">1</text>}
+            {arrow && <path d={`M ${door.x + arrow.dx * 14} ${door.y + arrow.dy * 14} L ${door.x + arrow.dx * 28} ${door.y + arrow.dy * 28} M ${door.x + arrow.dx * 28 - arrow.dx * 7 + arrow.dy * 5} ${door.y + arrow.dy * 28 - arrow.dy * 7 - arrow.dx * 5} L ${door.x + arrow.dx * 28} ${door.y + arrow.dy * 28} L ${door.x + arrow.dx * 28 - arrow.dx * 7 - arrow.dy * 5} ${door.y + arrow.dy * 28 - arrow.dy * 7 + arrow.dx * 5}`}
+              fill="none" stroke={fill} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />}
             <text x={door.x + 15} y={door.y - 12} fontSize="12" fontWeight="600" fill="#334155" stroke="#fff" strokeWidth="3" paintOrder="stroke">{door.name}</text>
           </g>
         );
