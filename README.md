@@ -12,7 +12,7 @@ GKS, **PolyForm Internal Use 1.0.0 + kişisel öğrenme ek izni** ile sunulur. �
 
 ## Demo görselleri
 
-Yerel demodan alınmıştır; bütün kişi, kapı ve hareket kayıtları sentetiktir. Referans gün 7 Eylül 2026’dır.
+Yerel demodan alınmıştır; bütün kişi, kapı ve hareket kayıtları sentetiktir. Görseller önceki küçük demo verisindendir (referans gün 7 Eylül 2026); güncel demo aşağıda anlatılan fabrika verisini kullanır.
 
 ![Ana sayfa, açık tema](docs/images/v2-ana-sayfa-acik.png)
 
@@ -143,7 +143,7 @@ Frontend'i normal local çalışma komutuyla başlatın. “Demoyu İncele” d�
 
 Personel formunda T.C. kimlik numarası yalnız 11 rakam olarak denetlenir; kontrol hanesi algoritması bilinçli olarak uygulanmaz, çünkü bütün kişi verileri sentetiktir.
 
-Seed 12 sentetik personel, iki vardiya, altı kapı, farklı yetki setleri, izin/mesai kararları ve örnek işlem geçmişi oluşturur. Referans gün **7 Eylül 2026**; haftalık tatil örneği 6 Eylül, gece vardiyasının çıkışı 8 Eylül'dür. Dashboard ve varsayılan tarih filtreleri bu dönemi kullanır. Aynı seed sürümü yeniden çalıştırıldığında kayıt çoğalmaz. Boş olmayan iş tabloları reddedilir; veriler otomatik silinmez. Baştan kurulum için yeni bir `gksdemo_` veritabanı adı seçilip hem `DB_NAME` hem `DEMO_SEED_CONFIRM` güncellenir ve komutlar tekrarlanır. Seed onay değişkeni normal servis çalışmasında gerekli değildir.
+Seed, uydurma bir döküm ve makine fabrikasının (Selvitepe Döküm ve Makine San. A.Ş.; temizlik ve güvenlik taşeron firmadan) bir yıllık verisini üretir: 17 departmanda 119 kişi (yıl içinde 12 işe giriş, 9 çıkış, bir yeniden işe alım, iki kayıp kart), iki haftada bir dönen sabah/akşam/gece vardiyaları ve merkez ofis vardiyası, iki katlı fabrika planına yerleşik 12 kapı, resmi tatiller, yıllık izin/rapor/mazeret kayıtları, yaklaşık 143 bin geçiş (geç kalma, erken çıkış, devamsızlık, unutulan çıkış, mola aşımı, hafta sonu mesaisi, yetkisiz ve tanımsız kart denemeleri dahil), sunucunun kendi hesabıyla verilmiş fazla mesai kararları ve bunların işlem geçmişi. Dönem 1 Kasım 2025 – 30 Ekim 2026, referans gün **30 Ekim 2026**'dır; son haftanın fazla mesaileri onay bekler. İsimler, T.C. kimlik (kontrol hanesi geçerli, rastgele), kart ve sicil numaraları uydurmadır ve sabit bir tohumla her kurulumda aynı üretilir. Dashboard ve varsayılan tarih filtreleri referans günü kullanır. Aynı seed sürümü yeniden çalıştırıldığında kayıt çoğalmaz. Boş olmayan iş tabloları reddedilir; veriler otomatik silinmez. Baştan kurulum için yeni bir `gksdemo_` veritabanı adı seçilip hem `DB_NAME` hem `DEMO_SEED_CONFIRM` güncellenir ve komutlar tekrarlanır. Seed onay değişkeni normal servis çalışmasında gerekli değildir.
 
 Demo modu bütün iş verisi yazma çağrılarını, admin tokenı kullanılsa bile `403 DEMO_READ_ONLY` ile reddeder. `SANDBOX_MODE=true` ise ziyaretçi kendi simülasyon alanını açabilir: demo verisinin yalnız ona ait bir kopyasında (ayrı PostgreSQL şeması) personel, kapı, vardiya, izin ve mesai işlemleri ile toplu veri üretimi yapılır, puantaj bu veriden hesaplanır; hesap işlemleri kapalıdır, satır kotası vardır ve kopya süre dolunca silinir. Giriş uçları açık kalır; seed yalnız CLI komutudur. Yerel geliştirme simülatörü demo seed'inden ayrıdır. Public demo tek sunuculu düzende ([hosting kılavuzu](docs/hosting.md)) yayındadır.
 

@@ -14,8 +14,8 @@ const copied = ['Katlar', 'Bolgeler', 'Doors', 'Vardiyalar', 'Users', 'Permissio
     'Izinler', 'Logs', 'Mesai_Onaylari', 'SystemLogs', 'DoorLogs'];
 // Row limits per sandbox; checked once per INSERT statement.
 const quotas = Object.freeze({
-    Users: 300, Katlar: 10, Bolgeler: 60, Doors: 60, Vardiyalar: 30, Permissions: 10000, Personel_Vardiya: 3000, Personel_Calisma_Gecmisi: 3000,
-    Izinler: 3000, Logs: 50000, Mesai_Onaylari: 10000, SystemLogs: 20000, DoorLogs: 5000,
+    Users: 300, Katlar: 10, Bolgeler: 60, Doors: 60, Vardiyalar: 30, Permissions: 10000, Personel_Vardiya: 6000, Personel_Calisma_Gecmisi: 3000,
+    Izinler: 3000, Logs: 300000, Mesai_Onaylari: 10000, SystemLogs: 20000, DoorLogs: 5000,
 });
 const QUOTA_ERROR = 'GKSQ1';
 const migrations = path.resolve(__dirname, '../../database/migrations');

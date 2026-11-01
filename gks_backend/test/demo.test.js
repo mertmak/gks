@@ -28,29 +28,22 @@ test('demo denies every business mutation even with an admin token', { skip: pro
         const preserved = (await new sql.Request().input('id', sql.Int, setup[0].ID).query('SELECT * FROM SystemLogs WHERE ID=@id')).recordset;
         assert.deepEqual(preserved, setup);
     });
-    assert.deepEqual(await seedDemo(),{alreadySeeded:true,plan:false});
-    assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Bolgeler')).recordset[0].n,5);
-    assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Doors WHERE Plan_X IS NOT NULL')).recordset[0].n,7,'every demo door is on the plan');
-    assert.equal((await sql.query("SELECT COUNT(*) AS n FROM Permissions P JOIN Doors D ON D.ID=P.Door_ID WHERE D.Kapi_Adi='Demo Kapı 7'")).recordset[0].n,12);
-    await t.test('a demo seeded before the plan step gets the plan on the next run', async () => {
-        await sql.query("DELETE FROM GksSeedState WHERE Version='v2-kat-plani'; DELETE FROM Katlar; DELETE FROM Doors WHERE Kapi_Adi='Demo Kapı 7'; DELETE FROM DoorLogs WHERE Islem_Tipi='KAT PLANI GÜNCELLENDİ'");
-        assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Bolgeler')).recordset[0].n,0);
-        assert.deepEqual(await seedDemo(),{alreadySeeded:true,plan:true});
-        assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Doors WHERE Plan_X IS NOT NULL')).recordset[0].n,7);
-        assert.deepEqual((await sql.query("SELECT Tarih FROM DoorLogs WHERE Islem_Tipi='KAT PLANI GÜNCELLENDİ'")).recordset.map(r=>r.Tarih.toISOString()),['2026-09-07T08:00:00.000Z']);
-    });
-    assert.equal((await sql.query('SELECT COUNT(*) AS n FROM Users')).recordset[0].n,12);
-    const report=await require('../services/attendance').attendance('2026-09-07','2026-09-07');
-    const row=n=>report.find(r=>r.Sicil_No===String(10000+n));
-    assert.equal(row(1).Durum,'Normal');assert.equal(row(2).Hesaplanan_Dk,30);
-    assert.equal(row(3).Gec_Kalma_Dk,0);assert.equal(row(4).Gec_Kalma_Dk,11);
-    assert.equal(row(5).Erken_Cikma_Dk,30);assert.equal(row(6).Durum,'Çıkış Yok');
-    assert.equal(row(7).Durum,'Devamsız');assert.equal(row(8).Durum,'Yıllık İzin');
-    assert.equal(row(10).Mola_Asimi_Dk,15);assert.equal(row(10).Fazla_Mesai_Dk,60);
-    assert.equal(row(11).Fazla_Mesai_Dk,0);assert.equal(row(11).Mesai_Durumu,'Onaylandı');
-    assert.equal(row(12).Mesai_Durumu,'Reddedildi');
-    const holiday=(await require('../services/attendance').attendance('2026-09-06','2026-09-06')).find(r=>r.Sicil_No==='10009');
-    assert.equal(holiday.Hesaplanan_Dk,460);
+    assert.deepEqual(await seedDemo(),{alreadySeeded:true});
+    const count=async query=>(await sql.query(query)).recordset[0].n;
+    assert.equal(await count('SELECT COUNT(*) AS n FROM Bolgeler'),9);
+    assert.equal(await count('SELECT COUNT(*) AS n FROM Doors WHERE Plan_X IS NOT NULL'),12,'every demo door is on the factory plan');
+    assert.equal(await count('SELECT COUNT(*) AS n FROM Users'),119);
+    assert.equal(await count('SELECT COUNT(*) AS n FROM Users WHERE Durum'),110);
+    assert.equal(await count('SELECT COUNT(DISTINCT L.RFID_Kart_No) AS n FROM Logs L JOIN Users U ON U.ID=L.User_ID WHERE L.RFID_Kart_No<>U.RFID_Kart_No'),2,'passes made with a replaced card keep their owner');
+    assert.equal(await count('SELECT COUNT(*) AS n FROM Personel_Calisma_Gecmisi'),1);
+    // The whole year reads as a working factory: no rows the calendar cannot explain.
+    const year=await require('../services/attendance').attendance('2025-11-01','2026-10-30');
+    const statuses=new Set(year.map(row=>row.Durum));
+    for(const status of ['Normal','Geç Kaldı','Erken Çıktı','Devamsız','Çıkış Yok','Mola Aşımı','Hafta Tatili','Tatil Mesaisi','Yıllık İzin','Raporlu','Mazeret İzni','Resmi Tatil']) assert.ok(statuses.has(status),status);
+    for(const status of ['Giriş Yok','Vardiya Yok','İzin Çakışması','Tatil Mesaisi / Çıkış Yok']) assert.ok(!statuses.has(status),status);
+    const pending=year.filter(row=>row.Hesaplanan_Dk>0&&row.Mesai_Durumu==='Bekliyor');
+    assert.ok(pending.length>0&&pending.every(row=>row.TarihStr>'2026-10-23'),'only the last week waits for an overtime decision');
+    assert.equal(year.filter(row=>row.Hesaplanan_Dk>0&&row.Mesai_Durumu!=='Bekliyor').length,await count('SELECT COUNT(*) AS n FROM Mesai_Onaylari'));
     const { app } = require('../server');
     const server = require('http').createServer(app);const io = require('../utils/socket').init(server);
     await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
@@ -68,7 +61,7 @@ test('demo denies every business mutation even with an admin token', { skip: pro
             process.env.TZ = 'America/Los_Angeles';
             const weekly = await call('GET', '/dashboard/summary?filter=haftalik', viewer);
             assert.equal(weekly.status, 200);
-            assert.deepEqual(weekly.data.trendData.map(row => row.label), ['Paz', 'Pzt']);
+            assert.deepEqual([weekly.data.trendData[0].label, weekly.data.trendData.at(-1).label], ['Cmt', 'Cum']);
         } finally {
             if (previousTZ === undefined) delete process.env.TZ;
             else process.env.TZ = previousTZ;
@@ -97,9 +90,9 @@ test('demo denies every business mutation even with an admin token', { skip: pro
     assert.deepEqual(await snapshot(),before);
     assert.equal((await call('GET','/users')).status,401);
     assert.equal((await call('GET','/users',viewer)).status,200);
-    assert.equal((await call('GET','/public-config')).data.referenceDate,'2026-09-07');
+    assert.equal((await call('GET','/public-config')).data.referenceDate,'2026-10-30');
     assert.equal((await call('GET','/public-config')).data.businessTimeZone,process.env.BUSINESS_TIMEZONE || 'Europe/Istanbul');
     assert.equal((await call('GET','/features',viewer)).data.simulation,false);
-    assert.equal(require('../utils/attendance').businessToday(),'2026-09-07');
+    assert.equal(require('../utils/attendance').businessToday(),'2026-10-30');
     t.diagnostic(`${mutations.length} write routes checked with both viewer and admin tokens; data unchanged.`);
 });

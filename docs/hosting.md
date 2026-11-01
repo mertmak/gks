@@ -149,7 +149,7 @@ Backend açılışta 32 karakterden kısa `JWT_SECRET`, varsayılan `admin` paro
 Dış ağdan ve gizli tarayıcı oturumundan:
 
 - `https://<alan adı>/api/status` → `200`; sayfa HTTPS ile açılır, tarayıcı konsolunda mixed-content uyarısı yoktur.
-- “Demoyu İncele” ile giriş; gezinti, Türkçe karakterli arama, 7 Eylül 2026 puantajı ve bir Excel indirmesi.
+- “Demoyu İncele” ile giriş; gezinti, Türkçe karakterli arama, 30 Ekim 2026 puantajı ve bir Excel indirmesi.
 - Bütün yazma işlemleri `403 DEMO_READ_ONLY` döner (yönetici oturumunda da).
 - Canlı yenileme (Socket.IO) bağlantısı kurulur.
 - `sudo reboot` sonrası servisler kendiliğinden açılır.
