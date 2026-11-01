@@ -18,7 +18,7 @@ export const AREA_COLORS = {
   Ofis: { fill: '#e0e7ff', stroke: '#4f46e5' },
   Yemekhane: { fill: '#fef3c7', stroke: '#d97706' },
   Mola: { fill: '#d1fae5', stroke: '#059669' },
-  'Merdiven/Asansör': { fill: '#ede9fe', stroke: '#7c3aed' },
+  'Merdiven/Asansör': { fill: '#ecfccb', stroke: '#65a30d' },
   Üretim: { fill: '#ffedd5', stroke: '#ea580c' },
   Depo: { fill: '#e7e5e4', stroke: '#57534e' },
   Soyunma: { fill: '#fce7f3', stroke: '#db2777' },
@@ -226,6 +226,19 @@ export function passages(areas, door) {
     way, label: `${areaName(areas, from)} → ${areaName(areas, to)}`, meaning: passageMeaning(typeOf(from), typeOf(to)),
     closed: door.oneWay !== 'Çift' && door.oneWay !== way,
   }));
+}
+
+// Unit vector of the allowed way through a one-way door (null for two-way doors); the outside has no centre, so it uses the door itself.
+export function doorArrow(areas, door) {
+  if (door.oneWay === 'Çift') return null;
+  const [from, to] = door.oneWay === 'A→B' ? [door.a, door.b] : [door.b, door.a];
+  const centre = ref => {
+    const area = areas.find(item => item.ref === ref);
+    return area ? { x: area.points.reduce((sum, p) => sum + p[0], 0) / area.points.length, y: area.points.reduce((sum, p) => sum + p[1], 0) / area.points.length } : { x: door.x, y: door.y };
+  };
+  const a = centre(from), b = centre(to);
+  const length = Math.hypot(b.x - a.x, b.y - a.y);
+  return length ? { dx: (b.x - a.x) / length, dy: (b.y - a.y) / length } : null;
 }
 
 // Stairs and lifts of the same group on other floors.

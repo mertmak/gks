@@ -259,9 +259,9 @@ function Facility() {
             </div>
             <ul className="flex flex-wrap gap-x-4 gap-y-1 px-5 py-3 border-t border-line text-xs text-muted">
               {AREA_TYPES.map(type => <li key={type} className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm border" style={{ background: AREA_COLORS[type].fill, borderColor: AREA_COLORS[type].stroke }} />{type}</li>)}
-              <li className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-primary" />Aktif kapı</li>
-              <li className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-slate-400" />Pasif kapı</li>
-              <li>1: tek yönlü kapı</li>
+              <li className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full border-2 border-white" style={{ background: '#0f172a' }} />Aktif kapı</li>
+              <li className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full border-2 border-white" style={{ background: '#94a3b8' }} />Pasif kapı</li>
+              <li>Ok: tek yönlü kapı (izinli yön)</li>
             </ul>
           </div>
 

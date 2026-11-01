@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   fromServer, toServer, linkAt, placeDoor, relink, replaceArea, moveArea, moveVertex, insertVertex, removeVertex, newArea, isLinked,
-  areaProblem, passages, partners, addFloor, moveFloor, removeFloor, floorsInOrder,
+  areaProblem, doorArrow, passages, partners, addFloor, moveFloor, removeFloor, floorsInOrder,
 } from '../src/utils/floorPlan.js';
 import { isSimple, contains } from '../src/utils/polygon.js';
 
@@ -132,4 +132,16 @@ test('floors are added, reordered and removed with their areas and doors', () =>
   const removed = removeFloor(plan, 'z');
   assert.deepEqual([removed.floors.map(floor => floor.ref), removed.areas.map(area => area.ref), removed.doors[0].placed], [['u'], ['m1'], false]);
   assert.equal(removeFloor(removed, 'u'), removed, 'the last floor stays');
+});
+
+test('a one-way door points from its allowed side to the other; two-way doors have no arrow', () => {
+  const areas = [
+    { ref: 'a', points: [[0, 0], [100, 0], [100, 100], [0, 100]] },
+    { ref: 'b', points: [[100, 0], [200, 0], [200, 100], [100, 100]] },
+  ];
+  const door = { x: 100, y: 50, a: 'a', b: 'b', oneWay: 'A→B' };
+  assert.deepEqual(doorArrow(areas, door), { dx: 1, dy: 0 });
+  assert.deepEqual(doorArrow(areas, { ...door, oneWay: 'B→A' }), { dx: -1, dy: 0 });
+  assert.equal(doorArrow(areas, { ...door, oneWay: 'Çift' }), null);
+  assert.deepEqual(doorArrow(areas, { ...door, a: null }), { dx: 1, dy: 0 });
 });

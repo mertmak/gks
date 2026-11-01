@@ -24,6 +24,18 @@ const Icon = ({ name, className = 'w-5 h-5' }) => (
 
 const readCollapsed = () => { try { return localStorage.getItem('gks-sidebar') === 'collapsed'; } catch { return false; } };
 
+// Yukarı/aşağı ok, Home ve End menü bağlantıları arasında odağı taşır.
+const moveFocus = event => {
+  const step = { ArrowDown: 1, ArrowUp: -1, Home: 'first', End: 'last' }[event.key];
+  if (!step) return;
+  const links = [...event.currentTarget.querySelectorAll('a')];
+  const at = links.indexOf(document.activeElement);
+  if (at < 0) return;
+  event.preventDefault();
+  const next = step === 'first' ? 0 : step === 'last' ? links.length - 1 : at + step;
+  links[Math.min(Math.max(next, 0), links.length - 1)].focus();
+};
+
 function NavLinks({ nav, collapsed }) {
   const { pathname } = useLocation();
   const link = (to, label, icon, nested, active = pathname === to) => {
@@ -37,7 +49,7 @@ function NavLinks({ nav, collapsed }) {
     );
   };
   return (
-    <ul className="space-y-0.5">
+    <ul className="space-y-0.5" onKeyDown={moveFocus}>
       {nav.map(entry => {
         if (!entry.items) return <li key={entry.label}>{link(entry.to, entry.label, entry.icon)}</li>;
         if (!entry.items.length) return null;
