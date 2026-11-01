@@ -149,7 +149,7 @@ Backend açılışta 32 karakterden kısa `JWT_SECRET`, varsayılan `admin` paro
 Dış ağdan ve gizli tarayıcı oturumundan:
 
 - `https://<alan adı>/api/status` → `200`; sayfa HTTPS ile açılır, tarayıcı konsolunda mixed-content uyarısı yoktur.
-- “Demoyu İncele” ile giriş; gezinti, Türkçe karakterli arama, 7 Eylül 2026 puantajı ve bir Excel indirmesi.
+- “Demoyu İncele” ile giriş; gezinti, Türkçe karakterli arama, 30 Ekim 2026 puantajı ve bir Excel indirmesi.
 - Bütün yazma işlemleri `403 DEMO_READ_ONLY` döner (yönetici oturumunda da).
 - Canlı yenileme (Socket.IO) bağlantısı kurulur.
 - `sudo reboot` sonrası servisler kendiliğinden açılır.
@@ -167,7 +167,7 @@ cd /opt/gks/app && git pull --ff-only
 gks --profile install build
 ```
 
-Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın; migration yeni tablo ekliyorsa (ör. `003_kat_plani.sql` → `Bolgeler`, `004_tesis.sql` → `Katlar`) uygulama rolünün yetkileri için `db:runtime-role` komutunu da yeniden çalıştırın ve dosyayı tekrar silin. Demo daha önce seed edildiyse `seed:demo` yeniden çalıştırıldığında yalnız sonradan eklenen adımları uygular (ör. boş kat planına hazır demo planı); mevcut demo verisine dokunmaz. Sonra:
+Yeni bir migration varsa önce yedek alın (bölüm 6), `install.env` dosyasını yalnız `DB_USER`/`DB_PASSWORD` kurulum değerleriyle geçici olarak yeniden oluşturun, `db:migrate` çalıştırın; migration yeni tablo ekliyorsa (ör. `003_kat_plani.sql` → `Bolgeler`, `004_tesis.sql` → `Katlar`) uygulama rolünün yetkileri için `db:runtime-role` komutunu da yeniden çalıştırın ve dosyayı tekrar silin. Demo aynı seed sürümüyle kurulduysa `seed:demo` bir şey yapmaz. Seed sürümü değiştiyse (ör. bir yıllık fabrika verisi) seed dolu iş tablolarını reddeder; yeni demo verisi için yedek alıp iş tablolarını ve `GksSeedState` tablosunu boşaltın, sonra `seed:demo` çalıştırın. Sonra:
 
 ```sh
 gks up -d --wait

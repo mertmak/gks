@@ -29,7 +29,8 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         .query('SELECT COUNT(*) AS n FROM pg_namespace WHERE nspname=@name')).recordset[0].n === 1;
     const schemaOf = token => jwt.decode(token).sandbox;
 
-    assert.equal(await count('Bolgeler'), 5, 'the demo seed draws the plan the copies start from');
+    assert.equal(await count('Bolgeler'), 9, 'the demo seed draws the plan the copies start from');
+    const people = await count('Users');
     assert.equal((await call('GET', '/public-config')).data.sandbox, true);
     const first = await call('POST', '/sandbox');
     assert.equal(first.status, 200, JSON.stringify(first.data));
@@ -44,21 +45,21 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         for (const query of ['SELECT ID, User_ID FROM Logs ORDER BY ID', 'SELECT ID, Plan_X, Plan_Y, Bolge_A_ID, Bolge_B_ID FROM Doors ORDER BY ID']) {
             assert.deepEqual((await runInSchema(schemaOf(a), () => sql.query(query))).recordset, (await sql.query(query)).recordset);
         }
-        assert.equal(await count('Bolgeler', schemaOf(a)), 5);
-        assert.equal(await count('Katlar', schemaOf(a)), 1);
+        assert.equal(await count('Bolgeler', schemaOf(a)), 9);
+        assert.equal(await count('Katlar', schemaOf(a)), 2);
         const viewer = (await call('POST', '/demo-login')).data.token;
-        const expected = (await call('GET', '/reports/daily-attendance?tarih=2026-09-07', viewer)).data;
-        assert.deepEqual((await call('GET', '/reports/daily-attendance?tarih=2026-09-07', a)).data, expected);
-        assert.equal(expected.length, 12);
+        const expected = (await call('GET', '/reports/daily-attendance?tarih=2026-10-30', viewer)).data;
+        assert.deepEqual((await call('GET', '/reports/daily-attendance?tarih=2026-10-30', a)).data, expected);
+        assert.equal(expected.length, 110);
     });
 
     await t.test('writes stay inside the visitor copy; the read-only demo is unchanged', async () => {
         const person = { ad_soyad: 'Simülasyon Kişisi', tc: '66000000001', sicil: '60001', rfid: '55000000001', ise_giris: '2026-09-01' };
         const created = await call('POST', '/users', a, person);
         assert.equal(created.status, 200, JSON.stringify(created.data));
-        assert.equal(await count('Users', schemaOf(a)), 13);
-        assert.equal(await count('Users', schemaOf(b)), 12);
-        assert.equal(await count('Users'), 12);
+        assert.equal(await count('Users', schemaOf(a)), people + 1);
+        assert.equal(await count('Users', schemaOf(b)), people);
+        assert.equal(await count('Users'), people);
         const audit = (await runInSchema(schemaOf(a), () => sql.query("SELECT Islemi_Yapan FROM SystemLogs ORDER BY ID DESC LIMIT 1"))).recordset[0];
         assert.equal(audit.Islemi_Yapan, 'Simülasyon Ziyaretçisi');
         const viewer = (await call('POST', '/demo-login')).data.token;
@@ -84,7 +85,7 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         const before = await count('Logs');
         const result = await call('POST', '/seeder/run', a, body);
         assert.equal(result.status, 200, JSON.stringify(result.data));
-        assert.equal(await count('Users', schemaOf(a)), 18);
+        assert.equal(await count('Users', schemaOf(a)), people + 6);
         assert.ok(await count('Logs', schemaOf(a)) > before);
         assert.equal(await count('Logs'), before);
         assert.equal((await call('POST', '/seeder/run', a, { ...body, personelSayisi: 60 })).status, 400);
@@ -97,12 +98,12 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         const saved = await call('PUT', '/kat-plani', a, { katlar, bolgeler: [area, { ...area, ref: 'y', kat: 'u' }], kapilar: [] });
         assert.equal(saved.status, 200, JSON.stringify(saved.data));
         assert.equal(await count('Bolgeler', schemaOf(a)), 2);
-        assert.equal(await count('Bolgeler', schemaOf(b)), 5);
-        assert.equal(await count('Bolgeler'), 5);
-        assert.deepEqual([await count('Katlar', schemaOf(a)), await count('Katlar', schemaOf(b)), await count('Katlar')], [2, 1, 1]);
+        assert.equal(await count('Bolgeler', schemaOf(b)), 9);
+        assert.equal(await count('Bolgeler'), 9);
+        assert.deepEqual([await count('Katlar', schemaOf(a)), await count('Katlar', schemaOf(b)), await count('Katlar')], [2, 2, 2]);
         const viewer = (await call('POST', '/demo-login')).data.token;
         assert.equal((await call('PUT', '/kat-plani', viewer, { katlar: [], bolgeler: [], kapilar: [] })).status, 403);
-        assert.equal((await call('GET', '/kat-plani', viewer)).data.bolgeler.length, 5);
+        assert.equal((await call('GET', '/kat-plani', viewer)).data.bolgeler.length, 9);
     });
 
     await t.test('socket events reach only the copy that changed', async () => {
@@ -147,7 +148,7 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         const reset = await call('POST', '/sandbox/reset', c);
         assert.equal(reset.status, 200);
         assert.equal(await schemaExists(schemaOf(c)), false);
-        assert.equal(await count('Users', schemaOf(reset.data.token)), 12);
+        assert.equal(await count('Users', schemaOf(reset.data.token)), people);
         assert.equal(await sandbox.purge(), 0, 'a restart keeps open copies of the current version');
         await sql.query(`COMMENT ON SCHEMA ${schemaOf(reset.data.token)} IS '000_eski.sql'`);
         assert.equal(await sandbox.purge(), 1, 'copies built by older migrations are dropped');

@@ -50,4 +50,4 @@ Mola aşımı `max(0, toplam mola - mola hakkı)` olur. 30 dakika hak ve 40 daki
 
 Hesaplanan süre, onaylanan süre ve hak edilen mesai ayrı alanlardır. Sıfır dakika onayı geçerli karardır. Onay sınırı sunucuda yeniden hesaplanan süreye göre `0–min(2880, hesaplanan+120)`; red/beklemede onaylanan süre sıfırdır. Toplu karar atomiktir. Ayrıntılar ve geçmiş kart/vardiya/çalışma dönemi sınırları [README](../README.md) içinde açıklanır.
 
-Gelecek veya eksik verili bir günde mevcut kuralların ürettiği sonuç, sonradan yeni okutma geldiğinde değişebilir. Karar anındaki hesap ve güncel hesap bu nedenle farklı olabilir. Demo seed, normal/gece/tatil/eksik geçiş/izin/tolerans/mola ve farklı mesai kararlarını tekrar üretir.
+Gelecek veya eksik verili bir günde mevcut kuralların ürettiği sonuç, sonradan yeni okutma geldiğinde değişebilir. Karar anındaki hesap ve güncel hesap bu nedenle farklı olabilir. Demo seed, bir yıllık fabrika verisinde normal/gece/tatil/eksik geçiş/izin/tolerans/mola ve farklı mesai kararlarını tekrar üretir; vardiya değişimleri pazar günü başlar, böylece geceden sabaha geçişte pazartesi girişi önceki gece vardiyasının penceresine düşmez.

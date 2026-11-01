@@ -49,7 +49,7 @@ docker compose -f compose.yaml -f compose.local.yaml run --rm --no-deps backend 
 
 Seed yalnız `gksdemo_`/`gkstest_` hedefinde tam eşleşen onay değişkeniyle çalışır. İlk CLI yöneticisinin denetim kaydı korunur; diğer iş verisi veya işlem geçmişi varsa seed reddedilir. Tekrar çalıştırmak kayıt çoğaltmaz. Salt okunur public demo kurulumunda yönetici oluşturmak gerekmez.
 
-Örnek dönem **6–8 Eylül 2026**'dır. Yerel uygulama bugünü açar; örnek puantaj için 7 Eylül 2026'yı seçin. `DEMO_MODE=true` seçilirse tarih varsayılanları örnek döneme yönelir ve bütün iş verisi yazma işlemleri kapanır.
+Örnek dönem **1 Kasım 2025 – 30 Ekim 2026**'dır. Yerel uygulama bugünü açar; örnek puantaj için bu aralıktan bir gün (ör. 30 Ekim 2026) seçin. `DEMO_MODE=true` seçilirse tarih varsayılanları örnek döneme yönelir ve bütün iş verisi yazma işlemleri kapanır.
 
 ## Servisleri çalıştırma
 

@@ -203,7 +203,7 @@ function DailyReport() {
         else if (text.includes('Geç Kaldı') || text.includes('Devamsız') || text.includes('Mola Aşımı')) colorClass = 'bg-danger-soft text-danger border border-danger-line';
         else if (text.includes('Erken Çıktı')) colorClass = 'bg-warning-soft text-warning border border-warning-line';
         else if (text.includes('Çıkış Yok') || text.includes('Çıkış Okutulmadı')) colorClass = 'bg-warning-soft text-warning border border-warning-line';
-        else if (text === 'Hafta Tatili') colorClass = 'bg-surface-3 text-muted border border-line';
+        else if (text === 'Hafta Tatili' || text === 'Resmi Tatil') colorClass = 'bg-surface-3 text-muted border border-line';
         else if (text === 'Tatil Mesaisi') colorClass = 'bg-accent-soft text-accent border border-accent';
         else if (text === 'Yıllık İzin' || text === 'Mazeret İzni' || text === 'Ücretsiz İzin') colorClass = 'bg-info-soft text-info border border-info-line';
         else if (text === 'Raporlu') colorClass = 'bg-surface-3 text-ink border border-line-strong';

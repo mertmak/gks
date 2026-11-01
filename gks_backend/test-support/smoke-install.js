@@ -103,7 +103,7 @@ async function main() {
         docker(['up', '-d', '--force-recreate', '--wait', '--wait-timeout', '90']);
         await waitForHttp();
         const config = await call('/public-config');
-        assert.equal(config.data.referenceDate, '2026-09-07');
+        assert.equal(config.data.referenceDate, '2026-10-30');
         const demo = await call('/demo-login', { method: 'POST' });
         assert.equal(demo.status, 200);
         for (const session of [token, demo.data.token]) {
