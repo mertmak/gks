@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import api from '../api/axios';
 
 import CustomDataGrid from '../components/CustomDataGrid';
+import HolidayCalendar from '../components/HolidayCalendar';
 import AutocompleteSearch from '../components/AutoCompleteSearch';
 import AlertMessage from '../components/AlertMessage';
 import ConfirmAction from '../components/ConfirmAction';
@@ -317,6 +318,8 @@ function Shifts() {
           getRowId={(params) => params.data.ID}
         />
       </section>
+
+      <HolidayCalendar />
 
       <ConfirmAction isOpen={Boolean(confirmation)} title="Vardiya Durumunu Değiştir" pending={pending} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmStatus}>
         <p><strong>{confirmation?.name}</strong> vardiyası {confirmation?.durum ? 'aktifleştirilecek.' : 'pasife alınacak.'}</p>

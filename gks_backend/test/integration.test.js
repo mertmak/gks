@@ -54,6 +54,21 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
       assert.equal(row.Mesai_Aciklama,'Fixture decision');assert.equal(row.Mesai_Islemi_Yapan,'fixture-admin');assert.ok(row.Mesai_Islem_Zamani);
     }
   });
+  await t.test('official holiday turns a shift day into Resmi Tatil and is admin-only',async()=>{
+    await new sql.Request().input('uid',sql.Int,uid).input('shift',sql.Int,shift)
+      .query("INSERT INTO Personel_Vardiya(User_ID,Vardiya_ID,Baslangic_Tarihi,Bitis_Tarihi) VALUES(@uid,@shift,'2026-09-08','2026-09-08')");
+    const status=async()=>(await call('GET','/reports/daily-attendance?tarih=2026-09-08')).data.find(r=>r.User_ID===uid).Durum;
+    assert.equal(await status(),'Devamsız');
+    assert.equal((await call('POST','/holidays',{tarih:'2026-09-08',tatil_adi:'Fixture Bayramı'},viewer)).status,403);
+    assert.equal((await call('POST','/holidays',{tarih:'2026-09-08',tatil_adi:'Fixture Bayramı'})).status,200);
+    assert.equal((await call('POST','/holidays',{tarih:'2026-09-08',tatil_adi:'İkinci'})).status,409);
+    assert.equal(await status(),'Resmi Tatil');
+    const holiday=(await call('GET','/holidays',undefined,viewer)).data.find(h=>h.Tatil_Adi==='Fixture Bayramı');
+    assert.equal((await call('DELETE',`/holidays/${holiday.ID}`)).status,200);
+    assert.equal((await call('DELETE',`/holidays/${holiday.ID}`)).status,404);
+    assert.equal(await status(),'Devamsız');
+    assert.equal((await sql.query("SELECT COUNT(*) AS n FROM SystemLogs WHERE Islem_Tipi='RESMİ TATİL'")).recordset[0].n,2);
+  });
   await t.test('password changes revoke old sessions and only change the caller',async()=>{
     const username='test-'+stamp;
     assert.equal((await call('POST','/hesap-ekle',{username,password:'Fixture-Password-123',rol:'user'})).status,200);

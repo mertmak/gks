@@ -203,7 +203,7 @@ function build() {
     };
     const worksOn = (person, key) => !!shiftOn(person, key)?.days.includes(weekday(key));
 
-    // Leave: official holidays first, then personal leave that never overlaps.
+    // Leave never overlaps an official holiday on which the person is off.
     const leaves = [];
     const busy = new Map(people.map(person => [person, new Map()]));
     const addLeave = (person, start, end, Izin_Turu, Aciklama, Durum = 'Onaylandı', created) => {
@@ -214,9 +214,10 @@ function build() {
             Olusturulma_Tarihi: stamp(created > referenceDate ? referenceDate : created, between(510, 1050)) });
         return true;
     };
-    for (const [start, end, name, closed] of holidays) for (const person of people) {
+    for (const [start, end, , closed] of holidays) for (const person of people) {
         if ((person.pattern === 'ofis' || closed) && days(start, end).some(key => worksOn(person, key))) {
-            addLeave(person, start, end, 'Resmi Tatil', name, 'Onaylandı', addDays(start, -10));
+            // Off like approved leave (no passes, no personal leave); the day itself is in Resmi_Tatiller.
+            for (const key of days(start, end)) busy.get(person).set(key, 'Onaylandı');
         }
     }
     const lastLeaveDay = addDays(referenceDate, 40);
@@ -245,6 +246,7 @@ function build() {
     }
     for (let n = 0; n < 4; n++) tryLeave(pick(fathers), '2026-07-01', referenceDate, between(3, 6), 'Yıllık İzin', 'Sipariş yoğunluğu nedeniyle uygun görülmedi', 'Reddedildi');
     const onLeave = (person, key) => busy.get(person).get(key) === 'Onaylandı';
+    const holidayDays = new Set(holidays.flatMap(([start, end]) => days(start, end)));
 
     // Door passes. Timestamps are business wall-clock time.
     const logs = [];
@@ -279,7 +281,8 @@ function build() {
             }
         }
         if (!person.access.includes(office ? 'uretim' : 'merdiven') && chance(0.003)) pass(person, key, arrive + between(60, 200), office ? 'uretim' : 'merdiven', false);
-        if (!chance(0.004)) pass(person, key, exit, 'cikis', true, exit === shift.end - 1 ? between(1, 59) : undefined);
+        // Holiday work always checks out, so it reads as Tatil Mesaisi.
+        if (!chance(0.004) || holidayDays.has(key)) pass(person, key, exit, 'cikis', true, exit === shift.end - 1 ? between(1, 59) : undefined);
     };
     // Weekend overtime: production on some Sundays, planning and finance on some Saturdays.
     const extraDay = (person, key, shift) => {
@@ -331,7 +334,7 @@ function build() {
         for (const card of person.cards.slice(1)) audit(stamp(card.from, between(480, 520)), 'GÜNCELLEME', person, 'Personel bilgileri güncellendi. Kayıp kart yerine yeni kart tanımlandı.');
     }
     for (const leave of leaves) {
-        if (leave.Izin_Turu !== 'Resmi Tatil') audit(leave.Olusturulma_Tarihi, 'İZİN GİRİŞİ', leave.person, `${leave.Baslangic_Tarihi} - ${leave.Bitis_Tarihi}: ${leave.Izin_Turu} (${leave.Durum})`);
+        audit(leave.Olusturulma_Tarihi, 'İZİN GİRİŞİ', leave.person, `${leave.Baslangic_Tarihi} - ${leave.Bitis_Tarihi}: ${leave.Izin_Turu} (${leave.Durum})`);
     }
 
     const users = people.map(person => ({
@@ -357,10 +360,10 @@ function overtimeDecisions(rows, approver) {
         return {
             User_ID: row.User_ID, Tarih: row.TarihStr, Hesaplanan_Dk: minutes, Onaylanan_Dk: rejected ? 0 : Math.floor(minutes / 15) * 15 || minutes,
             Durum: rejected ? 'Reddedildi' : 'Onaylandı', Islemi_Yapan: approver, Islem_Zamani: stamp(decided, 540 + Math.floor(rand() * 120), Math.floor(rand() * 60)),
-            Aciklama: rejected ? 'Ön onay alınmadan kalındı' : weekend ? 'Hafta sonu çalışması' : pick(['Sipariş yetiştirme', 'Arıza müdahalesi', 'Vardiya devri', 'Sevkiyat yetiştirme', 'Planlı fazla çalışma']),
+            Aciklama: rejected ? 'Ön onay alınmadan kalındı' : row.Resmi_Tatil ? 'Resmi tatil çalışması' : weekend ? 'Hafta sonu çalışması' : pick(['Sipariş yetiştirme', 'Arıza müdahalesi', 'Vardiya devri', 'Sevkiyat yetiştirme', 'Planlı fazla çalışma']),
             Ad_Soyad: row.Ad_Soyad, Sicil_No: row.Sicil_No,
         };
     });
 }
 
-module.exports = { build, overtimeDecisions, shifts, doors, firstDay, company, contractor, tcKimlik, addDays };
+module.exports = { build, overtimeDecisions, shifts, doors, holidays, firstDay, company, contractor, tcKimlik, addDays };

@@ -21,7 +21,7 @@ function calculateAttendance(row, logs) {
     const events = logs.filter(l => (Object.hasOwn(l, 'User_ID') ? l.User_ID === row.User_ID : l.RFID_Kart_No === row.RFID_Kart_No) && +new Date(l.Zaman) >= +window.from && +new Date(l.Zaman) < +window.to).sort((a,b)=>+new Date(a.Zaman)-+new Date(b.Zaman));
     const first = events.find(l=>l.Kapi_Turu==='Ana Giriş');
     const last = [...events].reverse().find(l=>l.Kapi_Turu==='Ana Çıkış' && first && +new Date(l.Zaman)>=+new Date(first.Zaman));
-    const holiday = !(row.Calisma_Gunleri || '1,2,3,4,5').split(',').map(Number).includes(asDate(row.Tarih).getUTCDay());
+    const holiday = !!row.Resmi_Tatil || !(row.Calisma_Gunleri || '1,2,3,4,5').split(',').map(Number).includes(asDate(row.Tarih).getUTCDay());
     let mealStart,breakStart,meal=0,rest=0;
     for(const e of events) {
         if(!first || +new Date(e.Zaman)<+new Date(first.Zaman) || (last && +new Date(e.Zaman)>+new Date(last.Zaman))) continue;
@@ -35,7 +35,7 @@ function calculateAttendance(row, logs) {
     if(leaveConflict) status='İzin Çakışması';
     else if(row.Izin_Durumu) status=row.Izin_Durumu;
     else if(!row.Vardiya_Adi) status='Vardiya Yok';
-    else if(!first) status=events.some(e=>e.Kapi_Turu==='Ana Çıkış')?'Giriş Yok':holiday?'Hafta Tatili':'Devamsız';
+    else if(!first) status=events.some(e=>e.Kapi_Turu==='Ana Çıkış')?'Giriş Yok':holiday?(row.Resmi_Tatil?'Resmi Tatil':'Hafta Tatili'):'Devamsız';
     else {
         if(holiday) {status=last?'Tatil Mesaisi':'Tatil Mesaisi / Çıkış Yok';if(last) computed=Math.max(0,diffMinutes(first.Zaman,last.Zaman)-meal-rest);}
         else {

@@ -19,7 +19,7 @@ const stamp = v => v ? `${v.slice(8, 10)}.${v.slice(5, 7)} ${v.slice(11, 16)}` :
 const SUMMARY = [
   ['Sicil No', r => r.Sicil_No], ['Ad Soyad', r => r.Ad_Soyad], ['Departman', r => r.Departman],
   ['Gün', r => r.Gun], ['Çalışılan Gün', r => r.Calisilan_Gun], ['Devamsız', r => r.Devamsiz_Gun], ['İzinli', r => r.Izinli_Gun],
-  ['Hafta Tatili', r => r.Hafta_Tatili], ['Geç Kalma (adet)', r => r.Gec_Kalma_Sayisi], ['Geç (dk)', r => r.Gec_Kalma_Dk],
+  ['Hafta Tatili', r => r.Hafta_Tatili], ['Resmi Tatil', r => r.Resmi_Tatil], ['Geç Kalma (adet)', r => r.Gec_Kalma_Sayisi], ['Geç (dk)', r => r.Gec_Kalma_Dk],
   ['Erken Çıkış (dk)', r => r.Erken_Cikma_Dk], ['Çalışma (saat)', r => hours(r.Calisma_Dk)], ['Onaylı Fazla Mesai (saat)', r => hours(r.Fazla_Mesai_Dk)],
   ['Yemek (dk)', r => r.Yemek_Dk], ['Mola (dk)', r => r.Mola_Dk], ['Mola Aşımı (dk)', r => r.Mola_Asimi_Dk],
 ];

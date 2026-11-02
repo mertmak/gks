@@ -21,6 +21,7 @@ const tables = {
         'Sistem_ID', 'Ise_Giris_Tarihi', 'Isten_Cikis_Tarihi', 'Cikis_Nedeni'],
     Vardiyalar: ['ID', 'Vardiya_Adi', 'Mesai_Baslangic', 'Mesai_Bitis', 'Yemek_Baslangic', 'Yemek_Bitis',
         'Tolerans_Dk', 'Mola_Hakki_Dk', 'Durum', 'Calisma_Gunleri'],
+    Resmi_Tatiller: ['ID', 'Tarih', 'Tatil_Adi'],
     Yoneticiler: ['ID', 'Kullanici_Adi', 'Sifre_Hash', 'Rol', 'Olusturulma_Tarihi', 'Token_Version'],
     GksSeedState: ['Version'],
     GksSandboxes: ['ID', 'Schema_Adi', 'Olusturulma', 'Bitis'],
@@ -30,7 +31,7 @@ const tables = {
 const aliases = [
     'AktifKapi', 'AktifPersonel', 'Basarili', 'BugunGecis', 'Cakisma_Var', 'Gelen', 'Izin_Durumu',
     'Kapi_Durum', 'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
-    'Bolge_A_Turu', 'Bolge_B_Turu', 'Onayli_Izin_Sayisi', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
+    'Bolge_A_Turu', 'Bolge_B_Turu', 'Onayli_Izin_Sayisi', 'Resmi_Tatil', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
     'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'superuser', 'toplam', 'tur',
 ];
 

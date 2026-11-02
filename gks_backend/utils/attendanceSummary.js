@@ -10,7 +10,7 @@ function periodRange({donem,baslangic,bitis}) {
     return {baslangic,bitis};
 }
 
-const fields = ['Gun','Calisilan_Gun','Devamsiz_Gun','Izinli_Gun','Hafta_Tatili','Gec_Kalma_Sayisi','Gec_Kalma_Dk','Erken_Cikma_Dk','Calisma_Dk','Fazla_Mesai_Dk','Yemek_Dk','Mola_Dk','Mola_Asimi_Dk'];
+const fields = ['Gun','Calisilan_Gun','Devamsiz_Gun','Izinli_Gun','Hafta_Tatili','Resmi_Tatil','Gec_Kalma_Sayisi','Gec_Kalma_Dk','Erken_Cikma_Dk','Calisma_Dk','Fazla_Mesai_Dk','Yemek_Dk','Mola_Dk','Mola_Asimi_Dk'];
 const empty = () => Object.fromEntries(fields.map(f=>[f,0]));
 function add(total,row) {
     total.Gun++;
@@ -18,6 +18,7 @@ function add(total,row) {
     if(row.Durum==='Devamsız') total.Devamsiz_Gun++;
     if(row.Izin_Durumu && !row.Izin_Cakismasi) total.Izinli_Gun++;
     if(row.Durum==='Hafta Tatili') total.Hafta_Tatili++;
+    if(row.Durum==='Resmi Tatil') total.Resmi_Tatil++;
     if(row.Gec_Kalma_Dk>0) total.Gec_Kalma_Sayisi++;
     total.Gec_Kalma_Dk+=row.Gec_Kalma_Dk;
     total.Erken_Cikma_Dk+=row.Erken_Cikma_Dk;

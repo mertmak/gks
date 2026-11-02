@@ -13,11 +13,12 @@ async function attendance(start,end,{transaction,userId,userIds,departman}={}) {
     const users=await req.query(`
       SELECT U.ID AS User_ID,U.Ad_Soyad,U.Sicil_No,U.Departman,U.Sirket,U.RFID_Kart_No,D.Tarih,
         P.Snapshot_Vardiya_Adi AS Vardiya_Adi,P.Snapshot_Mesai_Baslangic AS Mesai_Baslangic,P.Snapshot_Mesai_Bitis AS Mesai_Bitis,P.Snapshot_Calisma_Gunleri AS Calisma_Gunleri,P.Snapshot_Tolerans_Dk AS Tolerans_Dk,P.Snapshot_Mola_Hakki_Dk AS Mola_Hakki_Dk,
-        M.Durum AS Mesai_Durumu,M.Onaylanan_Dk,M.Aciklama AS Mesai_Aciklama,M.Islemi_Yapan AS Mesai_Islemi_Yapan,M.Islem_Zamani AS Mesai_Islem_Zamani,I.Izin_Turu AS Izin_Durumu,I.Kayit_Sayisi AS Onayli_Izin_Sayisi
+        M.Durum AS Mesai_Durumu,M.Onaylanan_Dk,M.Aciklama AS Mesai_Aciklama,M.Islemi_Yapan AS Mesai_Islemi_Yapan,M.Islem_Zamani AS Mesai_Islem_Zamani,I.Izin_Turu AS Izin_Durumu,I.Kayit_Sayisi AS Onayli_Izin_Sayisi,T.Tatil_Adi AS Resmi_Tatil
       FROM Users U
       CROSS JOIN (SELECT G::date AS Tarih FROM generate_series(CAST(@start AS timestamp),CAST(@end AS timestamp),interval '1 day') G) D
       LEFT JOIN LATERAL (SELECT P.* FROM Personel_Vardiya P WHERE P.User_ID=U.ID AND P.Baslangic_Tarihi<=D.Tarih AND (P.Bitis_Tarihi IS NULL OR P.Bitis_Tarihi>=D.Tarih) ORDER BY P.Baslangic_Tarihi DESC,P.ID DESC LIMIT 1) P ON true
       LEFT JOIN Mesai_Onaylari M ON M.User_ID=U.ID AND M.Tarih=D.Tarih
+      LEFT JOIN Resmi_Tatiller T ON T.Tarih=D.Tarih
       LEFT JOIN LATERAL (SELECT COUNT(*) AS Kayit_Sayisi,CASE WHEN COUNT(*)=1 THEN MAX(Izin_Turu) END AS Izin_Turu FROM Izinler WHERE User_ID=U.ID AND D.Tarih BETWEEN Baslangic_Tarihi AND Bitis_Tarihi AND Durum='Onaylandı') I ON true
       WHERE (@userIds IS NULL OR U.ID=ANY(@userIds)) AND (CAST(@departman AS text) IS NULL OR U.Departman=@departman) AND (
         ((U.Ise_Giris_Tarihi IS NULL OR U.Ise_Giris_Tarihi<=D.Tarih)

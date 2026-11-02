@@ -33,10 +33,11 @@ Her okutmanın türü (Ana Giriş, Ana Çıkış, Yemekhane Giriş/Çıkış, Mo
 | Aynı güne birden fazla onaylı izin | İzin Çakışması; yeni mesai kararı 409 |
 | Vardiya ataması yok | Vardiya Yok |
 | Çalışma günleri dışında okutma yok | Hafta Tatili |
+| Resmî tatil gününde okutma yok | Resmi Tatil |
 
 Dakika farkları aşağı yuvarlanır; saniyeler ayrıca ücret veya puan üretmez. Normal iş gününde mesai, vardiya bitişinden sonraki çıkış farkıdır; geç kalma, yemek veya mola bu süreden ayrıca düşülmez. Bunlar ayrı alanlarda gösterilir. Bu davranış, günlük net çalışma/bordro hesabı değildir.
 
-Çalışma günleri modelinde 0=Pazar, 1=Pazartesi, …, 6=Cumartesi. Haftalık tatilde giriş ve çıkış varsa **Tatil Mesaisi**: giriş–çıkış farkından eşleşmiş yemek ve mola süreleri düşülür; sonuç sıfırın altına inmez. Resmî tatil takvimi yoktur.
+Çalışma günleri modelinde 0=Pazar, 1=Pazartesi, …, 6=Cumartesi. Haftalık tatilde giriş ve çıkış varsa **Tatil Mesaisi**: giriş–çıkış farkından eşleşmiş yemek ve mola süreleri düşülür; sonuç sıfırın altına inmez. `Resmi_Tatiller` takvimindeki bir gün, vardiyanın başladığı gün olarak haftalık tatil gibi işlenir: okutma yoksa **Resmi Tatil**, giriş ve çıkış varsa **Tatil Mesaisi** (geç kalma/erken çıkma hesaplanmaz). Onaylı izin resmî tatilden önce gelir. Takvim değişikliği geçmiş mesai kararlarını değiştirmez.
 
 ## Yemek ve mola
 

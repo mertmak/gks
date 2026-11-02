@@ -46,6 +46,13 @@ test('absence, missing checkout, leave and holiday remain distinct',()=>{
  assert.equal(calculateAttendance({...row,Izin_Durumu:'Yıllık İzin'},[]).Durum,'Yıllık İzin');
  assert.equal(calculateAttendance({...row,Tarih:'2026-09-06'},[]).Durum,'Hafta Tatili');
 });
+test('official holiday: absence is Resmi Tatil, work is holiday overtime, leave still wins',()=>{
+ const tatil={...row,Resmi_Tatil:'Cumhuriyet Bayramı'};
+ assert.equal(calculateAttendance(tatil,[]).Durum,'Resmi Tatil');
+ const worked=calculateAttendance(tatil,[event('Ana Giriş','2026-09-07T09:30:00Z'),event('Ana Çıkış','2026-09-07T14:30:00Z')]);
+ assert.equal(worked.Durum,'Tatil Mesaisi');assert.equal(worked.Gec_Kalma_Dk,0);assert.equal(worked.Hesaplanan_Dk,300);
+ assert.equal(calculateAttendance({...tatil,Izin_Durumu:'Yıllık İzin'},[]).Durum,'Yıllık İzin');
+});
 test('open meal is reported without inventing duration and breaks include excess',()=>{
  const result=calculateAttendance(row,[event('Ana Giriş','2026-09-07T09:00:00Z'),event('Mola / Sigara Alanı','2026-09-07T10:00:00Z'),event('İç Geçiş','2026-09-07T10:40:00Z'),event('Yemekhane Giriş','2026-09-07T13:00:00Z'),event('Ana Çıkış','2026-09-07T18:00:00Z')]);
  assert.equal(result.Toplam_Mola_Dk,40);assert.equal(result.Mola_Asimi_Dk,10);assert.equal(result.Toplam_Yemek_Dk,0);assert.equal(result.Acik_Yemek,true);
