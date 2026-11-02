@@ -18,7 +18,7 @@ const tables = {
     Personel_Calisma_Gecmisi: ['ID', 'User_ID', 'Baslangic_Tarihi', 'Bitis_Tarihi', 'Cikis_Nedeni'],
     SystemLogs: ['ID', 'Islem_Tipi', 'Personel_Ad', 'Sicil_No', 'Detay', 'Tarih', 'Islemi_Yapan'],
     Users: ['ID', 'Ad_Soyad', 'RFID_Kart_No', 'Durum', 'TC_Kimlik', 'Sicil_No', 'Sirket', 'Departman', 'Gorev',
-        'Sistem_ID', 'Ise_Giris_Tarihi', 'Isten_Cikis_Tarihi', 'Cikis_Nedeni'],
+        'Sistem_ID', 'Ise_Giris_Tarihi', 'Isten_Cikis_Tarihi', 'Cikis_Nedeni', 'Izin_Devir_Gun', 'Izin_Devir_Tarihi'],
     Vardiyalar: ['ID', 'Vardiya_Adi', 'Mesai_Baslangic', 'Mesai_Bitis', 'Yemek_Baslangic', 'Yemek_Bitis',
         'Tolerans_Dk', 'Mola_Hakki_Dk', 'Durum', 'Calisma_Gunleri'],
     Resmi_Tatiller: ['ID', 'Tarih', 'Tatil_Adi'],
@@ -31,7 +31,7 @@ const tables = {
 const aliases = [
     'AktifKapi', 'AktifPersonel', 'Basarili', 'BugunGecis', 'Cakisma_Var', 'Gelen', 'Izin_Durumu',
     'Kapi_Durum', 'Kayit_Sayisi', 'LastExit', 'Mesai_Aciklama', 'Mesai_Durumu', 'Mesai_Islem_Zamani', 'Mesai_Islemi_Yapan',
-    'Bolge_A_Turu', 'Bolge_B_Turu', 'Onayli_Izin_Sayisi', 'Resmi_Tatil', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
+    'Bolge_A_Turu', 'Bolge_B_Turu', 'Onayli_Izin_Sayisi', 'Resmi_Tatil', 'Izin_Gunu', 'Personel_Durum', 'Saat', 'ToplamPersonel', 'Yetkili', 'Yetkili_Sayisi', 'Yetkisiz', 'YetkisizGiris', 'Hafta',
     'adSoyad', 'count', 'doors', 'locked', 'logs', 'n', 'name', 'ready', 'rfid', 'superuser', 'toplam', 'tur',
 ];
 

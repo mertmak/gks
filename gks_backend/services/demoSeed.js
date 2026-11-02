@@ -5,7 +5,7 @@ const { referenceDate, accountName } = require('../config/demo');
 const { templates, savePlan } = require('./floorPlan');
 const { attendance } = require('./attendance');
 const factory = require('./demoCompany');
-const version = 'v4-resmi-tatil-2026-11-01';
+const version = 'v5-izin-bakiyesi-2026-11-02';
 
 const seeded = async tx => (await new sql.Request(tx).input('version', sql.NVarChar, version)
     .query('SELECT Version FROM GksSeedState WHERE Version=@version')).recordset.length > 0;
@@ -63,6 +63,8 @@ async function seedDemo() {
         }
         await insertRows(tx, 'Users', { Ad_Soyad: 'varchar', RFID_Kart_No: 'varchar', Durum: 'boolean', TC_Kimlik: 'varchar', Sicil_No: 'varchar', Sirket: 'varchar', Departman: 'varchar',
             Gorev: 'varchar', Sistem_ID: 'varchar', Ise_Giris_Tarihi: 'date', Isten_Cikis_Tarihi: 'date', Cikis_Nedeni: 'varchar' }, data.users);
+        // Leave tracking starts with the demo data: zero carry-over on its first day.
+        await request().input('devir', sql.Date, factory.firstDay).query('UPDATE Users SET Izin_Devir_Gun=0,Izin_Devir_Tarihi=@devir');
         const ids = new Map((await request().query('SELECT ID, Sicil_No FROM Users')).recordset.map(row => [row.Sicil_No, row.ID]));
         const id = person => person ? ids.get(person.Sicil_No) : null;
         await insertRows(tx, 'Permissions', { User_ID: 'int', Door_ID: 'int' }, data.permissions.map(p => ({ User_ID: id(p.person), Door_ID: doorIds[p.door] })));

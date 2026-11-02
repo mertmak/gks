@@ -2,6 +2,7 @@
 // shift rotations, leave and door passes ending on the demo reference day.
 // Every company, person, ID and card number here is invented.
 const { referenceDate } = require('../config/demo');
+const { annualLeaveEntitlement } = require('../utils/annualLeave');
 
 const company = 'Selvitepe Döküm ve Makine San. A.Ş.';
 const contractor = 'Akdere Tesis Hizmetleri Ltd. Şti.';
@@ -207,6 +208,11 @@ function build() {
     const leaves = [];
     const busy = new Map(people.map(person => [person, new Map()]));
     const addLeave = (person, start, end, Izin_Turu, Aciklama, Durum = 'Onaylandı', created) => {
+        // Annual leave is earned after the first service year; earlier requests become excuse leave.
+        if (Izin_Turu === 'Yıllık İzin' && Durum !== 'Reddedildi' && annualLeaveEntitlement(person.periods.map(([s, e]) => ({ start: s, end: e })), start).Kidem_Yil < 1) {
+            Izin_Turu = 'Mazeret İzni';
+            Aciklama = 'Yıllık izin hakkı henüz doğmadı';
+        }
         const span = days(start, end);
         if (!span.length || span.some(key => !employed(person, key) || busy.get(person).has(key))) return false;
         if (Durum !== 'Reddedildi') for (const key of span) busy.get(person).set(key, Durum);

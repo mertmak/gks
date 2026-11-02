@@ -21,6 +21,7 @@ const properties = {
   DoorInput: { kapi_adi: { ...text(100), minLength: 1 }, kapi_turu: { type: 'string', enum: ['Ana Giriş', 'Ana Çıkış', 'İç Geçiş', 'Yemekhane Giriş', 'Yemekhane Çıkış', 'Mola / Sigara Alanı'], default: 'İç Geçiş' }, departman: text(100), konum: text(100), yetki_ver: { type: 'boolean', description: 'Yalnız oluşturmada ve simülasyon ortamında: kapıya tüm aktif personeli yetkilendirir.' } },
   ShiftInput: { vardiya_adi: { ...text(100), minLength: 1 }, mesai_baslangic: time, mesai_bitis: time, yemek_baslangic: { oneOf: [{ ...time, nullable: true }, { type: 'string', enum: [''] }] }, yemek_bitis: { oneOf: [{ ...time, nullable: true }, { type: 'string', enum: [''] }] }, tolerans_dk: { ...integer(0, 120), default: 0 }, mola_hakki_dk: { ...integer(0, 480), default: 0 }, calisma_gunleri: { type: 'string', pattern: '^[0-6](,[0-6])*$', default: '1,2,3,4,5' } },
   HolidayInput: { tarih: date, tatil_adi: { ...text(100), minLength: 1 } },
+  LeaveCarryOverInput: { devir_gun: { ...integer(-365, 365), nullable: true }, devir_tarihi: { ...date, nullable: true } },
   LeaveInput: { user_id: id, izin_turu: { ...text(50), minLength: 1 }, baslangic: date, bitis: date, aciklama: text(255), durum: { ...decision, default: 'Onaylandı' } },
   OvertimeItem: { user_id: id, tarih: date, hesaplanan_dk: { ...integer(0, 2880), description: 'Uyumluluk için kabul edilir; karar hesaplamasında sunucu esas alınır.' }, onaylanan_dk: integer(0, 2880) },
 };
@@ -38,6 +39,7 @@ const schemas = {
   DoorInput: object(properties.DoorInput, ['kapi_adi']),
   ShiftInput: { ...object(properties.ShiftInput, ['vardiya_adi', 'mesai_baslangic', 'mesai_bitis']), description: 'Başlangıç/bitiş aynı olamaz. Gece yarısı 00:00 geçerlidir. Yemek saatleri birlikte girilir veya ikisi de boş bırakılır. Tanım düzenlemesi geçmiş atama snapshotlarını değiştirmez.' },
   HolidayInput: object(properties.HolidayInput, ['tarih', 'tatil_adi']),
+  LeaveCarryOverInput: { ...object(properties.LeaveCarryOverInput, ['devir_gun', 'devir_tarihi']), description: 'İkisi birlikte girilir; ikisi de null ise devir kaldırılır.' },
   LeaveInput: { ...object(properties.LeaveInput, ['user_id', 'izin_turu', 'baslangic', 'bitis']), description: 'Bitiş başlangıçtan önce olamaz. Onaylı/bekleyen aralıklar, sınır günleri dahil çakışamaz.' },
   OvertimeInput: object({ ...properties.OvertimeItem, durum: decision, aciklama: text(255) }, ['user_id', 'tarih', 'onaylanan_dk', 'durum']),
   BulkOvertimeInput: object({ mesailer: { ...array(object(properties.OvertimeItem, ['user_id', 'tarih', 'onaylanan_dk'])), minItems: 1, maxItems: 2000 }, durum: decision, aciklama: text(255) }, ['mesailer', 'durum']),
@@ -117,6 +119,8 @@ add('get', '/holidays', 'Resmi Tatiller', 'Resmi tatil takvimini listele', { out
 add('post', '/holidays', 'Resmi Tatiller', 'Resmi tatil ekle', { admin: true, body: 'HolidayInput', errors: { 409: 'Bu tarihte zaten bir resmi tatil var.' } });
 add('delete', '/holidays/{id}', 'Resmi Tatiller', 'Resmi tatili sil', { admin: true, errors: { 404: 'Resmi tatil bulunamadı.' } });
 add('get', '/leaves', 'İzinler', 'İzinleri ve eski çakışma uyarılarını listele', { output: array({ type: 'object' }), description: 'Cakisma_Var onaylı/bekleyen aralık çakışmasını işaretler; reddedilmiş kayıt engel oluşturmaz.' });
+add('get', '/leaves/balances', 'İzinler', 'Yıllık izin hakkı ve kalan gün', { parameters: [parameter('user_id', integer(1, 2147483647), false, 'Verilmezse tüm aktif personel.'), parameter('baslangic', date, false, 'Talep aralığı; user_id ile birlikte.'), parameter('bitis', date, false)], output: array({ type: 'object' }), description: '4857 sayılı Kanun 53. madde kademeleri (1–5 yıl 14, 6–14 yıl 20, 15+ yıl 26 gün); aynı işverendeki önceki çalışma dönemleri kıdeme eklenir. Kullanılan günler vardiya çalışma günlerinden resmi tatiller çıkarılarak sayılır. Devir bakiyesi (Devir_Gun, Devir_Tarihi) varsa Kalan = devir + o tarihten sonraki yıldönümü hakları − o tarihten itibaren kullanılan. Talep aralığı verilirse Talep_Gun döner.', errors: { 404: 'Personel bulunamadı.' } });
+add('put', '/leaves/balances/{id}', 'İzinler', 'Yıllık izin devir bakiyesini kaydet', { admin: true, body: 'LeaveCarryOverInput', errors: { 404: 'Personel bulunamadı.' } });
 add('post', '/leaves', 'İzinler', 'İzin kaydet', { admin: true, body: 'LeaveInput', errors: { 404: 'Personel bulunamadı.', 409: 'Onaylı veya bekleyen izinle tarih çakışması.' } });
 add('delete', '/leaves/{id}', 'İzinler', 'İzin kaydını iptal et', { admin: true, errors: { 404: 'İzin bulunamadı.' } });
 const overtimeDescription = 'Sunucu yeniden hesaplar. Onay sınırı 0–min(2880, hesaplanan+120); red/bekleme süreleri sıfırdır. Eski çakışan onaylı izinler düzeltilene kadar karar verilemez. Karar ve audit aynı transaction içinde kaydedilir.';

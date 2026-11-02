@@ -6,6 +6,8 @@ const { validate, schemas } = require('../middlewares/validate');
 const { addSystemLog } = require('../utils/logger');
 const logger = require('../utils/appLogger');
 const { inTransaction, httpError, validateId } = require('../utils/transaction');
+const { validateQuery, leaveBalanceQuery } = require('../middlewares/query');
+const { leaveBalances } = require('../services/annualLeave');
 router.param('id', validateId);
 
 // 1. TÜM İZİNLERİ GETİR
@@ -29,6 +31,29 @@ router.get('/leaves', verifyToken, async (req, res) => {
         logger.error('İzinleri çekme hatası: ' + err.message);
         res.status(500).json({ success: false, message: 'İzinler getirilemedi.' });
     }
+});
+
+router.get('/leaves/balances', verifyToken, validateQuery(leaveBalanceQuery), async (req, res, next) => {
+    try {
+        const { user_id, baslangic, bitis } = req.validatedQuery;
+        const rows = await leaveBalances({ userId: user_id, baslangic, bitis });
+        if (user_id && !rows.length) throw httpError(404, 'Personel bulunamadı.');
+        res.json(rows);
+    } catch (error) { next(error); }
+});
+
+router.put('/leaves/balances/:id', verifyToken, verifyAdmin, validate(schemas.izinDevriSchema), async (req, res, next) => {
+    const { devir_gun, devir_tarihi } = req.body;
+    try {
+        await inTransaction(async tx => {
+            const request = new sql.Request(tx).input('id', sql.Int, req.params.id).input('gun', sql.Int, devir_gun).input('tarih', sql.Date, devir_tarihi ?? null);
+            const user = (await request.query('UPDATE Users SET Izin_Devir_Gun=@gun,Izin_Devir_Tarihi=@tarih WHERE ID=@id RETURNING Ad_Soyad,Sicil_No')).recordset[0];
+            if (!user) throw httpError(404, 'Personel bulunamadı.');
+            await addSystemLog(req.user.kullanici_adi, 'İZİN DEVRİ', user.Ad_Soyad, user.Sicil_No, devir_gun == null ? 'Devir bakiyesi kaldırıldı.' : `${devir_tarihi} itibarıyla ${devir_gun} gün devir.`, tx);
+        });
+        notifyLeaves();
+        res.json({ success: true, message: 'İzin devri kaydedildi.' });
+    } catch (error) { next(error); }
 });
 
 // Every leave write locks the Users row first, so overlap checks are serialized.
