@@ -25,6 +25,7 @@ erDiagram
 | `Bolgeler` | Bir kattaki çokgen bölgeler (ad, tür, 2000 × 2000 ızgarada `Noktalar` = `[[x,y],…]`, 3–40 köşe, kendini kesmez). Merdiven/Asansör bölgeleri `Dikey_Grup` ile katlar arasında eşlenir. Kapılar `Doors.Plan_X/Plan_Y` ile bölge sınırına yerleştirilir ve `Bolge_A_ID`/`Bolge_B_ID` ile aynı kattaki iki bölgeyi bağlar; boş taraf bina dışıdır. `Doors.Yon_Kisiti` (`Çift`, `A→B`, `B→A`) tek yönlü kapıyı (turnike) belirtir. Bölge silinirse kapının o tarafı boşalır. |
 | `Permissions` | Personel–kapı çoktan çoğa ilişkisi. Aynı çift yinelenemez. Kapıyı pasife almak mevcut izinlerini kaldırır; tekrar aktifleştirmek izinleri geri getirmez. |
 | `Vardiyalar` | Saatler, tolerans, mola hakkı, haftanın çalışma günleri ve aktiflik. |
+| `Resmi_Tatiller` | Resmî tatil takvimi (tarih benzersiz, ad). Puantajda o günü tatil sayar. |
 | `Personel_Vardiya` | Tarihli personel ataması ve atama anındaki vardiya alanlarının kopyası. Rapor tanımın güncel saatleri yerine bu kopyayı kullanır. |
 | `Personel_Calisma_Gecmisi` | Yeniden işe alımdan önce kapanan çalışma dönemleri. Çalışılmayan aralıklar geçmiş rapora eklenmez. |
 | `Logs` | Kart, kapı, olay saati, başarılı/başarısız sonucu ve olay eklenirken belirlenen kişi. Tanımsız kartta kişi boş kalabilir; sonradan başka kişiye bağlanmaz. |
@@ -46,3 +47,4 @@ Kritik değişiklikler ile işlem geçmişi aynı transaction'a yazılır. Commi
 
 3. `003_kat_plani.sql`: kat planı. `Bolgeler` tablosu ve `Doors` tablosuna yerleşim kolonları (`Plan_X`, `Plan_Y`, `Bolge_A_ID`, `Bolge_B_ID`; hepsi boş başlar, mevcut kapılar ve kurulumlar etkilenmez). Kısıtlar: koordinatlar 0–2000, bölge en az 40 × 40, yerleşmemiş kapı bölgeye bağlanamaz, kapı aynı bölgeyi kendisine bağlayamaz. Simülasyon alanlarında `Bolgeler` de demo verisinden kopyalanır (kota 30).
 4. `004_tesis.sql`: tesis modeli. `Katlar` tablosu; `Bolgeler` dikdörtgenden çokgene geçer (`Kat_ID`, `Noktalar` jsonb, `Dikey_Grup`; `X/Y/Genislik/Yukseklik` kaldırılır) ve tür listesine `Merdiven/Asansör`, `Üretim`, `Depo`, `Soyunma` eklenir. Bölgesi olan kurulumda "Zemin Kat" oluşturulur ve her dikdörtgen dört köşeli çokgene çevrilir. `Doors.Yon_Kisiti` (varsayılan `Çift`) ve `Logs.Gecis_Anlami` (okutma anında geçilen bölgelerden yazılan anlam; eski kayıtlarda boş) eklenir. Simülasyon alanı kotaları: `Katlar` 10, `Bolgeler` 60.
+5. `005_resmi_tatiller.sql`: `Resmi_Tatiller` tablosu (tarih benzersiz). Mevcut veriye dokunmaz.

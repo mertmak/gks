@@ -5,7 +5,7 @@ const { referenceDate, accountName } = require('../config/demo');
 const { templates, savePlan } = require('./floorPlan');
 const { attendance } = require('./attendance');
 const factory = require('./demoCompany');
-const version = 'v3-fabrika-2026-10-30';
+const version = 'v4-resmi-tatil-2026-11-01';
 
 const seeded = async tx => (await new sql.Request(tx).input('version', sql.NVarChar, version)
     .query('SELECT Version FROM GksSeedState WHERE Version=@version')).recordset.length > 0;
@@ -32,7 +32,7 @@ async function seedDemo() {
         await advisoryLock(tx, locks.demoSeed);
         await request().query('CREATE TABLE IF NOT EXISTS GksSeedState(Version varchar(100) PRIMARY KEY)');
         if (await seeded(tx)) return { alreadySeeded: true };
-        for (const table of ['Users','Doors','Vardiyalar','Logs','Izinler','Mesai_Onaylari','DoorLogs','Katlar']) {
+        for (const table of ['Users','Doors','Vardiyalar','Logs','Izinler','Mesai_Onaylari','DoorLogs','Katlar','Resmi_Tatiller']) {
             if ((await request().query(`SELECT ID FROM ${table} LIMIT 1`)).recordset.length) throw new Error('Demo seed boş iş tabloları gerektirir; mevcut veriler silinmedi.');
         }
         // Local installs may bootstrap their first administrator before seeding.
@@ -49,6 +49,8 @@ async function seedDemo() {
         }
 
         const data = factory.build();
+        await insertRows(tx, 'Resmi_Tatiller', { Tarih: 'date', Tatil_Adi: 'varchar' },
+            factory.holidays.flatMap(([start, end, Tatil_Adi]) => { const out = []; for (let d = start; d <= end; d = factory.addDays(d, 1)) out.push({ Tarih: d, Tatil_Adi }); return out; }));
         const shiftIds = {}, doorIds = {};
         for (const s of factory.shifts) {
             shiftIds[s.key] = (await request().input('ad', sql.NVarChar, s.Vardiya_Adi).input('bas', sql.NVarChar, s.Mesai_Baslangic).input('bit', sql.NVarChar, s.Mesai_Bitis)

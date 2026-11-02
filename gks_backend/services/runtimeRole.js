@@ -10,6 +10,7 @@ const permissions = Object.freeze({
     Katlar: 'SELECT, INSERT, UPDATE, DELETE',
     Bolgeler: 'SELECT, INSERT, UPDATE, DELETE',
     Vardiyalar: 'SELECT, INSERT, UPDATE',
+    Resmi_Tatiller: 'SELECT, INSERT, DELETE',
     Personel_Vardiya: 'SELECT, INSERT, UPDATE, DELETE',
     Personel_Calisma_Gecmisi: 'SELECT, INSERT',
     Permissions: 'SELECT, INSERT, DELETE',
