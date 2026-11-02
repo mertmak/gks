@@ -4,7 +4,7 @@ import { businessDate } from '../utils/dates';
 import AdminForm from '../components/AdminForm';
 import PageHeader from '../components/ui/PageHeader';
 import { canWrite } from '../utils/session';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { listRows } from '../api/lists';
 import AutocompleteSearch from '../components/AutoCompleteSearch';
@@ -12,6 +12,7 @@ import CustomDataGrid from '../components/CustomDataGrid';
 import AlertMessage from '../components/AlertMessage';
 import ConfirmAction from '../components/ConfirmAction';
 import { usePendingAction } from '../hooks/usePendingAction';
+import LeaveBalances from '../components/LeaveBalances';
 
 const UPDATE_EVENTS = ['leaves_updated', 'users_updated'];
 
@@ -35,6 +36,21 @@ function Leaves() {
     bitis: businessDate(),
     aciklama: ''
   });
+
+  // Annual leave request: show the remaining entitlement and the working days this range uses.
+  const balanceKey = selectedUser && formData.izin_turu === 'Yıllık İzin' && formData.baslangic && formData.bitis >= formData.baslangic
+    ? `${selectedUser.ID}|${formData.baslangic}|${formData.bitis}` : '';
+  const [balance, setBalance] = useState({ key: '', data: null, error: '' });
+  useEffect(() => {
+    if (!balanceKey) return undefined;
+    const [user_id, baslangic, bitis] = balanceKey.split('|');
+    const controller = new AbortController();
+    api.get('/leaves/balances', { params: { user_id, baslangic, bitis }, signal: controller.signal })
+      .then(response => setBalance({ key: balanceKey, data: response.data[0], error: '' }))
+      .catch(() => { if (!controller.signal.aborted) setBalance({ key: balanceKey, data: null, error: 'İzin bakiyesi alınamadı.' }); });
+    return () => controller.abort();
+  }, [balanceKey]);
+  const shownBalance = balanceKey && balance.key === balanceKey ? balance : null;
 
   // --- BİLEŞENE UYGUN LOKAL HIZLI ARAMA ---
   const handleSearchInputChange = async (e) => {
@@ -199,6 +215,15 @@ function Leaves() {
             <input id="leaves-field-3" type="date" name="bitis" min={formData.baslangic} value={formData.bitis} onChange={handleChange} required className="field" />
           </div>
 
+          {balanceKey && <div className="md:col-span-4 text-sm" aria-live="polite">
+            {!shownBalance ? <p className="text-muted">İzin bakiyesi hesaplanıyor…</p>
+              : shownBalance.error ? <p className="text-danger">{shownBalance.error}</p>
+              : <>
+                <p className="text-ink">Kalan yıllık izin: <strong>{shownBalance.data.Kalan} gün</strong> (hak edilen {shownBalance.data.Hak_Edilen}, kullanılan {shownBalance.data.Kullanilan}{shownBalance.data.Bekleyen ? `, onay bekleyen ${shownBalance.data.Bekleyen}` : ''}). Bu talep <strong>{shownBalance.data.Talep_Gun} iş günü</strong>.</p>
+                {shownBalance.data.Talep_Gun > shownBalance.data.Kalan && <p role="alert" className="mt-2 p-3 bg-warning-soft text-ink rounded-lg">Talep, kalan yıllık izin hakkını {shownBalance.data.Talep_Gun - shownBalance.data.Kalan} gün aşıyor. Kayıt yine de yapılabilir (avans izin).</p>}
+              </>}
+          </div>}
+
           <div className="md:col-span-3">
             <label className="field-label" htmlFor="leaves-field-4">Açıklama (Opsiyonel)</label>
             <input id="leaves-field-4" type="text" name="aciklama" maxLength={255} value={formData.aciklama} onChange={handleChange} placeholder="İzin sebebi, rapor numarası vb." className="field" />
@@ -222,6 +247,7 @@ function Leaves() {
           getRowId={(params) => params.data.ID}
         />
       </section>
+      <LeaveBalances />
       <ConfirmAction isOpen={Boolean(confirmation)} title="İzin Kaydını Sil" pending={loading} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmDelete} confirmLabel="İzni Sil">
         <p><strong>{confirmation?.Ad_Soyad}</strong> · {confirmation?.Izin_Turu}</p>
         <p>{confirmation?.Baslangic_Tarihi?.slice(0, 10)} – {confirmation?.Bitis_Tarihi?.slice(0, 10)}</p>

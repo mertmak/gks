@@ -19,7 +19,7 @@ erDiagram
 
 | Tablo | Sorumluluk ve önemli sınır |
 |---|---|
-| `Users` | Personel kimliği, güncel kart, şirket/departman ve güncel çalışma dönemi. Panel hesabı değildir. Kart, TC ve sicil tekilliği migration kısıtlarıyla korunur; kart ve sicil büyük/küçük harf duyarsız tekildir. |
+| `Users` | Personel kimliği, güncel kart, şirket/departman, güncel çalışma dönemi ve yıllık izin devir bakiyesi (gün ve tarih birlikte, −365…365). Panel hesabı değildir. Kart, TC ve sicil tekilliği migration kısıtlarıyla korunur; kart ve sicil büyük/küçük harf duyarsız tekildir. |
 | `Doors` | Sentetik geçiş noktası, kapı türü ve aktiflik. Fiziksel röle/turnike sürücüsü yoktur. |
 | `Katlar` | Tesisin katları (ad, benzersiz sıra). Kat silinirse bölgeleri de silinir. |
 | `Bolgeler` | Bir kattaki çokgen bölgeler (ad, tür, 2000 × 2000 ızgarada `Noktalar` = `[[x,y],…]`, 3–40 köşe, kendini kesmez). Merdiven/Asansör bölgeleri `Dikey_Grup` ile katlar arasında eşlenir. Kapılar `Doors.Plan_X/Plan_Y` ile bölge sınırına yerleştirilir ve `Bolge_A_ID`/`Bolge_B_ID` ile aynı kattaki iki bölgeyi bağlar; boş taraf bina dışıdır. `Doors.Yon_Kisiti` (`Çift`, `A→B`, `B→A`) tek yönlü kapıyı (turnike) belirtir. Bölge silinirse kapının o tarafı boşalır. |
@@ -48,3 +48,4 @@ Kritik değişiklikler ile işlem geçmişi aynı transaction'a yazılır. Commi
 3. `003_kat_plani.sql`: kat planı. `Bolgeler` tablosu ve `Doors` tablosuna yerleşim kolonları (`Plan_X`, `Plan_Y`, `Bolge_A_ID`, `Bolge_B_ID`; hepsi boş başlar, mevcut kapılar ve kurulumlar etkilenmez). Kısıtlar: koordinatlar 0–2000, bölge en az 40 × 40, yerleşmemiş kapı bölgeye bağlanamaz, kapı aynı bölgeyi kendisine bağlayamaz. Simülasyon alanlarında `Bolgeler` de demo verisinden kopyalanır (kota 30).
 4. `004_tesis.sql`: tesis modeli. `Katlar` tablosu; `Bolgeler` dikdörtgenden çokgene geçer (`Kat_ID`, `Noktalar` jsonb, `Dikey_Grup`; `X/Y/Genislik/Yukseklik` kaldırılır) ve tür listesine `Merdiven/Asansör`, `Üretim`, `Depo`, `Soyunma` eklenir. Bölgesi olan kurulumda "Zemin Kat" oluşturulur ve her dikdörtgen dört köşeli çokgene çevrilir. `Doors.Yon_Kisiti` (varsayılan `Çift`) ve `Logs.Gecis_Anlami` (okutma anında geçilen bölgelerden yazılan anlam; eski kayıtlarda boş) eklenir. Simülasyon alanı kotaları: `Katlar` 10, `Bolgeler` 60.
 5. `005_resmi_tatiller.sql`: `Resmi_Tatiller` tablosu (tarih benzersiz). Mevcut veriye dokunmaz.
+6. `006_izin_devri.sql`: `Users.Izin_Devir_Gun` ve `Izin_Devir_Tarihi` (boş başlar; boşken bakiye işe girişten hesaplanır).

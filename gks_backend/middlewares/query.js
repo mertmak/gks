@@ -17,10 +17,14 @@ const periodReportQuery = z.object({ donem: z.enum(['hafta', 'ay', 'ozel']), bas
     .refine(v => v.donem !== 'ozel' || (v.bitis && validDateRange(v.baslangic, v.bitis) && days(v.baslangic, v.bitis) <= 92))
     .refine(v => v.kapsam === 'kisi' ? v.personel?.length === 1 : v.kapsam === 'secili' ? !!v.personel : true)
     .refine(v => v.kapsam !== 'departman' || !!v.departman);
+const queryId = z.string().regex(/^\d{1,10}$/).transform(Number).pipe(z.number().int().min(1).max(2147483647));
+// A request range is counted for one person only.
+const leaveBalanceQuery = z.object({ user_id: queryId.optional(), baslangic: date.optional(), bitis: date.optional() })
+    .refine(v => !v.baslangic === !v.bitis && (!v.baslangic || (v.user_id && validDateRange(v.baslangic, v.bitis))));
 const validateQuery = schema => (req, res, next) => {
     const result = schema.safeParse(req.query);
     if (!result.success) return res.status(400).json({ success: false, message: 'Geçersiz arama, tarih veya sayfalama parametresi.' });
     req.validatedQuery = result.data;
     next();
 };
-module.exports = { validateQuery, usersQuery, logsQuery, dashboardQuery, reportQuery, overtimeQuery, simPlanQuery, simDayQuery, periodReportQuery };
+module.exports = { validateQuery, usersQuery, logsQuery, dashboardQuery, reportQuery, overtimeQuery, simPlanQuery, simDayQuery, periodReportQuery, leaveBalanceQuery };

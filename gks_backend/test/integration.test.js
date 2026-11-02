@@ -69,6 +69,40 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
     assert.equal(await status(),'Devamsız');
     assert.equal((await sql.query("SELECT COUNT(*) AS n FROM SystemLogs WHERE Islem_Tipi='RESMİ TATİL'")).recordset[0].n,2);
   });
+  await t.test('annual leave balance counts shift working days without official holidays',async()=>{
+    const person=(await sql.query("INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Sicil_No,Ise_Giris_Tarihi) VALUES('Fixture Bakiye','"+card+"9','B"+sicil+"','2019-01-01') RETURNING ID")).recordset[0].ID;
+    const q=text=>new sql.Request().input('uid',sql.Int,person).query(text);
+    await q("INSERT INTO Personel_Calisma_Gecmisi(User_ID,Baslangic_Tarihi,Bitis_Tarihi) VALUES(@uid,'2010-01-01','2010-12-31')");
+    await q(`INSERT INTO Izinler(User_ID,Izin_Turu,Baslangic_Tarihi,Bitis_Tarihi,Durum) VALUES
+      (@uid,'Yıllık İzin','2026-09-07','2026-09-13','Onaylandı'),(@uid,'Yıllık İzin','2026-09-14','2026-09-15','Bekliyor'),
+      (@uid,'Yıllık İzin','2026-09-16','2026-09-18','Reddedildi'),(@uid,'Raporlu','2026-09-21','2026-09-22','Onaylandı')`);
+    await sql.query("INSERT INTO Resmi_Tatiller(Tarih,Tatil_Adi) VALUES('2026-09-09','Fixture Tatil')");
+    const {annualLeaveEntitlement}=require('../utils/annualLeave');const {businessToday,dateKey}=require('../utils/attendance');
+    const expected=annualLeaveEntitlement([{start:'2010-01-01',end:'2010-12-31'},{start:'2019-01-01',end:null}],dateKey(businessToday()));
+    const one=await call('GET',`/leaves/balances?user_id=${person}&baslangic=2026-09-21&bitis=2026-09-27`,undefined,viewer);
+    assert.equal(one.status,200);
+    // Mon–Sun week, no shift → Mon–Fri default, minus the Wednesday holiday.
+    assert.deepEqual(one.data.map(r=>[r.Hak_Edilen,r.Kidem_Yil,r.Kullanilan,r.Bekleyen,r.Kalan,r.Talep_Gun]),[[expected.Hak_Edilen,expected.Kidem_Yil,4,2,expected.Hak_Edilen-4,5]]);
+    assert.ok(expected.Kidem_Yil>=8);
+    const all=await call('GET','/leaves/balances',undefined,viewer);
+    assert.equal(all.status,200);assert.equal(all.data.find(r=>r.User_ID===person).Kullanilan,4);assert.equal(all.data[0].Talep_Gun,undefined);
+    assert.equal((await call('GET','/leaves/balances?baslangic=2026-09-21&bitis=2026-09-27')).status,400);
+    assert.equal((await call('GET',`/leaves/balances?user_id=${person}&baslangic=2026-09-21`)).status,400);
+    assert.equal((await call('GET','/leaves/balances?user_id=2147483647')).status,404);
+    // Carry-over: 10 days on 2026-09-10; only the leave days from that date on (Thu, Fri) count.
+    assert.equal((await call('PUT',`/leaves/balances/${person}`,{devir_gun:10,devir_tarihi:'2026-09-10'},viewer)).status,403);
+    assert.equal((await call('PUT',`/leaves/balances/${person}`,{devir_gun:10,devir_tarihi:null})).status,400);
+    assert.equal((await call('PUT',`/leaves/balances/${person}`,{devir_gun:10,devir_tarihi:'2026-09-10'})).status,200);
+    const since=annualLeaveEntitlement([{start:'2010-01-01',end:'2010-12-31'},{start:'2019-01-01',end:null}],dateKey(businessToday()),'2026-09-10');
+    const carried=(await call('GET',`/leaves/balances?user_id=${person}`)).data[0];
+    assert.deepEqual([carried.Devir_Gun,carried.Devir_Tarihi,carried.Hak_Edilen,carried.Kullanilan,carried.Kalan],[10,'2026-09-10',since.Hak_Edilen,2,10+since.Hak_Edilen-2]);
+    assert.equal((await call('PUT',`/leaves/balances/${person}`,{devir_gun:null,devir_tarihi:null})).status,200);
+    assert.equal((await call('GET',`/leaves/balances?user_id=${person}`)).data[0].Kullanilan,4);
+    assert.equal((await call('PUT','/leaves/balances/2147483647',{devir_gun:0,devir_tarihi:'2026-01-01'})).status,404);
+    assert.equal((await sql.query("SELECT COUNT(*) AS n FROM SystemLogs WHERE Islem_Tipi='İZİN DEVRİ'")).recordset[0].n,2);
+    for(const table of ['Izinler','Personel_Calisma_Gecmisi']) await q(`DELETE FROM ${table} WHERE User_ID=@uid`);
+    await q('DELETE FROM Users WHERE ID=@uid');await sql.query("DELETE FROM Resmi_Tatiller WHERE Tatil_Adi='Fixture Tatil'");
+  });
   await t.test('password changes revoke old sessions and only change the caller',async()=>{
     const username='test-'+stamp;
     assert.equal((await call('POST','/hesap-ekle',{username,password:'Fixture-Password-123',rol:'user'})).status,200);

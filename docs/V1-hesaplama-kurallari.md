@@ -47,6 +47,14 @@ Kapanmamış yemek veya mola için süre tahmin edilmez; `Acik_Yemek`/`Acik_Mola
 
 Mola aşımı `max(0, toplam mola - mola hakkı)` olur. 30 dakika hak ve 40 dakika tamamlanmış mola, 10 dakika aşım gösterir. İzin/izin çakışması yoksa durum metnine Mola Aşımı eklenir. Vardiyadaki planlı yemek saatleri tamamlanmamış bir yemek süresi yerine geçirilmez.
 
+## Yıllık izin bakiyesi
+
+`GET /api/leaves/balances` her aktif personel için yıllık izin hakkını hesaplar (4857 sayılı Kanun 53. madde): her tamamlanan hizmet yılında 1–5. yıllar için 14, 6–14. yıllar için 20, 15. yıl ve sonrası için 26 gün. Hak, yıldönümü gününde doğar; ilk yıl dolmadan hak yoktur. Kıdem, güncel dönem (`Ise_Giris_Tarihi`–bugün veya çıkış) ile `Personel_Calisma_Gecmisi` dönemlerinin gün toplamıdır; dönemler kesintisiz sayılarak yıldönümleri bulunur. 18 yaş altı ve 50 yaş üstü için en az 20 gün kuralı uygulanmaz (doğum tarihi tutulmaz).
+
+Kullanılan gün, onaylı `Yıllık İzin` kayıtlarındaki iş günleridir: o gün geçerli vardiya atamasının çalışma günleri (atama yoksa Pazartesi–Cuma), `Resmi_Tatiller` hariç. Bekleyen talepler ayrı gösterilir, reddedilenler sayılmaz. Gelecekteki onaylı izinler de kullanılmış sayılır.
+
+Devir bakiyesi (`Users.Izin_Devir_Gun`, `Izin_Devir_Tarihi`) o tarihteki kalan izindir: kalan = devir + o tarihte veya sonra doğan haklar − o tarihten itibaren kullanılan günler. Devir yoksa işe girişten bu yana tüm haklar ve kayıtlı tüm yıllık izinler sayılır. Kalan eksiye düşebilir (avans izin); izin girişi engellenmez, yalnız uyarı gösterilir.
+
 ## Yönetici kararı ve geçmiş
 
 Hesaplanan süre, onaylanan süre ve hak edilen mesai ayrı alanlardır. Sıfır dakika onayı geçerli karardır. Onay sınırı sunucuda yeniden hesaplanan süreye göre `0–min(2880, hesaplanan+120)`; red/beklemede onaylanan süre sıfırdır. Toplu karar atomiktir. Ayrıntılar ve geçmiş kart/vardiya/çalışma dönemi sınırları [README](../README.md) içinde açıklanır.
