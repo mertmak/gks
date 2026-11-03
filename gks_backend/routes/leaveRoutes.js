@@ -80,6 +80,31 @@ router.post('/leaves', verifyToken, verifyAdmin, validate(schemas.izinEkleSchema
     } catch (error) { next(error); }
 });
 
+// Only pending leaves are decided. Approval re-checks overlap in case older data already overlaps.
+router.put('/leaves/:id/durum', verifyToken, verifyAdmin, validate(schemas.izinKararSchema), async (req, res, next) => {
+    const { durum, aciklama } = req.body;
+    try {
+        const info = (await new sql.Request().input('id', sql.Int, req.params.id).query('SELECT User_ID FROM Izinler WHERE ID=@id')).recordset[0];
+        if (!info) throw httpError(404, 'İzin kaydı bulunamadı.');
+        await inTransaction(async tx => {
+            const request = new sql.Request(tx).input('id', sql.Int, req.params.id).input('uid', sql.Int, info.User_ID).input('durum', sql.NVarChar, durum);
+            const user = (await request.query('SELECT Ad_Soyad,Sicil_No FROM Users WHERE ID=@uid FOR UPDATE')).recordset[0];
+            const leave = (await request.query('SELECT Izin_Turu,Baslangic_Tarihi,Bitis_Tarihi,Durum FROM Izinler WHERE ID=@id FOR UPDATE')).recordset[0];
+            if (!leave) throw httpError(404, 'İzin kaydı bulunamadı.');
+            if (leave.Durum !== 'Bekliyor') throw httpError(409, `Bu izin zaten karara bağlanmış (${leave.Durum}).`);
+            if (durum === 'Onaylandı') {
+                const overlap = await request.query("SELECT O.ID FROM Izinler O, Izinler I WHERE I.ID=@id AND O.ID<>@id AND O.User_ID=@uid AND O.Durum IN ('Onaylandı','Bekliyor') AND O.Baslangic_Tarihi<=I.Bitis_Tarihi AND O.Bitis_Tarihi>=I.Baslangic_Tarihi LIMIT 1");
+                if (overlap.recordset.length) throw httpError(409, 'Bu tarih aralığında başka onaylı veya bekleyen izin var. Önce çakışmayı giderin.');
+            }
+            await request.query('UPDATE Izinler SET Durum=@durum WHERE ID=@id');
+            const range = `${leave.Baslangic_Tarihi.toISOString().slice(0, 10)} - ${leave.Bitis_Tarihi.toISOString().slice(0, 10)}`;
+            await addSystemLog(req.user.kullanici_adi, durum === 'Onaylandı' ? 'İZİN ONAYI' : 'İZİN RED', user.Ad_Soyad, user.Sicil_No, `${range}: ${leave.Izin_Turu}${aciklama ? ` · ${aciklama}` : ''}`, tx);
+        });
+        notifyLeaves();
+        res.json({ success: true, message: durum === 'Onaylandı' ? 'İzin onaylandı.' : 'İzin reddedildi.' });
+    } catch (error) { next(error); }
+});
+
 router.delete('/leaves/:id', verifyToken, verifyAdmin, async (req, res, next) => {
     try {
         const info = (await new sql.Request().input('id', sql.Int, req.params.id).query('SELECT User_ID FROM Izinler WHERE ID=@id')).recordset[0];

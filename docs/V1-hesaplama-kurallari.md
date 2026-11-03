@@ -55,6 +55,10 @@ Kullanılan gün, onaylı `Yıllık İzin` kayıtlarındaki iş günleridir: o g
 
 Devir bakiyesi (`Users.Izin_Devir_Gun`, `Izin_Devir_Tarihi`) o tarihteki kalan izindir: kalan = devir + o tarihte veya sonra doğan haklar − o tarihten itibaren kullanılan günler. Devir yoksa işe girişten bu yana tüm haklar ve kayıtlı tüm yıllık izinler sayılır. Kalan eksiye düşebilir (avans izin); izin girişi engellenmez, yalnız uyarı gösterilir.
 
+## İzin onayı
+
+İzin, onaylı veya onay bekleyen (`Bekliyor`) olarak kaydedilir. Bekleyen izin günleri başka izne kapalıdır ama puantajda ve kullanılan bakiyede sayılmaz. Yönetici `PUT /api/leaves/{id}/durum` ile bekleyen izni bir kez onaylar veya reddeder; karar verilmiş izin yeniden karara bağlanamaz (iptal edilip yeniden girilir). Onay, aynı personelin onaylı/bekleyen başka bir izniyle çakışıyorsa reddedilir. Karar ve isteğe bağlı karar notu `İZİN ONAYI`/`İZİN RED` denetim kaydına aynı transaction içinde yazılır.
+
 ## Yönetici kararı ve geçmiş
 
 Hesaplanan süre, onaylanan süre ve hak edilen mesai ayrı alanlardır. Sıfır dakika onayı geçerli karardır. Onay sınırı sunucuda yeniden hesaplanan süreye göre `0–min(2880, hesaplanan+120)`; red/beklemede onaylanan süre sıfırdır. Toplu karar atomiktir. Ayrıntılar ve geçmiş kart/vardiya/çalışma dönemi sınırları [README](../README.md) içinde açıklanır.
