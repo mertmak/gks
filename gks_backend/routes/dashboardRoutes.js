@@ -1,4 +1,5 @@
-const { validateQuery, logsQuery, dashboardQuery: dashboardSchema } = require('../middlewares/query');
+const { validateQuery, logsQuery, presenceQuery, dashboardQuery: dashboardSchema } = require('../middlewares/query');
+const { presence, LOOKBACK_MS } = require('../utils/presence');
 const { businessToday } = require('../utils/attendance');
 const { monthlyTrendQuery } = require('../services/dashboardTrends');
 const dashboardQuery = query => new sql.Request().input('today', sql.Date, businessToday()).query(query);
@@ -228,6 +229,24 @@ router.get('/door-logs', verifyToken, validateQuery(logsQuery), async (req, res,
     } catch (err) {
         next(err);
     }
+});
+
+// Personnel inside at `tarih saat` (default: now; the demo uses its reference date with the current clock).
+router.get('/presence', verifyToken, validateQuery(presenceQuery), async (req, res, next) => {
+    try {
+        const tarih = req.validatedQuery.tarih ?? businessToday();
+        const saat = req.validatedQuery.saat ?? require('../config/business').time();
+        const asOf = new Date(`${tarih}T${saat}:59.999Z`);
+        const fmt = d => d.toISOString().replace('T', ' ').slice(0, 23);
+        const events = (await new sql.Request().input('from', sql.NVarChar, fmt(new Date(asOf - LOOKBACK_MS))).input('to', sql.NVarChar, fmt(asOf)).query(`
+            SELECT L.User_ID, L.Zaman, COALESCE(L.Gecis_Anlami, D.Kapi_Turu) AS Kapi_Turu, D.Kapi_Adi
+            FROM Logs L JOIN Doors D ON D.ID = L.Door_ID JOIN Users U ON U.ID = L.User_ID
+            WHERE L.Basarili_Mi = true AND U.Durum = true AND L.Zaman > CAST(@from AS timestamp) AND L.Zaman <= CAST(@to AS timestamp)
+            ORDER BY L.Zaman, L.ID`)).recordset;
+        const inside = presence(events);
+        const users = inside.size ? (await new sql.Request().input('ids', sql.IntArray, [...inside.keys()]).query('SELECT ID AS User_ID, Ad_Soyad, Sicil_No, Departman FROM Users WHERE ID = ANY(@ids) ORDER BY Departman, Ad_Soyad')).recordset : [];
+        res.json({ tarih, saat, kisiler: users.map(u => ({ ...u, ...inside.get(u.User_ID) })) });
+    } catch (err) { next(err); }
 });
 
 module.exports = router;

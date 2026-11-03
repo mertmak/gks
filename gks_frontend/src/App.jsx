@@ -8,6 +8,7 @@ import { connectSocket, disconnectSocket } from './api/socket';
 // Sayfa Bileşenleri İçe Aktarımı
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Logs = lazy(() => import('./pages/Logs'));
+const Presence = lazy(() => import('./pages/Presence'));
 const DoorLogs = lazy(() => import('./pages/DoorLogs'));
 const SystemLogs = lazy(() => import('./pages/SystemLogs'));
 const Users = lazy(() => import('./pages/Users'));
@@ -134,6 +135,7 @@ function App() {
 
           {/* Geçiş ve Denetim Rotaları */}
           <Route path="/gecis-hareketleri" element={<Logs />} />
+          <Route path="/iceridekiler" element={<Presence />} />
           <Route path="/denetim/kapi" element={<DoorLogs />} />
           <Route path="/denetim/sistem" element={<SystemLogs />} />
 

@@ -16,6 +16,7 @@ export function buildNav({ admin }) {
     ] },
     { label: 'Puantaj', to: '/puantaj', icon: 'table' },
     { label: 'Geçiş Hareketleri', to: '/gecis-hareketleri', icon: 'arrows' },
+    { label: 'İçeridekiler', to: '/iceridekiler', icon: 'users' },
     { label: 'Denetim Kayıtları', icon: 'shield', items: [
       { label: 'Kapı Değişiklikleri', to: '/denetim/kapi' },
       { label: 'Sistem İşlemleri', to: '/denetim/sistem' },
