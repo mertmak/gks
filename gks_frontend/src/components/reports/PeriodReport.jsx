@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { socket } from '../../api/socket';
@@ -7,6 +7,7 @@ import { businessDate, shiftPeriod } from '../../utils/dates';
 import { prepareExcel } from '../../utils/excel';
 import CustomDataGrid from '../CustomDataGrid';
 import AutocompleteSearch from '../AutoCompleteSearch';
+import PersonStatements from './PersonStatements';
 
 const KEYS = ['donem', 'baslangic', 'bitis', 'kapsam', 'personel', 'departman'];
 const DONEM = { hafta: 'Hafta', ay: 'Ay', ozel: 'Özel aralık' };
@@ -52,6 +53,8 @@ function PeriodReport() {
   const loading = !!queryKey && done.key !== requestKey;
   const [person, setPerson] = useState(null);
   const summaryGrid = useRef();
+  const [statementIds, setStatementIds] = useState(null);
+  const endStatements = useCallback(() => setStatementIds(null), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -172,6 +175,7 @@ function PeriodReport() {
           <button type="button" onClick={() => move(-1)} disabled={!query.baslangic || loading} className="btn btn-secondary">‹ Önceki dönem</button>
           <button type="button" onClick={() => move(1)} disabled={!query.baslangic || loading} className="btn btn-secondary">Sonraki dönem ›</button>
           <button type="button" onClick={print} disabled={!result} className="btn btn-secondary ml-auto">Yazdır</button>
+          <button type="button" onClick={() => setStatementIds(result.ozet.map(r => r.User_ID))} disabled={!result?.ozet.length || loading} className="btn btn-secondary">Kişi dökümlerini yazdır</button>
         </div>
       </form>
 
@@ -183,7 +187,7 @@ function PeriodReport() {
           {day(result.baslangic)} – {day(result.bitis)} · {KAPSAM[query.kapsam]}{query.departman ? `: ${query.departman}` : ''} · {result.ozet.length} kişi
         </p>
         <section aria-label="Dönem özeti" className="card p-2 flex flex-col h-[60vh] print:h-auto print:shadow-none">
-          <p className="p-2 text-xs text-muted print:hidden">Bir kişinin adına tıklayınca günlük dökümü aşağıda açılır. Excel dosyası "Özet" ve "Günlük" iki sayfa içerir.</p>
+          <p className="p-2 text-xs text-muted print:hidden">Bir kişinin adına tıklayınca günlük dökümü aşağıda açılır. Excel dosyası "Özet" ve "Günlük" iki sayfa içerir. "Kişi dökümlerini yazdır" her kişi için imza alanlı ayrı bir sayfa basar.</p>
           <CustomDataGrid ref={summaryGrid} rowData={result.ozet} columnDefs={summaryColumns} getRowId={p => p.data.User_ID} rowHeight={44}
             pinnedBottomRowData={result.ozet.length > 1 ? [{ ...result.toplam, Ad_Soyad: 'Toplam' }] : undefined}
             prepareExport={() => prepareExcel([
@@ -194,12 +198,16 @@ function PeriodReport() {
         {person && <section aria-label="Günlük döküm" className="card p-2 flex flex-col h-[60vh] print:hidden">
           <div className="flex items-center justify-between p-2">
             <h2 className="font-semibold text-ink">{userName(person)} — günlük döküm</h2>
-            <button type="button" onClick={() => setPerson(null)} className="btn btn-sm btn-secondary">Kapat</button>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setStatementIds([person])} className="btn btn-sm btn-secondary">İmzalı döküm yazdır</button>
+              <button type="button" onClick={() => setPerson(null)} className="btn btn-sm btn-secondary">Kapat</button>
+            </div>
           </div>
           <CustomDataGrid rowData={personRows} columnDefs={dailyColumns} getRowId={p => p.data.TarihStr} rowHeight={44}
             exportFileName={`puantaj_${userName(person)}_${result.baslangic}_${result.bitis}`} />
         </section>}
       </>}
+      {result && statementIds && <PersonStatements result={result} userIds={statementIds} onDone={endStatements} />}
     </div>
   );
 }

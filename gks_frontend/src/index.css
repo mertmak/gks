@@ -88,3 +88,25 @@
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Per-person monthly statements (components/reports/PersonStatements.jsx): print only, black on white. */
+.statements { display: none; }
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body.printing-statements { background: #fff; }
+  body.printing-statements > :not(.statements) { display: none !important; }
+  body.printing-statements .statements { display: block; color: #000; font: 10pt/1.35 system-ui, sans-serif; }
+  .statement { break-after: page; }
+  .statement:last-child { break-after: auto; }
+  .statement-head h1 { font-size: 14pt; font-weight: 700; }
+  .statement-head dl { display: grid; grid-template-columns: auto 1fr; gap: 1mm 4mm; margin: 3mm 0; }
+  .statement-head dt, .statement-totals dt { font-weight: 600; }
+  .statement table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  .statement th, .statement td { border: 0.5pt solid #555; padding: 0.6mm 1.5mm; text-align: left; }
+  .statement th { background: #eee; }
+  .statement tr { break-inside: avoid; }
+  .statement-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1mm 4mm; margin: 4mm 0; break-inside: avoid; }
+  .statement-totals div { display: flex; justify-content: space-between; border-bottom: 0.5pt dotted #888; }
+  .statement-signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; margin-top: 8mm; break-inside: avoid; }
+  .statement-signatures div { border-top: 0.5pt solid #000; padding-top: 1.5mm; height: 22mm; text-align: center; font-size: 9pt; }
+}
