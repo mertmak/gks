@@ -125,6 +125,23 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
     assert.deepEqual(logs.map(l=>[l.Islem_Tipi,l.Detay]),[['İZİN RED','2026-10-07 - 2026-10-07: Mazeret İzni · Çakışıyor'],['İZİN ONAYI','2026-10-19 - 2026-10-20: Yıllık İzin']]);
     await q('DELETE FROM Izinler WHERE User_ID=@uid');await q('DELETE FROM Users WHERE ID=@uid');
   });
+  await t.test('presence lists who entered and has not left, with meal location',async()=>{
+    const ids=(await sql.query("INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Sicil_No) VALUES('Fixture İçeride','"+card+"7','D"+sicil+"'),('Fixture Çıktı','"+card+"6','E"+sicil+"') RETURNING ID")).recordset.map(r=>r.ID);
+    const doors=(await sql.query("INSERT INTO Doors(Kapi_Adi,Kapi_Turu) VALUES('P Giriş','Ana Giriş'),('P Çıkış','Ana Çıkış'),('P Yemek','Yemekhane Giriş') RETURNING ID")).recordset.map(r=>r.ID);
+    const log=(c,d,z)=>new sql.Request().input('c',sql.NVarChar,card+c).input('d',sql.Int,doors[d]).input('z',sql.NVarChar,z).query('INSERT INTO Logs(RFID_Kart_No,Door_ID,Zaman,Basarili_Mi) VALUES(@c,@d,CAST(@z AS timestamp),true)');
+    await log('7',0,'2026-07-01 22:00');await log('7',2,'2026-07-02 01:30');
+    await log('6',0,'2026-07-02 08:00');await log('6',1,'2026-07-02 12:00');
+    const at=async q=>(await call('GET','/presence?'+q,undefined,viewer)).data.kisiler.filter(k=>ids.includes(k.User_ID)).map(k=>[k.Ad_Soyad,k.Konum,k.Son_Kapi]);
+    assert.deepEqual(await at('tarih=2026-07-02&saat=10:00'),[['Fixture Çıktı','Bina içi','P Giriş'],['Fixture İçeride','Yemekhane','P Yemek']]);
+    assert.deepEqual(await at('tarih=2026-07-02&saat=12:00'),[['Fixture İçeride','Yemekhane','P Yemek']]);
+    // Older than 24 hours: a forgotten exit no longer counts as inside.
+    assert.deepEqual(await at('tarih=2026-07-02&saat=22:01'),[]);
+    assert.equal((await call('GET','/presence?saat=25:00')).status,400);
+    assert.equal((await call('GET','/presence')).status,200);
+    await new sql.Request().input('ids',sql.IntArray,ids).query('DELETE FROM Logs WHERE User_ID=ANY(@ids)');
+    await new sql.Request().input('ids',sql.IntArray,ids).query('DELETE FROM Users WHERE ID=ANY(@ids)');
+    await new sql.Request().input('ids',sql.IntArray,doors).query('DELETE FROM Doors WHERE ID=ANY(@ids)');
+  });
   await t.test('password changes revoke old sessions and only change the caller',async()=>{
     const username='test-'+stamp;
     assert.equal((await call('POST','/hesap-ekle',{username,password:'Fixture-Password-123',rol:'user'})).status,200);
