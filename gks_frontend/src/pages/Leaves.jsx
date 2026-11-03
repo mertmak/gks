@@ -34,8 +34,10 @@ function Leaves() {
     izin_turu: 'Yıllık İzin',
     baslangic: businessDate(),
     bitis: businessDate(),
-    aciklama: ''
+    aciklama: '',
+    durum: 'Onaylandı'
   });
+  const [note, setNote] = useState('');
 
   // Annual leave request: show the remaining entitlement and the working days this range uses.
   const balanceKey = selectedUser && formData.izin_turu === 'Yıllık İzin' && formData.baslangic && formData.bitis >= formData.baslangic
@@ -99,10 +101,10 @@ function Leaves() {
       setMessage({ text: '', type: '' });
       try {
         await api.post('/leaves', { ...formData, user_id: selectedUser.ID });
-        setMessage({ text: 'İzin başarıyla kaydedildi.', type: 'success' });
+        setMessage({ text: formData.durum === 'Bekliyor' ? 'İzin talebi onaya gönderildi.' : 'İzin başarıyla kaydedildi.', type: 'success' });
 
         // Formu sıfırla
-        setFormData({ izin_turu: 'Yıllık İzin', baslangic: businessDate(), bitis: businessDate(), aciklama: '' });
+        setFormData({ izin_turu: 'Yıllık İzin', baslangic: businessDate(), bitis: businessDate(), aciklama: '', durum: 'Onaylandı' });
         setSelectedUser(null);
         setArama('');
         fetchLeaves();
@@ -112,26 +114,32 @@ function Leaves() {
     });
   };
 
-  const handleDelete = (leave) => {
+  // action: 'Sil', 'Onaylandı' or 'Reddedildi'
+  const openConfirmation = (leave, action) => {
     if (loading || confirmation) return;
     setMessage({ text: '', type: '' });
-    setConfirmation(leave);
+    setNote('');
+    setConfirmation({ ...leave, action });
   };
 
-  const confirmDelete = async () => {
+  const confirmAction = async () => {
     if (!confirmation) return;
+    const { ID, action } = confirmation;
     await run(async () => {
       setMessage({ text: '', type: '' });
       try {
-        await api.delete(`/leaves/${confirmation.ID}`);
-        setMessage({ text: 'İzin silindi.', type: 'success' });
+        const response = action === 'Sil' ? await api.delete(`/leaves/${ID}`) : await api.put(`/leaves/${ID}/durum`, { durum: action, aciklama: note });
+        setMessage({ text: response.data.message, type: 'success' });
         setConfirmation(null);
         fetchLeaves();
       } catch (error) {
-        setMessage({ text: error.response?.data?.message || 'Silme işlemi başarısız.', type: 'error' });
+        setMessage({ text: error.response?.data?.message || 'İşlem başarısız.', type: 'error' });
       }
     });
   };
+  const pendingCount = leaves.filter(row => row.Durum === 'Bekliyor').length;
+  const confirmTitles = { Sil: ['İzin Kaydını Sil', 'İzni Sil'], Onaylandı: ['İzni Onayla', 'Onayla'], Reddedildi: ['İzni Reddet', 'Reddet'] };
+  const [confirmTitle, confirmLabel] = confirmTitles[confirmation?.action] || confirmTitles.Sil;
 
   const colDefs = [
     { field: 'Sicil_No', headerName: 'Sicil No', width: 120 },
@@ -156,17 +164,25 @@ function Leaves() {
       },
       width: 220
     },
-    { field: 'Durum', headerName: 'Onay Durumu', width: 135 },
+    {
+      field: 'Durum', headerName: 'Onay Durumu', width: 140,
+      cellRenderer: ({ value }) => <span className={`badge ${value === 'Bekliyor' ? 'bg-warning-soft text-ink' : value === 'Reddedildi' ? 'bg-danger-soft text-danger border-danger-line' : 'bg-success-soft text-success'}`}>{value}</span>
+    },
     { headerName: 'Kayıt Kontrolü', width: 170, valueGetter: ({ data }) => data.Cakisma_Var ? 'İzin Çakışması' : '—' },
     { field: 'Aciklama', headerName: 'Açıklama', flex: 1, minWidth: 150 },
-    {
-      headerName: 'İşlemler', width: 100, sortable: false, filter: false,
-      cellRenderer: (params) => (
-        <button disabled={loading || Boolean(confirmation)} onClick={() => handleDelete(params.data)} className="btn btn-sm bg-danger-soft text-danger">
-          İptal Et
-        </button>
-      )
-    }
+    ...(canWrite() ? [{
+      headerName: 'İşlemler', width: 250, pinned: 'right', sortable: false, filter: false,
+      cellRenderer: ({ data }) => {
+        const busy = loading || Boolean(confirmation);
+        return <div className="flex gap-2">
+          {data.Durum === 'Bekliyor' && <>
+            <button type="button" disabled={busy} onClick={() => openConfirmation(data, 'Onaylandı')} className="btn btn-sm btn-primary">Onayla</button>
+            <button type="button" disabled={busy} onClick={() => openConfirmation(data, 'Reddedildi')} className="btn btn-sm btn-secondary">Reddet</button>
+          </>}
+          <button type="button" disabled={busy} onClick={() => openConfirmation(data, 'Sil')} className="btn btn-sm bg-danger-soft text-danger">İptal Et</button>
+        </div>;
+      }
+    }] : [])
   ];
 
   return (
@@ -224,7 +240,15 @@ function Leaves() {
               </>}
           </div>}
 
-          <div className="md:col-span-3">
+          <div>
+            <label className="field-label" htmlFor="leaves-field-5">Kayıt Durumu</label>
+            <select id="leaves-field-5" name="durum" value={formData.durum} onChange={handleChange} className="field">
+              <option value="Onaylandı">Onaylı</option>
+              <option value="Bekliyor">Onaya gönder</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-2">
             <label className="field-label" htmlFor="leaves-field-4">Açıklama (Opsiyonel)</label>
             <input id="leaves-field-4" type="text" name="aciklama" maxLength={255} value={formData.aciklama} onChange={handleChange} placeholder="İzin sebebi, rapor numarası vb." className="field" />
           </div>
@@ -238,7 +262,7 @@ function Leaves() {
       </section>}
 
       <section aria-labelledby="leave-list-title" className="card p-4 flex flex-col h-[60vh]">
-        <h2 id="leave-list-title" className="p-2 text-sm font-semibold text-ink">{listLoading ? 'İzinler yükleniyor…' : `Kayıtlı izinler (${leaves.length})`}</h2>
+        <h2 id="leave-list-title" className="p-2 text-sm font-semibold text-ink">{listLoading ? 'İzinler yükleniyor…' : `Kayıtlı izinler (${leaves.length})${pendingCount ? ` · ${pendingCount} onay bekliyor` : ''}`}</h2>
         {listError && <p role="alert" className="text-danger mb-2">{listError} <button type="button" onClick={fetchLeaves} className="underline">Tekrar dene</button></p>}
         <CustomDataGrid
           rowData={leaves}
@@ -248,10 +272,13 @@ function Leaves() {
         />
       </section>
       <LeaveBalances />
-      <ConfirmAction isOpen={Boolean(confirmation)} title="İzin Kaydını Sil" pending={loading} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmDelete} confirmLabel="İzni Sil">
+      <ConfirmAction isOpen={Boolean(confirmation)} title={confirmTitle} pending={loading} error={message.type === 'error' ? message.text : ''} onClose={() => setConfirmation(null)} onConfirm={confirmAction} confirmLabel={confirmLabel} confirmClassName={confirmation?.action === 'Onaylandı' ? 'btn-primary' : 'btn-danger'}>
         <p><strong>{confirmation?.Ad_Soyad}</strong> · {confirmation?.Izin_Turu}</p>
         <p>{confirmation?.Baslangic_Tarihi?.slice(0, 10)} – {confirmation?.Bitis_Tarihi?.slice(0, 10)}</p>
-        <p>Bu izin kaydı silinecek ve ilgili günlerin puantaj hesabı yeniden değerlendirilecek.</p>
+        {confirmation?.action === 'Sil' ? <p>Bu izin kaydı silinecek ve ilgili günlerin puantaj hesabı yeniden değerlendirilecek.</p> : <>
+          <p>{confirmation?.action === 'Onaylandı' ? 'Onaylanan izin puantajda ve yıllık izin bakiyesinde kullanılmış sayılır.' : 'Reddedilen izin günleri serbest kalır; kayıt geçmiş için saklanır.'}</p>
+          <div><label className="field-label" htmlFor="leave-decision-note">Karar notu (opsiyonel)</label><input id="leave-decision-note" type="text" maxLength={255} value={note} onChange={e => setNote(e.target.value)} className="field" placeholder="Denetim kaydına yazılır" /></div>
+        </>}
       </ConfirmAction>
     </div>
   );

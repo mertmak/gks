@@ -79,6 +79,7 @@ const schemas = {
     resmiTatilSchema: z.object({ tarih: date, tatil_adi: text(100).min(1) }),
     izinDevriSchema: z.object({ devir_gun: number(-365, 365).nullable(), devir_tarihi: optionalDate }).refine(v => (v.devir_gun == null) === (v.devir_tarihi == null), 'Devir günü ve tarihi birlikte girilmelidir.'),
     izinEkleSchema: z.object({ user_id: id, izin_turu: text(50).min(1), baslangic: date, bitis: date, aciklama: text(255).default(''), durum: status.default('Onaylandı') }).refine(v => v.bitis >= v.baslangic, 'Bitiş başlangıçtan önce olamaz.'),
+    izinKararSchema: z.object({ durum: z.enum(['Onaylandı', 'Reddedildi']), aciklama: text(255).default('') }),
     mesaiOnaySchema: z.object({ user_id: id, tarih: date, hesaplanan_dk: minutes.optional(), onaylanan_dk: minutes, durum: status, aciklama: text(255).default('') }),
     mesaiBulkOnaySchema: z.object({ mesailer: z.array(z.object({ user_id: id, tarih: date, hesaplanan_dk: minutes.optional(), onaylanan_dk: minutes })).min(1).max(2000), durum: status, aciklama: text(255).default('') }),
     bulkShiftSchema: z.object({ ...baseTarget, vardiya_id: optionalId }).refine(targetRequired, targetMessage),

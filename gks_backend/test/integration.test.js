@@ -103,6 +103,28 @@ test('database-backed API regression suite',{skip:process.env.RUN_DB_TESTS!=='tr
     for(const table of ['Izinler','Personel_Calisma_Gecmisi']) await q(`DELETE FROM ${table} WHERE User_ID=@uid`);
     await q('DELETE FROM Users WHERE ID=@uid');await sql.query("DELETE FROM Resmi_Tatiller WHERE Tatil_Adi='Fixture Tatil'");
   });
+  await t.test('pending leave is approved or rejected once, by an admin, without overlap',async()=>{
+    const person=(await sql.query("INSERT INTO Users(Ad_Soyad,RFID_Kart_No,Sicil_No) VALUES('Fixture Onay','"+card+"8','C"+sicil+"') RETURNING ID")).recordset[0].ID;
+    const q=text=>new sql.Request().input('uid',sql.Int,person).query(text);
+    // Legacy overlap written directly: a pending leave inside an approved one.
+    const ids=(await q(`INSERT INTO Izinler(User_ID,Izin_Turu,Baslangic_Tarihi,Bitis_Tarihi,Durum) VALUES
+      (@uid,'Yıllık İzin','2026-10-05','2026-10-09','Onaylandı'),(@uid,'Mazeret İzni','2026-10-07','2026-10-07','Bekliyor'),
+      (@uid,'Yıllık İzin','2026-10-19','2026-10-20','Bekliyor') RETURNING ID`)).recordset.map(r=>r.ID);
+    const decide=(id,body,token)=>call('PUT',`/leaves/${id}/durum`,body,token);
+    assert.equal((await decide(ids[2],{durum:'Onaylandı'},viewer)).status,403);
+    assert.equal((await decide(ids[2],{durum:'Bekliyor'})).status,400);
+    assert.equal((await decide(2147483647,{durum:'Onaylandı'})).status,404);
+    assert.equal((await decide(ids[0],{durum:'Reddedildi'})).status,409);
+    assert.equal((await decide(ids[1],{durum:'Onaylandı'})).status,409);
+    assert.equal((await decide(ids[1],{durum:'Reddedildi',aciklama:'Çakışıyor'})).status,200);
+    assert.equal((await decide(ids[2],{durum:'Onaylandı'})).status,200);
+    assert.equal((await decide(ids[2],{durum:'Reddedildi'})).status,409);
+    const rows=(await q('SELECT ID,Durum FROM Izinler WHERE User_ID=@uid ORDER BY ID')).recordset.map(r=>r.Durum);
+    assert.deepEqual(rows,['Onaylandı','Reddedildi','Onaylandı']);
+    const logs=(await sql.query("SELECT Islem_Tipi,Detay FROM SystemLogs WHERE Islem_Tipi IN ('İZİN ONAYI','İZİN RED') ORDER BY ID")).recordset;
+    assert.deepEqual(logs.map(l=>[l.Islem_Tipi,l.Detay]),[['İZİN RED','2026-10-07 - 2026-10-07: Mazeret İzni · Çakışıyor'],['İZİN ONAYI','2026-10-19 - 2026-10-20: Yıllık İzin']]);
+    await q('DELETE FROM Izinler WHERE User_ID=@uid');await q('DELETE FROM Users WHERE ID=@uid');
+  });
   await t.test('password changes revoke old sessions and only change the caller',async()=>{
     const username='test-'+stamp;
     assert.equal((await call('POST','/hesap-ekle',{username,password:'Fixture-Password-123',rol:'user'})).status,200);
