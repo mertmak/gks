@@ -51,11 +51,11 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
     const seciliDepartmanlar = parseCustomList(customDepartmanlar, defaultDepartmanlar);
     const seciliKapilar = parseCustomList(customKapilar, defaultKapilar);
 
-    const generateRandomUser = () => {
+    // Sicil is sequential: a random 5-digit value collided with existing staff (ux_users_sicil).
+    const generateRandomUser = sicil => {
         const adSoyad = `${getRandomItem(seciliIsimler)} ${getRandomItem(seciliSoyisimler)}`;
         const rfid = `${10000000000 + Math.floor(Math.random() * 89999999999)}`; 
         const tc = `${10000000000 + Math.floor(Math.random() * 89999999999)}`;   
-        const sicil = `${10000 + Math.floor(Math.random() * 89999)}`;            
         const departman = getRandomItem(seciliDepartmanlar);
         return { adSoyad, rfid, tc, sicil, departman };
     };
@@ -88,8 +88,10 @@ router.post('/seeder/run', verifyToken, verifyAdmin, async (req, res) => {
         if (doors.length === 0) throw new Error('Aktif personel ve kapı gereklidir.');
 
         if (userAction === 'append') {
+            const lastSicil = (await query`SELECT COALESCE(MAX(CAST(Sicil_No AS integer)), 9999) AS Sicil_No FROM Users WHERE Sicil_No ~ '^[0-9]{5}$'`).recordset[0].Sicil_No;
+            if (lastSicil + Number(personelSayisi) > 99999) throw httpError(409, '5 haneli sicil numarası kalmadı.');
             for (let i = 0; i < Number(personelSayisi); i++) {
-                const u = generateRandomUser();
+                const u = generateRandomUser(String(lastSicil + 1 + i));
                 await query`INSERT INTO Users (Ad_Soyad, RFID_Kart_No, TC_Kimlik, Sicil_No, Departman, Durum, Ise_Giris_Tarihi, Sistem_ID) VALUES (${u.adSoyad}, ${u.rfid}, ${u.tc}, ${u.sicil}, ${u.departman}, true, CAST(${startDateStr} AS DATE), ${u.rfid})`;
             }
         }
