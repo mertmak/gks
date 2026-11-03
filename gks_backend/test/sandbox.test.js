@@ -83,8 +83,11 @@ test('personal simulation copies are writable, isolated and expire', { skip: pro
         const shift = (await call('GET', '/shifts', a)).data[0].ID;
         const body = { userAction: 'append', doorAction: 'keep', logAction: 'append', personelSayisi: 5, kapiSayisi: 1, vardiyaId: shift, startDateStr: '2026-09-08', endDateStr: '2026-09-09' };
         const before = await count('Logs');
+        const sicils = () => runInSchema(schemaOf(a), () => sql.query("SELECT Sicil_No FROM Users WHERE Sicil_No ~ '^[0-9]{5}$' ORDER BY Sicil_No")).then(r => r.recordset.map(u => Number(u.Sicil_No)));
+        const last = Math.max(9999, ...await sicils());
         const result = await call('POST', '/seeder/run', a, body);
         assert.equal(result.status, 200, JSON.stringify(result.data));
+        assert.deepEqual((await sicils()).slice(-5), [1, 2, 3, 4, 5].map(i => last + i));
         assert.equal(await count('Users', schemaOf(a)), people + 6);
         assert.ok(await count('Logs', schemaOf(a)) > before);
         assert.equal(await count('Logs'), before);
